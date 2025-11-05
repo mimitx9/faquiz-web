@@ -2,7 +2,7 @@
 export interface FaTestInfo {
     expireTime: number;
     isPaid: boolean;
-    plan: 'FREE' | 'MONTHLY' | 'YEARLY' | 'LIFETIME';
+    plan: 'FREE' | 'PRO' | 'YEARLY' | 'LIFETIME';
 }
 
 export interface User {
@@ -11,21 +11,7 @@ export interface User {
     username: string;
     fullName: string;
     avatar?: string;
-    closeCategoryCode?: string;
-    university?: string;
-    subscriptionType?: 'free' | 'premium';
-    countAttempt?: number; // Số lần đã attempt quiz từ API
-    faTestInfo?: FaTestInfo;
-    userBag?: {
-        key?: number; // Số key của user
-        battleHint?: number;
-        battleSnow?: number;
-        battleBlockTop1?: number;
-        battleBlockBehind?: number;
-    };
-    globalRank?: GlobalRank; // User's ranking information
-    createdAt?: string;
-    updatedAt?: string;
+    faQuizInfo?: FaTestInfo;
 }
 
 // Auth types

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 import { quizBattleApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 
@@ -277,6 +278,8 @@ const SubCategoryQuizPage: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái đã nộp bài
   const [startTime, setStartTime] = useState<number | null>(null); // Thời gian bắt đầu làm bài
   const [timeSpent, setTimeSpent] = useState<number>(0); // Thời gian đã làm bài (giây)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false); // Hiển thị modal nâng cấp
+  const [upgradeModalMessage, setUpgradeModalMessage] = useState<string>(''); // Message cho modal
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref để clear interval
 
   const isEssay = (question: Question) => {
@@ -310,7 +313,14 @@ const SubCategoryQuizPage: React.FC = () => {
         
       } catch (e: any) {
         console.error(e);
-        setError('Không thể tải câu hỏi, vui lòng thử lại.');
+        // Kiểm tra HTTP status code 403 và mã lỗi 40300401 - yêu cầu thanh toán
+        if (e.response?.status === 403 && e.response?.data?.meta?.code === 40300401) {
+          const errorMessage = e.response?.data?.meta?.message || 'SubCategory này yêu cầu thanh toán. Vui lòng đăng nhập để truy cập nội dung này';
+          setUpgradeModalMessage(errorMessage);
+          setShowUpgradeModal(true);
+        } else {
+          setError('Không thể tải câu hỏi, vui lòng thử lại.');
+        }
       } finally {
         setLoading(false);
       }
@@ -542,6 +552,13 @@ const SubCategoryQuizPage: React.FC = () => {
   const categoryBackgroundColor = category?.backgroundColor || '#3B82F6';
   const subcategoryTitle = subCategory?.title || 'Đề thi thử';
 
+  // Handler khi hết giờ đếm ngược
+  const handleTimerExpired = () => {
+    if (!isSubmitted) {
+      handleSubmit();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -549,6 +566,20 @@ const SubCategoryQuizPage: React.FC = () => {
         <div className="flex justify-center items-center py-20 pt-32">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
+      </div>
+    );
+  }
+
+  // Nếu có modal upgrade thì hiển thị modal, không hiển thị lỗi hay "Không có câu hỏi"
+  if (showUpgradeModal) {
+    return (
+      <div className="min-h-screen bg-white">
+        <QuizHeader />
+        <UpgradeModal 
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          message={upgradeModalMessage}
+        />
       </div>
     );
   }
@@ -580,7 +611,10 @@ const SubCategoryQuizPage: React.FC = () => {
     const correctAnswers = calculateCorrectAnswers();
     return (
       <div className="min-h-screen bg-white">
-        <QuizHeader />
+        <QuizHeader 
+          totalQuestions={questions.length}
+          onTimerExpired={handleTimerExpired}
+        />
         <QuizResults
           totalScore={correctAnswers}
           totalQuestions={questions.length}
@@ -712,7 +746,10 @@ const SubCategoryQuizPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <QuizHeader />
+      <QuizHeader 
+        totalQuestions={questions.length}
+        onTimerExpired={handleTimerExpired}
+      />
       <main className="pt-20">
         <div className={`flex transition-all duration-300 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
           {/* Cột 1: Sidebar với danh sách câu hỏi */}

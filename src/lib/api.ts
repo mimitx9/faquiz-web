@@ -246,11 +246,6 @@ export const authApiService = {
                 username: response.data.data.username,
                 fullName: response.data.data.username, // Use username as fullName if not available
                 avatar: undefined,
-                university: undefined,
-                subscriptionType: 'free',
-                countAttempt: 0,
-                createdAt: response.data.data.createdAt,
-                updatedAt: response.data.data.updatedAt
             };
             return userData;
         } else {
@@ -261,7 +256,7 @@ export const authApiService = {
     getProfile: async (): Promise<User> => {
         try {
             console.log('🔍 API: Calling getProfile...');
-            const response = await userProfileApi.get('/profile-battle');
+            const response = await userProfileApi.get('/profile-quiz');
 
             console.log('🔍 API: getProfile response:', response);
             console.log('🔍 API: getProfile data:', response.data);

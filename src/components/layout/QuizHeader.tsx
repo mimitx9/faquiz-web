@@ -1,17 +1,114 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import Avatar from '@/components/common/Avatar';
 import { useAuth } from '@/hooks/useAuth';
 
-const QuizHeader: React.FC = () => {
+interface QuizHeaderProps {
+  totalQuestions?: number; // Số lượng câu hỏi để tính thời gian
+  onTimerExpired?: () => void; // Callback khi hết giờ
+}
+
+const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired }) => {
   const router = useRouter();
-  const { user, isInitialized } = useAuth();
+  const { user, isInitialized, logout } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isTimerEnabled, setIsTimerEnabled] = useState(false);
+  const [remainingTime, setRemainingTime] = useState<number>(0); // Thời gian còn lại (giây)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const onTimerExpiredRef = useRef(onTimerExpired); // Lưu callback mới nhất
+
+  const isPaid = user?.faQuizInfo?.isPaid === true;
+
+  // Cập nhật ref khi callback thay đổi (không trigger re-render)
+  useEffect(() => {
+    onTimerExpiredRef.current = onTimerExpired;
+  }, [onTimerExpired]);
+
+  // Load timer setting from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTimerSetting = localStorage.getItem('timer_enabled');
+      const enabled = savedTimerSetting === 'true';
+      setIsTimerEnabled(enabled);
+    }
+  }, []);
+
+  // Khởi tạo và quản lý đồng hồ đếm ngược
+  useEffect(() => {
+    // Clear interval cũ trước khi tạo mới
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    if (isTimerEnabled && totalQuestions && totalQuestions > 0) {
+      const totalTimeSeconds = totalQuestions * 15; // Số câu x 15 giây
+      setRemainingTime(totalTimeSeconds);
+
+      // Bắt đầu đếm ngược
+      timerIntervalRef.current = setInterval(() => {
+        setRemainingTime((prev) => {
+          if (prev <= 1) {
+            // Hết giờ
+            if (timerIntervalRef.current) {
+              clearInterval(timerIntervalRef.current);
+              timerIntervalRef.current = null;
+            }
+            // Sử dụng ref để gọi callback mới nhất
+            if (onTimerExpiredRef.current) {
+              onTimerExpiredRef.current();
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      // Reset timer khi tắt hoặc không có câu hỏi
+      setRemainingTime(0);
+    }
+
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [isTimerEnabled, totalQuestions]); // Loại bỏ onTimerExpired khỏi dependency
+
+  // Format thời gian từ giây sang MM:SS
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const handleUpgradeClick = () => {
+    // Nếu đã thanh toán thì không làm gì cả
+    if (isPaid) {
+      return;
+    }
     // Nếu chưa đăng nhập thì redirect đến trang login
     if (isInitialized && !user) {
       router.push('/login');
@@ -19,6 +116,33 @@ const QuizHeader: React.FC = () => {
       router.push('/upgrade');
     }
   };
+
+  const handleTimerToggle = () => {
+    const newValue = !isTimerEnabled;
+    setIsTimerEnabled(newValue);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('timer_enabled', String(newValue));
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setIsDropdownOpen(false);
+    router.push('/login');
+  };
+
+  // Calculate remaining days
+  const calculateRemainingDays = (): number | null => {
+    if (!user?.faQuizInfo?.expireTime) return null;
+    const expireTime = user.faQuizInfo.expireTime * 1000; // Convert to milliseconds if it's unix timestamp
+    const now = Date.now();
+    const diffTime = expireTime - now;
+    if (diffTime <= 0) return 0;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const remainingDays = calculateRemainingDays();
 
   return (
     <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white">
@@ -37,28 +161,142 @@ const QuizHeader: React.FC = () => {
         </Link>
       </div>
 
-      {/* Cột 2: Trống */}
-      <div className="w-1/3"></div>
+      {/* Cột 2: Đồng hồ đếm ngược (hiển thị khi timer enabled và đã có câu hỏi) */}
+      <div className="w-1/3 flex items-center justify-center">
+        {isTimerEnabled && totalQuestions && totalQuestions > 0 && remainingTime > 0 && (
+          <div className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5"
+              style={{ color: '#FFBB00' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span
+              className="text-xl font-semibold"
+              style={{ color: '#FFBB00' }}
+            >
+              {formatTime(remainingTime)}
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Cột 3: Nút Nâng Cấp và Avatar */}
+      {/* Cột 3: Nút Nâng Cấp/PRO và Avatar */}
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <button
           onClick={handleUpgradeClick}
-          className="rounded-full px-4 py-2 transition-opacity hover:opacity-80"
+          className={`rounded-full px-4 py-2 transition-opacity ${
+            isPaid ? 'cursor-default' : 'hover:opacity-80'
+          }`}
           style={{
             backgroundColor: '#FFBB001A',
             color: '#FFBB00',
             border: 'none'
           }}
         >
-          Nâng Cấp
+          {isPaid ? 'PRO' : 'Nâng Cấp'}
         </button>
-        <Avatar
-          src={user?.avatar || '/logos/header/avatar-default.svg'}
-          alt={user?.fullName || user?.username || 'User'}
-          name={user?.fullName || user?.username || 'User'}
-          size="md"
-        />
+        
+        {/* Avatar with dropdown menu */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="cursor-pointer transition-opacity bg-white rounded-full flex items-center"
+          >
+            {user && user.avatar ? (
+              <Image
+                src={user.avatar}
+                alt={user.fullName || user.username || 'User'}
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <Image
+                src="/logos/header/avatar-default.svg"
+                alt="Avatar"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+            )}
+          </button>
+
+          {/* Dropdown Menu */}
+          {isDropdownOpen && (
+            <div
+              className="absolute right-0 top-full mt-2 w-56 z-50"
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                borderRadius: '5%',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              <div className="py-2">
+                {/* Thông tin Pro/Upgrade */}
+                {isPaid ? (
+                  <div className="flex items-center justify-between px-4 py-2">
+                    <span className="font-medium text-sm text-black">Pro</span>
+                    {remainingDays !== null && (
+                      <span
+                        className="text-sm font-medium"
+                        style={{ color: '#FFBB00' }}
+                      >
+                        Còn {remainingDays} ngày
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    href="/upgrade"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center px-4 py-2 text-black hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="font-medium text-sm">Nâng cấp</span>
+                  </Link>
+                )}
+
+                {/* Config đếm giờ */}
+                <div className="flex items-center justify-between px-4 py-2 text-black hover:bg-gray-50 transition-colors">
+                  <span className="font-medium text-sm">Đếm giờ</span>
+                  <button
+                    onClick={handleTimerToggle}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isTimerEnabled ? '' : 'bg-gray-300'
+                    }`}
+                    style={{
+                      backgroundColor: isTimerEnabled ? '#9333EA' : undefined,
+                    }}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isTimerEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Đăng xuất */}
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-4 py-2 text-left hover:bg-gray-50 transition-colors"
+                  style={{ color: 'rgba(0, 0, 0, 0.5)' }}
+                >
+                  <span className="font-medium text-sm">Đăng xuất</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

@@ -15,7 +15,6 @@ interface AuthContextType {
     register: (data: RegisterRequest) => Promise<void>;
     logout: () => Promise<void>;
     refreshUser: () => Promise<void>;
-    incrementAttemptCount: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -202,18 +201,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         }
     };
 
-    const incrementAttemptCount = () => {
-        setUser(prev => {
-            if (!prev) return prev;
-            const updated: User = {
-                ...prev,
-                countAttempt: (prev.countAttempt || 0) + 1,
-            };
-            saveUserToCache(updated);
-            return updated;
-        });
-    };
-
     const value = {
         user,
         loading,
@@ -222,7 +209,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         register,
         logout,
         refreshUser,
-        incrementAttemptCount,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -19,6 +19,7 @@ export { default as SubCategoryListItem } from './SubCategoryListItem';
 export { default as SubCategoryListPanel } from './SubCategoryListPanel';
 export { default as SubjectCard } from './SubjectCard';
 export { default as HomeLoginForm } from './HomeLoginForm';
+export { default as UpgradeModal } from './UpgradeModal';
 
 // Re-export design tokens và utilities
 export * from '@/lib/design-tokens';
