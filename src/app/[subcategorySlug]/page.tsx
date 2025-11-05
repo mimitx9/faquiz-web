@@ -1,11 +1,264 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
+import QuizResults from '@/components/ui/QuizResults';
 import { quizBattleApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo } from '@/types';
+
+const COMMENT_MESSAGE_SUCCESS = [
+  'Tuyệt cú mèo',
+  'Giỏi ghê',
+  'Mê chữ ê kéo dài',
+  'Ỏ giỏi đấy',
+  'Hảo hảo',
+  'Dễ như ăn bánh',
+  'Mấy câu này tuổi gì',
+  'Ơ mây zing',
+  'Phenomenal!!!',
+  'Spectacular!!!',
+  'Oăn đờ phu',
+  'Really?',
+  'Thật không thể tin được',
+  'Có khiếu quá',
+  'Nghệ cả củ',
+  'Dăm ba cái câu hỏi',
+  'Khéo quá',
+  'Giỏi nha bây',
+  'Ăn gì giỏi thế',
+  'Chuẩn không cần chỉnh',
+  'Good job!',
+  'Congratulation!',
+  'Marvelous!!!',
+  'Fabulous!!!',
+  'Bravo~',
+  'I love you',
+  'Giỏi!',
+  'Tiếp tục nào!',
+  'Chiến tích',
+  'Bứt phá hơn đê',
+  'Còn nhiều câu khó hơn cơ!',
+  'Được quá nhỉ',
+  'Có ai bảo bạn giỏi chưa?',
+  'Hâm mộ ghê cơ',
+  'Tiến thêm bước nữa nào!',
+  'Não săn chắc phết nhể',
+  'Mê rồi nha chế',
+  'Bạn giỏi thật chứ đùa',
+  'Quá giỏi',
+  'Công nhận chiến tích',
+  'Tuyệt quá',
+  'Quá đã~',
+  'Khen nhiều hơi mệt nha!',
+  'MVP',
+  'Victory',
+  'Ngon lành!',
+  'Nâng cấp TK thì khen tiếp',
+  'Bro được đấy',
+  'Ngon zai',
+  'Mận ổi cóc xoài mía quá',
+  'Nice job! I\'m impressed!',
+  'Stick with it',
+  'Giỏi quá vỗ tay bép bép',
+  'Gút chóp bạn hiền!!!!',
+  'Mười điểm, làm tiếp!!!!',
+  'Xuất sắc quá cơ!!!',
+  'Gia đình tự hào về bạn!!',
+  'Bạn xuất sắc hơn 90% người rồi đấy!',
+  'Hảo!!!',
+  'Tuyệt vời ông mặt trời!',
+  'Đỉnh đỉnh!!',
+  'Đỉnh của chópppp',
+  'Xuất sắc luôn!!!!',
+  '3 phần xuất sắc 7 phần như 3',
+  'Âyya, lại trả lời chính xác rồi!!!',
+  'Tổ quốc tin bạn, phát huy tiếp nàooo',
+  'Không còn từ nào để khen nữa cơ!!',
+  'Lại đỉnh rồiii!!!',
+  'Bingo!!!',
+  'Tuyệt!!!',
+  'Chúc mừng!!! Lại đúng rồiiii!',
+  'Chất lừ luôn',
+  'Sao giỏi quá zậy?',
+  'Quá là vip pro luôn bạn eiii',
+  'Chất như nước cất',
+  'Hết nước chấmmm',
+  'Quá là xuất sắc',
+  'Đỉnh của đỉnh',
+  'Hay quá bạn ơi',
+  'Xịn xò con bò luôn',
+  'Rất chi là siêu cấp vũ trụ',
+  'Học kiểu này ai theo kịp bạn',
+  'Năng suất quá bạn ơii',
+  'Này có nhằm nhò gì nhở?',
+  'Chất hơn bạn ơi',
+  'Sao giỏi quá đê',
+  'Tuyêt vời ông mặt trời',
+  'Xịn vậy luôn',
+  'Đúng là học vì đam mê, giỏi quá!',
+  'Hơn cả giỏi, bạn quá đỉnh',
+  'Sự nỗ lực này xứng đáng được công nhận',
+  'Cứ hơi bị xịn xò í nhở',
+  'Giỏi vậy ai dám chê',
+  'Tưởng giỏi ai dè giỏi thật',
+  'Nhìn vậy mà cũng giỏi phết ha',
+  'Sao nay giỏi vậy?',
+  'Úi, một sinh viên chất lừ',
+  'Well done!',
+  'Ngưỡng mộ quá!!!',
+  'Sao lại có người giỏi như vậy cơ!!!',
+  'Xứng đáng có 10 người yêu!!!',
+  'Học bổng trong tay rồi!!!',
+  'Ngầu!!!',
+  'Chất quá!!!',
+  'Chất như nước cất luôn!!!',
+  'Thành công không xa!!!',
+  'Dáng vẻ này mình thích lắm',
+  'Lắm khi thấy bạn đỉnh vậy',
+  'Giỏi thật chứ đùa',
+  'Không thể tin được',
+  'Ấn tượng điểm số của bạn',
+  'Wao, 1 vẻ đẹp tri thức',
+  'Giỏi quá cơ',
+  'Rất đáng để nể phục',
+  'Không giỏi đời không nể',
+  'Bạn giỏi hơn khối người rồi đó',
+  'Duy trì phong độ này nhé',
+  'Giỏi thế!',
+  'Wao, sáng mắt luôn',
+  '1 điểm số ấn tượng',
+  'Chiến luôn',
+  'Không gì làm khó được bạn',
+  'Câu tiếp theo!!!'
+];
+
+const COMMENT_MESSAGE_FAILED = [
+  'Cố chút xíu nữa nào!',
+  'Suy nghĩ kĩ nhé',
+  'Hơi sai tí thui!',
+  'Thất bại là mẹ thất bại',
+  'Defeat',
+  'Hồi máu nhanh',
+  'Quên không dùng não rồi',
+  'Đừng vội vã',
+  'Cẩn trọng hơn nhé',
+  'Đừng bị mắc bẫy',
+  'Suy luận tí đê',
+  'Chọn bừa à?',
+  'Ê bạn chán tôi rồi à?',
+  'Làm đúng tui iu bạn luôn',
+  'Đừng sai nữa em mệt rồi',
+  'Alo sai dữ vậy cha nội',
+  'Có muốn đi học nữa không?',
+  'Học, học nữa, học lại',
+  'Làm sai nữa tui buồn á',
+  'Eo sai kìa',
+  'Chê!',
+  'N.G.U',
+  'Ai cũng đều có sai lầm',
+  'Never bend your head',
+  'Hang tough!',
+  'Hang in there!',
+  'Gắng lên nào!',
+  'Không phải lúc chơi đâu',
+  'Khổ trước sướng sau',
+  'Sai nhiều mới đúng được',
+  'Do the best you can',
+  'Cố hết sức chưa đấy!',
+  'Hơi hóc búa với bạn rùi',
+  'Bước thêm bước nữa nào',
+  'Đừng từ bỏ nhé!',
+  'Luyện tập thêm nào',
+  'It will be okay',
+  'Bạn giỏi mà, cố lên!',
+  'Come on, you can do it!',
+  'Chán quá thì chat với tui',
+  'Thử lại lần nữa xem',
+  'Không khó lắm đâu, thề!',
+  'Ai chả có sai lầm~',
+  'Ai cũng sai câu này, đừng lo',
+  'Tặng cái ôm động viên nè!',
+  'Keep going',
+  'Hói đầu chưa bây?',
+  'Không dễ đâu cưng',
+  'Nuốt không trôi',
+  'Đừng dừng lại',
+  'Tiếp tục đi nào',
+  'Sắp giỏi dồi',
+  'Quiz tôi xin chửi vào mặt bạn',
+  'Bạn tệ :))',
+  '0 điểm về chỗ!!!',
+  'Câu dễ thế cơ mà, chê!!!',
+  'Quiz từ chối nhận người quen:)',
+  'Không sao, cố thêm lần nữa !!',
+  'Chê :))))',
+  'Lại sai cơ!!.',
+  'Quiz cạn ngôn :)',
+  'Còn sai nữa là xuống đáy BXH rồi!!!',
+  'Đúng hộ Quiz 1 nữa câu thôi nào!!',
+  '10 phần bất an về điểm thi của bạn!!',
+  'Âyya, biết ngay lại sai mà!!!',
+  'Vẫn chưa đến nổi tuyệt vọng!!!',
+  'Không còn gì để chê :))',
+  'Vẫn chưa đến nổi phải tuyệt vọng!!!',
+  'Cố lên rồi sẽ sai tiếp!!!',
+  'Ngáo àaaa',
+  'Chia buồn! Lại sai rồi!!',
+  'sai câu nữa là còn đúng cái nịt',
+  'U là trời, dễ thế mà sai à',
+  'Làm sai lại đổ lỗi xu cà na chứ gì',
+  'Sai thêm câu nữa là về chăn bò',
+  'Gòi xong, phí tiền đi học',
+  'Stupid như pò',
+  'Chánnnn',
+  'Nhục quá bạn đê!',
+  'Sai quài vậy bạn',
+  'Sai vừa thôi, để phần người khác với',
+  'Đích còn dài mà cứ lẹt đẹt vậy luôn',
+  'Học tài thi phận, lận đận thì thi lại đê',
+  'Tầm này về quê nuôi cá là vừa',
+  'Nào mới chịu thể hiện đây',
+  'Sao nay tệ vậy?',
+  'Haizzz, chả thèm care',
+  'Học hành đàng hoàng cái coi',
+  'Mất nửa cái linh hồn khi thấy điểm của bạn',
+  'Xịn xò đành nhường cho người khác',
+  'Chúc bạn may mắn lần sau',
+  'Coi như lần này xui',
+  'Lần này coi như nháp',
+  'Nháp vừa vừa thuii',
+  'Thui đừng nháp nữa',
+  'Nữa, lại tệ nữa',
+  'Được rồi, xin người làm đàng hoàng cái coi',
+  'Học vậy mà tính đi ngủ luôn',
+  'Thật là uổng công bame kì vọng :(',
+  'Thất vọng quá đi!!!',
+  'Xứng đáng Ế đến già!!!',
+  'Qua môn còn xa quá!!!',
+  'Sầu!!!!',
+  'Chán thế!!!',
+  'Úp mặt vào tường tự kiểm điểm đê!!',
+  'Thất bại là mẹ thành công!!',
+  'Đọc đề không vậy?',
+  'Làm thàm đúng hem?',
+  'Cẩn thận chút đi bạn',
+  '10 điểm, nhưng 10 điểm cho người ta',
+  'Nỗ lực thêm bạn ơi',
+  'Học năng suất lên nào',
+  'Đừng chỉ nói suông, hãy hành động đê',
+  'Chịu luôn, rất tệ',
+  'Lần sau phải bức phá hơn',
+  'Lần sau hết mình nha',
+  'Cần sự bức phá hơn ở bạn',
+  'Nỗ lực thêm chút nào',
+  'Đừng quá lo, lần sau bạn sẽ tốt hơn',
+  'Thử sức thêm lần nữa nào',
+  'Tệ quá nghe',
+  'Khó chút đã lụi hẻ?',
+  'Làm lại thôi chờ chi!!'
+];
 
 const SubCategoryQuizPage: React.FC = () => {
   const router = useRouter();
@@ -20,6 +273,11 @@ const SubCategoryQuizPage: React.FC = () => {
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
   const [multiAnswers, setMultiAnswers] = useState<Record<number, Set<number>>>({}); // Lưu các answerId đã chọn cho mỗi câu hỏi
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [questionMessages, setQuestionMessages] = useState<Record<number, string>>({}); // Lưu message cho mỗi câu hỏi
+  const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái đã nộp bài
+  const [startTime, setStartTime] = useState<number | null>(null); // Thời gian bắt đầu làm bài
+  const [timeSpent, setTimeSpent] = useState<number>(0); // Thời gian đã làm bài (giây)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref để clear interval
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -47,6 +305,9 @@ const SubCategoryQuizPage: React.FC = () => {
           setSubCategory(matchedSubCategory);
         }
         
+        // Bắt đầu đếm thời gian khi tải xong câu hỏi
+        setStartTime(Date.now());
+        
       } catch (e: any) {
         console.error(e);
         setError('Không thể tải câu hỏi, vui lòng thử lại.');
@@ -56,6 +317,21 @@ const SubCategoryQuizPage: React.FC = () => {
     };
     loadQuestions();
   }, [slugParam]);
+
+  // Đếm thời gian làm bài
+  useEffect(() => {
+    if (startTime && !isSubmitted && !loading) {
+      intervalRef.current = setInterval(() => {
+        setTimeSpent(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [startTime, isSubmitted, loading]);
 
   // Đếm số lượng đáp án đúng trong một câu hỏi
   const getCorrectAnswerCount = (question: Question) => {
@@ -82,7 +358,17 @@ const SubCategoryQuizPage: React.FC = () => {
           set.add(answerId);
         }
       }
-      return { ...prev, [questionId]: set };
+      
+      // Kiểm tra xem đã verify chưa và set message
+      const newSet = new Set(set);
+      const verified = correctAnswerCount > 0 && newSet.size >= correctAnswerCount;
+      if (verified && !questionMessages[questionId]) {
+        const isCorrect = isAnswerCorrect(question, newSet);
+        const message = getRandomMessage(isCorrect);
+        setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
+      }
+      
+      return { ...prev, [questionId]: newSet };
     });
   };
 
@@ -99,6 +385,32 @@ const SubCategoryQuizPage: React.FC = () => {
     if (!selectedAnswers) return false;
     const correctAnswerCount = getCorrectAnswerCount(question);
     return correctAnswerCount > 0 && selectedAnswers.size >= correctAnswerCount;
+  };
+
+  // Hàm kiểm tra xem câu trả lời có đúng không
+  const isAnswerCorrect = (question: Question, selectedAnswers: Set<number> | undefined) => {
+    if (!selectedAnswers || !question.options) return false;
+    
+    const correctAnswerIds = new Set(
+      question.options.filter(opt => opt.isCorrect).map(opt => opt.answerId)
+    );
+    
+    // Kiểm tra xem số lượng đáp án đã chọn có bằng số đáp án đúng không
+    if (selectedAnswers.size !== correctAnswerIds.size) return false;
+    
+    // Kiểm tra xem tất cả đáp án đã chọn có đúng không
+    for (const answerId of selectedAnswers) {
+      if (!correctAnswerIds.has(answerId)) return false;
+    }
+    
+    return true;
+  };
+
+  // Hàm random message dựa trên đúng/sai
+  const getRandomMessage = (isCorrect: boolean): string => {
+    const messages = isCorrect ? COMMENT_MESSAGE_SUCCESS : COMMENT_MESSAGE_FAILED;
+    const randomIndex = Math.floor(Math.random() * messages.length);
+    return messages[randomIndex];
   };
 
   // Hàm render icon verify dựa trên trạng thái chọn và đúng/sai
@@ -183,6 +495,48 @@ const SubCategoryQuizPage: React.FC = () => {
     return undefined;
   };
 
+  // Hàm tính toán số câu đúng
+  const calculateCorrectAnswers = (): number => {
+    let correctCount = 0;
+    
+    questions.forEach((question) => {
+      if (isEssay(question)) {
+        // Đối với câu hỏi tự luận, tạm thời không tính điểm
+        // Có thể implement logic chấm điểm sau nếu cần
+        return;
+      } else {
+        const selectedAnswers = multiAnswers[question.questionId];
+        if (selectedAnswers && isAnswerCorrect(question, selectedAnswers)) {
+          correctCount++;
+        }
+      }
+    });
+    
+    return correctCount;
+  };
+
+  // Handler nộp bài
+  const handleSubmit = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    setIsSubmitted(true);
+    // Tính toán thời gian cuối cùng
+    if (startTime) {
+      setTimeSpent(Math.floor((Date.now() - startTime) / 1000));
+    }
+  };
+
+  // Handler làm lại bài
+  const handleRetry = () => {
+    setIsSubmitted(false);
+    setTextAnswers({});
+    setMultiAnswers({});
+    setQuestionMessages({});
+    setStartTime(Date.now());
+    setTimeSpent(0);
+  };
+
   // Sử dụng dữ liệu từ API
   const categoryTitle = category?.title || 'Đề thi thử';
   const categoryBackgroundColor = category?.backgroundColor || '#3B82F6';
@@ -221,12 +575,30 @@ const SubCategoryQuizPage: React.FC = () => {
     );
   }
 
+  // Hiển thị màn hình kết quả khi đã nộp bài
+  if (isSubmitted) {
+    const correctAnswers = calculateCorrectAnswers();
+    return (
+      <div className="min-h-screen bg-white">
+        <QuizHeader />
+        <QuizResults
+          totalScore={correctAnswers}
+          totalQuestions={questions.length}
+          timeSpent={timeSpent}
+          onRetry={handleRetry}
+        />
+      </div>
+    );
+  }
+
   // Hàm render một câu hỏi
   const renderQuestion = (question: Question, index: number) => {
     const questionIsEssay = isEssay(question);
     const selectedAnswers = multiAnswers[question.questionId];
     const verified = isVerified(question, selectedAnswers);
     const isAnswered = verified;
+    const message = questionMessages[question.questionId];
+    const isCorrect = verified ? isAnswerCorrect(question, selectedAnswers) : null;
 
     return (
       <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
@@ -239,6 +611,41 @@ const SubCategoryQuizPage: React.FC = () => {
         <h1 className="text-xl font-bold text-gray-900 mb-6">
           {question.question}
         </h1>
+
+        {/* Hiển thị message khi đã verify */}
+        {verified && message && (
+          <div className="mb-6">
+            <p 
+              className="text-base font-medium"
+              style={{ 
+                color: isCorrect ? '#00C800' : '#EC5300' 
+              }}
+            >
+              {message}
+            </p>
+          </div>
+        )}
+
+        {/* Quote giải thích tham khảo */}
+        {verified && (question.detailAnswer && question.detailAnswer.trim().length > 0) && (
+          <div className="mb-6">
+            <div className="flex items-start gap-3">
+              <div className="w-1 self-stretch rounded" style={{ backgroundColor: '#8D7EF7' }} />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="text-sm">
+                    <span className="font-semibold" style={{ color: '#8D7EF7' }}>Quiz thông thái</span>
+                    <span className="mx-2 text-gray-400">&gt;</span>
+                    <span className="text-gray-500">Giải thích tham khảo</span>
+                  </div>
+                </div>
+                <div className="text-gray-800 leading-relaxed">
+                  {question.detailAnswer}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Hiển thị ảnh nếu có */}
         {question.extraData?.image && (
@@ -377,13 +784,21 @@ const SubCategoryQuizPage: React.FC = () => {
               </div>
 
               {/* Footer với subcategory title */}
-              <div className="p-4 border-t border-gray-200">
+              <div className="p-4 border-t border-gray-200 relative">
                 <p 
-                  className="text-sm"
+                  className="text-sm pl-28"
                   style={{ color: '#0000001A' }}
                 >
                   {subcategoryTitle}
                 </p>
+                <button
+                  onClick={handleSubmit}
+                  aria-label="Nộp bài"
+                  className="absolute left-4 bottom-3 z-10 px-4 py-2 rounded-lg text-white shadow-md transition-opacity hover:opacity-80"
+                  style={{ backgroundColor: '#8D7EF7' }}
+                >
+                  Nộp bài
+                </button>
               </div>
             </div>
           )}
