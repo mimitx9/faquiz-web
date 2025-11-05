@@ -135,6 +135,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     };
 
 
+    const register = async (data: RegisterRequest) => {
+        setLoading(true);
+        try {
+            // Step 1: Gọi API đăng ký
+            await authApiService.register(data);
+
+            // Step 2: Đăng nhập luôn sau khi đăng ký thành công
+            const loginResponse = await authApiService.login({
+                username: data.username,
+                password: data.password,
+            });
+
+            const token = loginResponse?.token;
+            if (!token) {
+                throw new Error('No token received from login API after register');
+            }
+
+            localStorage.setItem('auth_token', token);
+
+            // Step 3: Lấy profile
+            const userData = await authApiService.getProfile();
+            setUser(userData);
+            saveUserToCache(userData);
+        } catch (error: any) {
+            localStorage.removeItem('auth_token');
+            clearUserCache();
+            resetFirePoints();
+            setUser(null);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const logout = async () => {
         setLoading(true);
         try {
@@ -185,6 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         loading,
         isInitialized,
         login,
+        register,
         logout,
         refreshUser,
         incrementAttemptCount,

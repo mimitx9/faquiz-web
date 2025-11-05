@@ -2,23 +2,15 @@
  * Utility functions for handling authentication errors
  */
 
-import { resetFirePoints } from './firePointsUtils';
-
 /**
- * Handles 401 authentication errors by clearing auth data and redirecting to login
+ * Handles 401 authentication errors by clearing auth data
  */
 export const handle401Error = () => {
     if (typeof window !== 'undefined') {
-        console.log('🔍 Auth Utils: 401 error detected, redirecting to login');
+        console.log('🔍 Auth Utils: 401 error detected, clearing auth data');
         
         // Clear auth data
         localStorage.removeItem('auth_token');
-        
-        // Reset đốm lửa khi có lỗi 401
-        resetFirePoints();
-        
-        // Redirect về trang login
-        window.location.href = '/login';
     }
 };
 

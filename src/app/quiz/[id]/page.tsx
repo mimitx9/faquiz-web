@@ -52,9 +52,6 @@ const QuizPage: React.FC = () => {
       setQuiz(response.data);
     } catch (error: any) {
       console.error('Error loading quiz:', error);
-      if (error.response?.status === 401) {
-        router.push('/login?redirect=/quiz/' + quizId);
-      }
     } finally {
       setLoading(false);
     }
@@ -84,7 +81,9 @@ const QuizPage: React.FC = () => {
 
     try {
       const response = await quizWebApiService.submitQuiz(quiz.id, answers);
-      router.push(`/result/${response.data.attemptId}`);
+      // Hiển thị thông báo hoặc redirect về home
+      alert('Đã nộp bài thành công!');
+      router.push('/');
     } catch (error) {
       console.error('Error submitting quiz:', error);
     }

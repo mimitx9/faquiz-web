@@ -117,28 +117,6 @@ const UpgradePage: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center">
-          <span className="text-gray-400 mr-2">Hoặc</span>
-          <Link
-            href="/login"
-            className="text-purple-600 hover:underline font-medium"
-          >
-            Đăng nhập tài khoản Pro
-          </Link>
-          <svg
-            className="w-4 h-4 inline-block ml-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </div>
       </main>
     </div>
   );

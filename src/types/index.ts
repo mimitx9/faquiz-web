@@ -39,6 +39,71 @@ export interface RegisterRequest {
     fullName: string;
     username: string;
     password: string;
+    universityId: number;
+}
+
+// Global ranking info for user profiles
+export interface GlobalRank {
+    userId: number;
+    url: string;
+    title: string;
+    color: string;
+    level: number;
+    levelId: number;
+    extraData?: {
+        currentCountAchieve?: number;
+        currentCountLose?: number;
+        currentCountWin?: number;
+        nextRank?: {
+            url: string;
+            title: string;
+            color: string;
+            level: number;
+            levelId: number;
+        };
+        targetNextLevel?: number;
+        userRanking?: number;
+    };
+}
+
+// Subject type used by SubjectCard and subject lists
+export interface Subject {
+    id: number;
+    name: string;
+    icon?: string;
+    color?: string;
+}
+
+// Responses for Home page new items (minimal shapes to satisfy usage)
+export interface NewSubjectsResponse {
+    meta: { code: number; message: string };
+    data: Subject[];
+}
+
+export interface NewQuizzesResponse {
+    meta: { code: number; message: string };
+    data: Array<{
+        id: number;
+        title: string;
+        subjectName: string;
+        universityName?: string;
+        questionCount: number;
+        color?: string;
+        isPro?: boolean;
+        categoryCode?: string;
+    }>;
+}
+
+// Placeholders to satisfy imports; expand when needed
+export interface AttemptHistoryResponse {
+    meta: { code: number; message: string };
+    data: any;
+}
+
+export interface QuizRoom {
+    id: number;
+    name: string;
+    [key: string]: any;
 }
 
 export interface AuthResponse {
