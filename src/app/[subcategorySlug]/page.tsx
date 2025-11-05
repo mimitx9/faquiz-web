@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
 import { quizBattleApiService } from '@/lib/api';
-import { Question, CategoryInfo, SubCategoryInfo } from '@/types';
+import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -415,7 +415,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Hàm render icon verify dựa trên trạng thái chọn và đúng/sai
   const renderVerifyIcon = (
-    option: { answerId?: number; isCorrect?: boolean }, 
+    option: QuestionOption, 
     selectedAnswers: Set<number> | undefined,
     isVerified: boolean
   ) => {
@@ -447,7 +447,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Hàm tính toán border color cho option
   const getBorderColor = (
-    option: { answerId?: number; isCorrect?: boolean }, 
+    option: QuestionOption, 
     selectedAnswers: Set<number> | undefined,
     isVerified: boolean
   ) => {
@@ -472,7 +472,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Hàm tính toán text color cho option (giống với border color khi đã verify)
   const getTextColor = (
-    option: { answerId?: number; isCorrect?: boolean }, 
+    option: QuestionOption, 
     selectedAnswers: Set<number> | undefined,
     isVerified: boolean
   ) => {
@@ -681,7 +681,7 @@ const SubCategoryQuizPage: React.FC = () => {
               
               return (
                 <button
-                  key={opt.answerId || idx}
+                  key={opt.answerId}
                   onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
                   disabled={isAnswered}
                   className={`w-full text-left p-4 rounded-lg transition-colors flex items-center justify-between bg-white ${
