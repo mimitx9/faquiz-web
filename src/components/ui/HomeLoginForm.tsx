@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { masterApiService } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import Button from '@/components/ui/Button';
 import Image from 'next/image';
@@ -48,21 +47,6 @@ const HomeLoginForm: React.FC<HomeLoginFormProps> = ({ onSuccess }) => {
     resolver: zodResolver(isRegisterMode ? registerSchema : loginSchema),
   });
 
-  useEffect(() => {
-    const fetchUniversities = async () => {
-      try {
-        setLoadingUniversities(true);
-        const res = await masterApiService.getUniversities();
-        setUniversities(res.data || []);
-      } catch (e) {
-        // fallback: để trống, user sẽ không thể submit do schema bắt buộc
-        setUniversities([]);
-      } finally {
-        setLoadingUniversities(false);
-      }
-    };
-    fetchUniversities();
-  }, []);
 
   const onSubmit = async (data: LoginFormData | RegisterFormData) => {
     setIsLoading(true);

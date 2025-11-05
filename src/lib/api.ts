@@ -5,25 +5,9 @@ import {
     RegisterRequest,
     User,
     ApiResponse,
-    CreateQuizAttemptResponse,
-    GetQuizAttemptResponse,
-    QuizAttemptResponse,
     RegisterUserResponse,
-    QuizSubmitData,
-    QuizSubmitResponse,
-    SubscriptionPlan,
-    AttemptHistoryResponse,
-    QuizRoom,
-    QuestionsByCategoryRequest,
-    QuestionsByCategoryResponse,
     QuestionsBySubCategoryRequest,
     QuestionsBySubCategoryResponse,
-    UserBagResponse,
-    GlobalRank,
-    NewQuizzesResponse,
-    NewSubjectsResponse,
-    QuizDetail,
-    QuizResult,
     SlideFastResponse
 } from '../types';
 import { handle401Error } from './authUtils';
@@ -146,25 +130,6 @@ quizApiInstance.interceptors.request.use((config) => {
     return config;
 });
 
-quizBattleApiInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    // Ensure site header is always set
-    config.headers.site = 'BATTLE';
-    return config;
-});
-
-masterApiInstance.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    config.headers.site = 'BATTLE';
-    return config;
-});
-
 quizWebApiInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -213,28 +178,6 @@ quizApiInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 Quiz API: 401 error detected, but allowing quiz without token');
             // Không gọi handle401Error() để không redirect
-        }
-        return Promise.reject(error);
-    }
-);
-
-quizBattleApiInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            console.log('🔍 Quiz Battle API: 401 error detected, redirecting to login');
-            handle401Error();
-        }
-        return Promise.reject(error);
-    }
-);
-
-masterApiInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            console.log('🔍 Master API: 401 error detected, redirecting to login');
-            handle401Error();
         }
         return Promise.reject(error);
     }
@@ -360,19 +303,6 @@ export const authApiService = {
 
 // Quiz Battle API
 export const quizBattleApiService = {
-    getShoppingMall: async (): Promise<{ meta: { code: number; message: string }, data: Array<{ id: number; itemCode: string; status: string; description: string; quantity: number; priceInKey: number }> }> => {
-        try {
-            console.log('🔍 API: Calling getShoppingMall...');
-            const response = await quizBattleApiInstance.get('/shopping-mall');
-            console.log('🔍 API: getShoppingMall response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getShoppingMall failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
     
     getQuestionsBySubCategory: async (payload: QuestionsBySubCategoryRequest): Promise<QuestionsBySubCategoryResponse> => {
         try {
@@ -382,195 +312,6 @@ export const quizBattleApiService = {
             return response.data;
         } catch (error: any) {
             console.error('❌ API: getQuestionsBySubCategory failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-    consumeItem: async (payload: { itemCode: string; quantity: number }): Promise<{ meta: { code: number; message: string }, data?: { userBag: any } }> => {
-        try {
-            console.log('🔍 API: Calling consumeItem...', payload);
-            const response = await quizBattleApiInstance.post('/consume-item', payload);
-            console.log('🔍 API: consumeItem response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: consumeItem failed:', error);
-            throw error;
-        }
-    },
-    getUserBag: async (): Promise<UserBagResponse> => {
-        try {
-            console.log('🔍 API: Calling getUserBag...');
-            const response = await quizBattleApiInstance.get<UserBagResponse>('/user-bag');
-            
-            console.log('🔍 API: getUserBag response:', response);
-            console.log('🔍 API: getUserBag data:', response.data);
-            
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getUserBag failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    getQuestionsByCategory: async (requestData: QuestionsByCategoryRequest): Promise<QuestionsByCategoryResponse> => {
-        try {
-            console.log('🔍 API: Calling getQuestionsByCategory with categoryCode:', requestData.categoryCode);
-            const response = await quizBattleApiInstance.post<QuestionsByCategoryResponse>('/questions/by-category', requestData);
-            
-            console.log('🔍 API: getQuestionsByCategory response:', response);
-            console.log('🔍 API: getQuestionsByCategory data:', response.data);
-            
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getQuestionsByCategory failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    getUserRanking: async (): Promise<{ data: { globalRank: GlobalRank } }> => {
-        try {
-            console.log('🔍 API: Calling getUserRanking...');
-            const response = await quizBattleApiInstance.get<{ data: { globalRank: GlobalRank } }>('/user-ranking');
-            
-            console.log('🔍 API: getUserRanking response:', response);
-            console.log('🔍 API: getUserRanking data:', response.data);
-            
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getUserRanking failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            
-            // Return mock data if API fails
-            console.log('🔍 API: Returning mock ranking data...');
-            return {
-                data: {
-                    globalRank: {
-                        userId: 0,
-                        url: "https://storage.googleapis.com/faquiz2/rankiCon/Fe3.png",
-                        title: "Lv 10. Vàng V",
-                        color: "#FFD700",
-                        level: 10,
-                        levelId: 5,
-                        extraData: {
-                            currentCountAchieve: 250,
-                            currentCountLose: 23,
-                            currentCountWin: 1,
-                            nextRank: {
-                                url: "https://storage.googleapis.com/faquiz2/rankiCon/Fe2.png",
-                                title: "Lv 11. Vàng IV",
-                                color: "#FFD700",
-                                level: 11,
-                                levelId: 6
-                            },
-                            targetNextLevel: 400,
-                            userRanking: 0
-                        }
-                    }
-                }
-            };
-        }
-    },
-};
-
-// Master API
-export const masterApiService = {
-    getUniversities: async (): Promise<{
-        meta: { code: number; message: string };
-        pagination: { pageSize: number; pageOffset: number; totalRecords: number; totalPages: number };
-        data: Array<{ text: string; code: string; image?: string }>;
-    }> => {
-        try {
-            console.log('🔍 API: Calling getUniversities...');
-            const response = await masterApiInstance.get('/list', {
-                params: { filterType: 'UNIVERSITY' },
-            });
-            console.log('🔍 API: getUniversities response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getUniversities failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-};
-
-// Quiz Web API
-export const quizWebApiService = {
-    getNewQuizzes: async (): Promise<NewQuizzesResponse> => {
-        try {
-            console.log('🔍 API: Calling getNewQuizzes...');
-            const response = await quizWebApiInstance.get<NewQuizzesResponse>('/new-quizzes');
-            console.log('🔍 API: getNewQuizzes response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getNewQuizzes failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    getNewSubjects: async (): Promise<NewSubjectsResponse> => {
-        try {
-            console.log('🔍 API: Calling getNewSubjects...');
-            const response = await quizWebApiInstance.get<NewSubjectsResponse>('/new-subjects');
-            console.log('🔍 API: getNewSubjects response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getNewSubjects failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    getQuizDetail: async (quizId: number): Promise<ApiResponse<QuizDetail>> => {
-        try {
-            console.log('🔍 API: Calling getQuizDetail...', quizId);
-            const response = await quizWebApiInstance.get<ApiResponse<QuizDetail>>(`/quiz/${quizId}`);
-            console.log('🔍 API: getQuizDetail response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: getQuizDetail failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    searchSubjects: async (query: string): Promise<NewSubjectsResponse> => {
-        try {
-            console.log('🔍 API: Calling searchSubjects...', query);
-            const response = await quizWebApiInstance.get<NewSubjectsResponse>('/search-subjects', {
-                params: { q: query },
-            });
-            console.log('🔍 API: searchSubjects response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: searchSubjects failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
-            throw error;
-        }
-    },
-
-    submitQuiz: async (quizId: number, answers: Record<number, string>): Promise<ApiResponse<QuizResult>> => {
-        try {
-            console.log('🔍 API: Calling submitQuiz...', quizId);
-            const response = await quizWebApiInstance.post<ApiResponse<QuizResult>>(`/quiz/${quizId}/submit`, {
-                answers,
-            });
-            console.log('🔍 API: submitQuiz response:', response);
-            return response.data;
-        } catch (error: any) {
-            console.error('❌ API: submitQuiz failed:', error);
             console.error('❌ API: Error response:', error.response?.data);
             console.error('❌ API: Error status:', error.response?.status);
             throw error;

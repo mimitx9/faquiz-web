@@ -74,26 +74,6 @@ export interface Subject {
     color?: string;
 }
 
-// Responses for Home page new items (minimal shapes to satisfy usage)
-export interface NewSubjectsResponse {
-    meta: { code: number; message: string };
-    data: Subject[];
-}
-
-export interface NewQuizzesResponse {
-    meta: { code: number; message: string };
-    data: Array<{
-        id: number;
-        title: string;
-        subjectName: string;
-        universityName?: string;
-        questionCount: number;
-        color?: string;
-        isPro?: boolean;
-        categoryCode?: string;
-    }>;
-}
-
 // Placeholders to satisfy imports; expand when needed
 export interface AttemptHistoryResponse {
     meta: { code: number; message: string };
@@ -131,29 +111,6 @@ export interface RegisterUserResponse {
 }
 
 
-export interface QuizSection {
-    quizId: number;
-    sectionType: 'Writing' | 'Speaking' | 'Listening' | 'Reading';
-    sectionQuestion: string;
-    isCurrent?: boolean;
-    tags?: string[];
-    state?: string;
-    questions: QuestionAnswer[];
-    medias?: QuestionAnswerMedia[];
-}
-
-export interface QuestionAnswer {
-    questionId: number;
-    questionType: 'essay' | 'speech' | 'multiple_choice';
-    text: string;
-    medias?: QuestionAnswerMedia[];
-    explanation?: string;
-    difficulty?: string;
-    options?: QuestionAnswerOption[];
-    userAnswer?: string;
-    transcription?: string;
-}
-
 export interface QuestionAnswerOption {
     text: string;
     isAnswer: boolean;
@@ -168,14 +125,6 @@ export interface QuestionAnswerMedia {
     type: 'audio' | 'image' | 'video';
 }
 
-// Legacy interfaces for backward compatibility
-export interface QuizQuestion {
-    questionId: number;
-    questionType: 'essay' | 'speech' | 'multiple_choice';
-    text: string;
-    options?: QuestionOption[];
-    medias?: Media[];
-}
 
 export interface QuestionOption {
     text: string;
@@ -188,13 +137,6 @@ export interface Media {
     type: 'audio' | 'image' | 'video';
 }
 
-export interface QuizAttemptResponse {
-    id: number;
-    attemptId: number;
-    userId: number;
-    startedAt: number;
-    quizSections: QuizSection[];
-}
 
 // API Response types
 export interface ApiResponse<T> {
@@ -205,70 +147,6 @@ export interface ApiResponse<T> {
     data: T;
     plan?: unknown;
 }
-
-export interface CreateQuizAttemptResponse {
-    meta: {
-        code: number;
-        message: string;
-    };
-    data: {
-        success: boolean;
-        attemptId: number;
-        message: string;
-    };
-}
-
-export interface GetQuizAttemptResponse {
-    meta: {
-        code: number;
-        message: string;
-    };
-    data: QuizAttemptResponse;
-}
-
-// Subscription types
-export interface SubscriptionPlan {
-    id: string;
-    name: string;
-    price: number;
-    currency: string;
-    duration: number;
-    features: string[];
-    popular?: boolean;
-}
-
-// Progress type
-// Quiz Submit types
-export interface QuizSubmitData {
-    userId: number;
-    quizSections: QuizSubmitSection[];
-}
-
-export interface QuizSubmitSection {
-    quizId: number;
-    sectionType: 'Writing' | 'Speaking' | 'Listening' | 'Reading';
-    sectionQuestion: string;
-    questions: QuizSubmitQuestion[];
-    medias?: Media[];
-    isCurrent?: boolean; // Thêm isCurrent để xác định section hiện tại
-}
-
-export interface QuizSubmitQuestion {
-    questionId: number;
-    questionType: 'essay' | 'speech' | 'multiple_choice';
-    text: string;
-    options?: QuizSubmitOption[];
-    medias?: Media[];
-    userAnswer?: string; // Thêm userAnswer để gửi câu trả lời của user
-    transcription?: string; // Thêm transcription cho speech questions
-}
-
-export interface QuizSubmitOption {
-    text: string;
-    isAnswer: boolean;
-    isCorrect: boolean;
-}
-
 
 // Quiz Submit Response types
 export interface QuizSubmitResponse {
@@ -351,25 +229,36 @@ export interface QuestionsBySubCategoryRequest {
     slug: string; // ví dụ: "763003-bo-xuong-he-co-cac-khop-phan-2"
 }
 
+export interface CategoryInfo {
+    code: string;
+    id: number;
+    title: string;
+    subtitle: string;
+    shortTitle: string;
+    icon: string;
+    backgroundColor: string;
+}
+
+export interface SubCategoryInfo {
+    code: string;
+    id: number;
+    title: string;
+    iconUrl: string;
+    categoryId: number;
+    categoryTitle: string;
+    isPayment: boolean;
+}
+
 export interface QuestionsBySubCategoryResponse {
     meta: {
         code: number;
         message: string;
     };
     data: {
+        category: CategoryInfo;
+        subCategories: SubCategoryInfo[];
         questions: Question[];
     };
-}
-
-// WebSocket Message types
-export interface WebSocketPingMessage {
-    type: 'ping';
-    timestamp: number;
-}
-
-export interface WebSocketPongMessage {
-    type: 'pong';
-    timestamp: number;
 }
 
 export interface UserBag {
@@ -380,18 +269,7 @@ export interface UserBag {
     battleBlockBehind: number;
 }
 
-export interface UserBagResponse {
-    meta: {
-        code: number;
-        message: string;
-    };
-    data: {
-        userBag: UserBag;
-    };
-}
 
-
-// Quiz Web App types
 export interface Quiz {
     id: number;
     title: string;
@@ -403,27 +281,7 @@ export interface Quiz {
     categoryCode?: string;
 }
 
-export interface QuizDetail {
-    id: number;
-    title: string;
-    subjectName: string;
-    universityName?: string;
-    questionCount: number;
-    questions: Question[];
-    timeLimit?: number; // in minutes
-}
 
-export interface QuizResult {
-    attemptId: number;
-    totalQuestions: number;
-    correctAnswers: number;
-    wrongAnswers: number;
-    score: number;
-    timeSpent: number; // in seconds
-    quiz: QuizDetail;
-}
-
-// Slide Fast SSE Types
 export interface SubCategoriesSlide {
     code: string;
     id: number;
