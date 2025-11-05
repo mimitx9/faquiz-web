@@ -19,11 +19,14 @@ yarn install
 pnpm install
 ```
 
-2. **Tạo file `.env.local` (nếu cần):**
+2. **Tạo file `.env.local`:**
 
 ```bash
-# Tạo file .env.local trong thư mục gốc
-# Nếu API backend chạy ở port khác, có thể cấu hình ở đây
+# Tạo file .env.local trong thư mục gốc với nội dung:
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Lấy API key từ: https://platform.openai.com/api-keys
+# API key này được sử dụng để chấm điểm tự luận trong phần quiz
 ```
 
 ## Chạy ứng dụng
