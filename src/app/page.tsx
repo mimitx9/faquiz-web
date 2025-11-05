@@ -305,8 +305,8 @@ const HomePage: React.FC = () => {
                   {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
                     <div className="mb-6">
-                      <h2 className="text-xl font-bold mb-4">MÔN MỚI</h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {filteredCategories.map((category) => (
                           <CategoryCard
                             key={category.id}
@@ -405,7 +405,7 @@ const HomePage: React.FC = () => {
             {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
             {filteredCategories.length > 0 && (
               <div className="mb-6">
-                <h2 className="text-xl font-bold mb-4">MÔN MỚI</h2>
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {filteredCategories.map((category) => {
                     // Đảm bảo backgroundColor được truyền đúng
