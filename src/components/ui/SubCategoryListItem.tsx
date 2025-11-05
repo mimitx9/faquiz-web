@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { SubCategoriesSlide } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SubCategoryListItemProps {
   subCategory: SubCategoriesSlide;
@@ -14,6 +16,9 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
   backgroundColor,
   onClick,
 }) => {
+  const router = useRouter();
+  const { user, isInitialized } = useAuth();
+  
   // Parse thông tin từ title hoặc label
   // Format có thể là: "2025 - Tổng quan về ngành RHM" hoặc tương tự
   const titleParts = subCategory.title.split(' - ');
@@ -28,9 +33,19 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
   // Kiểm tra xem có phải PRO không từ isPayment
   const isPro = subCategory.isPayment === true;
 
+  const handleClick = () => {
+    // Nếu là đề PRO và chưa đăng nhập thì redirect đến trang login
+    if (isPro && isInitialized && !user) {
+      router.push('/login');
+      return;
+    }
+    // Nếu không phải PRO hoặc đã đăng nhập thì gọi onClick callback
+    onClick?.();
+  };
+
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className="bg-white rounded-lg p-4 cursor-pointer transition-all mb-3"
       style={{
         border: '1px solid #47B2FF1A',

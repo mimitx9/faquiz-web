@@ -209,9 +209,10 @@ userProfileApi.interceptors.response.use(
 quizApiInstance.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Không redirect 401 cho quiz API - cho phép làm quiz không cần token
         if (error.response?.status === 401) {
-            console.log('🔍 Quiz API: 401 error detected, redirecting to login');
-            handle401Error();
+            console.log('🔍 Quiz API: 401 error detected, but allowing quiz without token');
+            // Không gọi handle401Error() để không redirect
         }
         return Promise.reject(error);
     }
@@ -242,9 +243,10 @@ masterApiInstance.interceptors.response.use(
 quizWebApiInstance.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Không redirect 401 cho quiz web API - cho phép làm quiz không cần token
         if (error.response?.status === 401) {
-            console.log('🔍 Quiz Web API: 401 error detected, redirecting to login');
-            handle401Error();
+            console.log('🔍 Quiz Web API: 401 error detected, but allowing quiz without token');
+            // Không gọi handle401Error() để không redirect
         }
         return Promise.reject(error);
     }

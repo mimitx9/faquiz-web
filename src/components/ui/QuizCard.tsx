@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Quiz } from '@/types';
+import { useAuth } from '@/hooks/useAuth';
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -9,9 +11,21 @@ interface QuizCardProps {
 }
 
 const QuizCard: React.FC<QuizCardProps> = ({ quiz, onClick }) => {
+  const router = useRouter();
+  const { user, isInitialized } = useAuth();
+
+  const handleClick = () => {
+    // Nếu là đề PRO và chưa đăng nhập thì redirect đến trang login
+    if (quiz.isPro && isInitialized && !user) {
+      router.push('/login');
+      return;
+    }
+    // Nếu không phải PRO hoặc đã đăng nhập thì gọi onClick callback
+    onClick();
+  };
   return (
     <div
-      onClick={onClick}
+      onClick={handleClick}
       className="bg-white rounded-lg shadow-sm p-4 min-w-[280px] cursor-pointer hover:shadow-md transition-shadow"
     >
       <div className="flex items-center gap-2 mb-2">

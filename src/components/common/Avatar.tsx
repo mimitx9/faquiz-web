@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AvatarProps {
   src?: string;
@@ -18,6 +20,18 @@ export default function Avatar({
   size = 'md', 
   className = '' 
 }: AvatarProps) {
+  const router = useRouter();
+  const { user, isInitialized } = useAuth();
+  const [imageError, setImageError] = useState(false);
+
+  const handleClick = () => {
+    // Nếu chưa đăng nhập thì redirect đến trang login
+    if (isInitialized && !user) {
+      router.push('/login');
+    }
+    // Nếu đã đăng nhập có thể thêm logic khác ở đây (ví dụ: mở menu profile)
+  };
+  
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
@@ -41,31 +55,25 @@ export default function Avatar({
   const sizeClasses = getSizeClasses();
   const initials = name ? getInitials(name) : 'U';
 
-  if (src) {
+  // Nếu có src và chưa lỗi thì hiển thị image
+  if (src && !imageError) {
     return (
       <img
         src={src}
         alt={alt || name || 'User avatar'}
-        className={`${sizeClasses} rounded-full object-cover ${className}`}
-        onError={(e) => {
-          // Fallback to initials if image fails to load
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          const parent = target.parentElement;
-          if (parent) {
-            parent.innerHTML = `
-              <div class="${sizeClasses} rounded-full bg-gray-600 flex items-center justify-center text-white font-medium">
-                ${initials}
-              </div>
-            `;
-          }
-        }}
+        className={`${sizeClasses} rounded-full object-cover cursor-pointer ${className}`}
+        onClick={handleClick}
+        onError={() => setImageError(true)}
       />
     );
   }
 
+  // Fallback: hiển thị initials
   return (
-    <div className={`${sizeClasses} rounded-full bg-gray-600 flex items-center justify-center text-white font-medium ${className}`}>
+    <div 
+      className={`${sizeClasses} rounded-full bg-gray-600 flex items-center justify-center text-white font-medium cursor-pointer ${className}`}
+      onClick={handleClick}
+    >
       {initials}
     </div>
   );

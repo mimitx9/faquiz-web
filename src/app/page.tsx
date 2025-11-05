@@ -11,9 +11,11 @@ import { categoryApiService } from '@/lib/api';
 import { CategoriesSlide, SubCategoriesSlide } from '@/types';
 import { useRouter } from 'next/navigation';
 import { normalizeSearchKeyword, matchesCategoryCode, hexToRgba } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
+  const { user, isInitialized } = useAuth();
   const [top10Categories, setTop10Categories] = useState<CategoriesSlide[]>([]);
   const [top10SubCategories, setTop10SubCategories] = useState<SubCategoriesSlide[]>([]);
   const [fullData, setFullData] = useState<CategoriesSlide[]>([]);
@@ -173,6 +175,12 @@ const HomePage: React.FC = () => {
   };
 
   const handleSubCategoryClick = (subCategory: SubCategoriesSlide) => {
+    // Nếu là đề PRO và chưa đăng nhập thì redirect đến trang login
+    if (subCategory.isPayment === true && isInitialized && !user) {
+      router.push('/login');
+      return;
+    }
+    
     // Tạo slug dạng: {categoryId}-{slug-cua-title}
     const vietnameseMap: Record<string, string> = {
       'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a',

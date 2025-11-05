@@ -1,10 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import Link from 'next/link';
+import { useAuth } from '@/hooks/useAuth';
 
 const UpgradePage: React.FC = () => {
+  const router = useRouter();
+  const { user, isInitialized } = useAuth();
+
+  useEffect(() => {
+    // Nếu chưa đăng nhập thì redirect đến trang login
+    if (isInitialized && !user) {
+      router.push('/login');
+    }
+  }, [user, isInitialized, router]);
   const plans = [
     {
       id: 'monthly',

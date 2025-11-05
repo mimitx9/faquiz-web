@@ -8,10 +8,15 @@ import { useAuth } from '@/hooks/useAuth';
 
 const QuizHeader: React.FC = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isInitialized } = useAuth();
 
   const handleUpgradeClick = () => {
-    router.push('/upgrade');
+    // Nếu chưa đăng nhập thì redirect đến trang login
+    if (isInitialized && !user) {
+      router.push('/login');
+    } else {
+      router.push('/upgrade');
+    }
   };
 
   return (
