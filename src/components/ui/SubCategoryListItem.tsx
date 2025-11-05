@@ -1,0 +1,90 @@
+'use client';
+
+import React from 'react';
+import { SubCategoriesSlide } from '@/types';
+
+interface SubCategoryListItemProps {
+  subCategory: SubCategoriesSlide;
+  backgroundColor?: string;
+  onClick?: () => void;
+}
+
+const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
+  subCategory,
+  backgroundColor,
+  onClick,
+}) => {
+  // Parse thông tin từ title hoặc label
+  // Format có thể là: "2025 - Tổng quan về ngành RHM" hoặc tương tự
+  const titleParts = subCategory.title.split(' - ');
+  // Chỉ lấy year nếu nó là số 4 chữ số (ví dụ: 2025)
+  const potentialYear = titleParts.length > 1 ? titleParts[0].trim() : null;
+  const year = potentialYear && /^\d{4}$/.test(potentialYear) ? potentialYear : null;
+  const title = year ? titleParts.slice(1).join(' - ') : subCategory.title;
+
+  // Parse số câu hỏi từ label
+  const questionCount = subCategory.label?.find((l) => l.includes('câu')) || null;
+  
+  // Kiểm tra xem có phải PRO không từ isPayment
+  const isPro = subCategory.isPayment === true;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-white rounded-lg p-4 cursor-pointer transition-all mb-3"
+      style={{
+        border: '1px solid #47B2FF1A',
+      }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          {year && (
+            <span className="text-sm font-semibold text-gray-700 mb-1 block">{year}</span>
+          )}
+          <h3 className="text-base font-medium text-gray-900 mb-2 line-clamp-2">
+            {title}
+          </h3>
+          {questionCount && (
+            <p className="text-sm text-gray-500">{questionCount}</p>
+          )}
+        </div>
+        {subCategory.isPayment !== undefined && (
+          <>
+            {isPro ? (
+              <button
+                className="rounded-full px-3 py-1 text-xs font-medium transition-opacity hover:opacity-80 flex-shrink-0"
+                style={{
+                  backgroundColor: '#FFBB001A',
+                  color: '#FFBB00',
+                  border: 'none'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                PRO
+              </button>
+            ) : (
+              <button
+                className="rounded-full px-3 py-1 text-xs font-medium flex-shrink-0"
+                style={{
+                  backgroundColor: 'rgba(141, 126, 247, 0.1)', // #8D7EF7 với opacity 10%
+                  color: '#8D7EF7',
+                  border: 'none'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                Free
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SubCategoryListItem;
+
