@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'drive.google.com', 'google.com', 'lh3.googleusercontent.com'],
+    domains: ['localhost', 'drive.google.com', 'google.com', 'lh3.googleusercontent.com', 'storage.googleapis.com'],
     unoptimized: true,
     remotePatterns: [
       {
@@ -12,6 +12,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '*.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'storage.googleapis.com',
       },
     ],
   },
