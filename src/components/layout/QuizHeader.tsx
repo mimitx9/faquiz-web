@@ -20,14 +20,14 @@ const QuizHeader: React.FC = () => {
   };
 
   return (
-    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white">
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
         <Link href="/" className="flex items-center">
           <img 
             src="/logos/logos.png" 
             alt="FA Quiz" 
-            className="h-12 w-auto"
+            className="h-8 w-auto"
           />
         </Link>
       </div>
