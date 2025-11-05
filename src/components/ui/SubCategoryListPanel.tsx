@@ -22,7 +22,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
       {/* Close button - absolute ở góc phải trên */}
       <button
         onClick={onClose}
-        className="absolute top-0 right-6 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-full"
+        className="absolute top-0 right-5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg text-gray-300 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-full"
         aria-label="Đóng"
       >
         <svg
@@ -34,7 +34,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={3}
             d="M6 18L18 6M6 6l12 12"
           />
         </svg>

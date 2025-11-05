@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SubCategoriesSlide } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { hexToRgba } from '@/lib/utils';
 
 interface SubCategoryListItemProps {
   subCategory: SubCategoriesSlide;
@@ -18,6 +19,7 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
 }) => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const [isHovered, setIsHovered] = useState(false);
   
   // Parse thông tin từ title hoặc label
   // Format có thể là: "2025 - Tổng quan về ngành RHM" hoặc tương tự
@@ -46,14 +48,25 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
   return (
     <div
       onClick={handleClick}
-      className="bg-white rounded-2xl p-6 cursor-pointer transition-all mb-4 border-2 border-gray-100 transition-all duration-200 hover:scale-105"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="rounded-3xl px-6 py-8 cursor-pointer transition-all mb-4 border-2 duration-200" 
+      style={{
+        borderColor: isHovered 
+          ? 'transparent' 
+          : (backgroundColor ? hexToRgba(backgroundColor, 0.05) : undefined),
+        backgroundColor: isHovered 
+          ? (backgroundColor ? hexToRgba(backgroundColor, 0.05) : 'white')
+          : 'white',
+        transform: isHovered ? 'scale(1.02)' : 'scale(1)'
+      }}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           {/* {year && (
             <span className="text-sm font-semibold text-gray-700 mb-1 block">{year}</span>
           )} */}
-          <h3 className="text-lg font-medium text-gray-900 line-clamp-2">
+          <h3 className="text-xl font-medium text-gray-900 line-clamp-2">
             {title}
           </h3>
           {/* {questionCount && (

@@ -491,7 +491,7 @@ const HomePage: React.FC = () => {
         {selectedCategory ? (
           <div className="flex h-[calc(100vh-120px)]">
             {/* Left panel - Categories */}
-            <div className="flex-1 overflow-y-auto px-8">
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               {/* Hiển thị kết quả tìm kiếm từ fullData khi có searchQuery */}
               {searchQuery.trim() ? (
                 <>
