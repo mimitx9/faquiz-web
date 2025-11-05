@@ -153,8 +153,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
             src="/logos/logos.png" 
             alt="FA Quiz" 
             width={120}
-            height={32}
-            className="h-8 w-auto"
+            height={48}
+            className="h-10 w-auto"
             priority
             quality={90}
           />
@@ -193,8 +193,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <button
           onClick={handleUpgradeClick}
-          className={`rounded-full px-4 py-2 transition-opacity ${
-            isPaid ? 'cursor-default' : 'hover:opacity-80'
+          className={`rounded-full text-sm font-semibold tracking-wide px-5 py-2 transition-colors duration-300 ${
+            isPaid ? 'cursor-default' : 'hover:!bg-[#FFBB00] hover:!text-white'
           }`}
           style={{
             backgroundColor: '#FFBB001A',
@@ -202,14 +202,14 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
             border: 'none'
           }}
         >
-          {isPaid ? 'PRO' : 'Nâng Cấp'}
+          {isPaid ? 'PRO' : 'NÂNG CẤP'}
         </button>
         
         {/* Avatar with dropdown menu */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="cursor-pointer transition-opacity bg-white rounded-full flex items-center"
+            className="cursor-pointer transition-opacity bg-white rounded-full flex items-center border-2 border-gray-100"
           >
             {user && user.avatar ? (
               <Image
@@ -233,19 +233,14 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div
-              className="absolute right-0 top-full mt-2 w-56 z-50"
-              style={{
-                backgroundColor: '#FFFFFF',
-                border: '1px solid rgba(0, 0, 0, 0.05)',
-                borderRadius: '5%',
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              }}
+              className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 rounded-2xl bg-white"
             >
               <div className="py-2">
                 {/* Thông tin Pro/Upgrade */}
                 {isPaid ? (
                   <div className="flex items-center justify-between px-4 py-2">
-                    <span className="font-medium text-sm text-black">Pro</span>
+                    <span className="font-medium text-sm" 
+                        style={{ color: '#FFBB00' }}>Pro</span>
                     {remainingDays !== null && (
                       <span
                         className="text-sm font-medium"
@@ -259,15 +254,15 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                   <Link
                     href="/upgrade"
                     onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-black hover:bg-gray-50 transition-colors"
+                    className="flex items-center px-4 py-2 text-black transition-colors"
                   >
-                    <span className="font-medium text-sm">Nâng cấp</span>
+                    <span className="font-medium text-sm" style={{ color: '#FFBB00' }}>Nâng cấp Pro</span>
                   </Link>
                 )}
 
                 {/* Config đếm giờ */}
-                <div className="flex items-center justify-between px-4 py-2 text-black hover:bg-gray-50 transition-colors">
-                  <span className="font-medium text-sm">Đếm giờ</span>
+                <div className="flex items-center justify-between px-4 py-2 text-black transition-colors">
+                  <span className="text-sm">Đếm giờ</span>
                   <button
                     onClick={handleTimerToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -288,10 +283,9 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                 {/* Đăng xuất */}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-2 text-left hover:bg-gray-50 transition-colors"
-                  style={{ color: 'rgba(0, 0, 0, 0.5)' }}
+                  className="w-full flex items-center px-4 py-2 text-gray-400 text-left hover:text-black transition-colors"
                 >
-                  <span className="font-medium text-sm">Đăng xuất</span>
+                  <span className="text-sm">Đăng xuất</span>
                 </button>
               </div>
             </div>

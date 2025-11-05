@@ -14,7 +14,6 @@ export { default as QuizCard } from './QuizCard';
 export { default as CategoryCard } from './CategoryCard';
 export { default as SubCategoryCard } from './SubCategoryCard';
 export { default as SearchBar } from './SearchBar';
-export { default as HorizontalScroll } from './HorizontalScroll';
 export { default as SubCategoryListItem } from './SubCategoryListItem';
 export { default as SubCategoryListPanel } from './SubCategoryListPanel';
 export { default as SubjectCard } from './SubjectCard';

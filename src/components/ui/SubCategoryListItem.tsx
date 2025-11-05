@@ -46,28 +46,25 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
   return (
     <div
       onClick={handleClick}
-      className="bg-white rounded-lg p-4 cursor-pointer transition-all mb-3"
-      style={{
-        border: '1px solid #47B2FF1A',
-      }}
+      className="bg-white rounded-2xl p-6 cursor-pointer transition-all mb-4 border-2 border-gray-100 transition-all duration-200 hover:scale-105"
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div className="flex-1">
-          {year && (
+          {/* {year && (
             <span className="text-sm font-semibold text-gray-700 mb-1 block">{year}</span>
-          )}
-          <h3 className="text-base font-medium text-gray-900 mb-2 line-clamp-2">
+          )} */}
+          <h3 className="text-lg font-medium text-gray-900 line-clamp-2">
             {title}
           </h3>
-          {questionCount && (
+          {/* {questionCount && (
             <p className="text-sm text-gray-500">{questionCount}</p>
-          )}
+          )} */}
         </div>
         {subCategory.isPayment !== undefined && (
           <>
             {isPro ? (
               <button
-                className="rounded-full px-3 py-1 text-xs font-medium transition-opacity hover:opacity-80 flex-shrink-0"
+                className="rounded-full px-3 py-1 text-xs font-semibold transition-opacity hover:opacity-80 flex-shrink-0"
                 style={{
                   backgroundColor: '#FFBB001A',
                   color: '#FFBB00',
@@ -81,7 +78,7 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
               </button>
             ) : (
               <button
-                className="rounded-full px-3 py-1 text-xs font-medium flex-shrink-0"
+                className="rounded-full px-3 py-1 text-xs font-semibold flex-shrink-0"
                 style={{
                   backgroundColor: 'rgba(141, 126, 247, 0.1)', // #8D7EF7 với opacity 10%
                   color: '#8D7EF7',

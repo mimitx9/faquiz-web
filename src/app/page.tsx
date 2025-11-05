@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import QuizHeader from '@/components/layout/QuizHeader';
-import HorizontalScroll from '@/components/ui/HorizontalScroll';
 import CategoryCard from '@/components/ui/CategoryCard';
 import SubCategoryCard from '@/components/ui/SubCategoryCard';
 import SubCategoryListPanel from '@/components/ui/SubCategoryListPanel';
@@ -24,6 +23,60 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoriesSlide | null>(null);
+  const subtitleScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const scrollSubtitleSuggestions = (direction: 'left' | 'right') => {
+    if (!subtitleScrollRef.current) return;
+
+    const container = subtitleScrollRef.current;
+    const scrollAmount = 300;
+    const startPosition = container.scrollLeft;
+    const targetPosition = direction === 'left' 
+      ? startPosition - scrollAmount 
+      : startPosition + scrollAmount;
+    
+    const duration = 500; // Thời gian animation (ms)
+    const startTime = performance.now();
+
+    // Easing function - ease-in-out để animation mượt mà
+    const easeInOutCubic = (t: number): number => {
+      return t < 0.5 
+        ? 4 * t * t * t 
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeInOutCubic(progress);
+      
+      const currentPosition = startPosition + (targetPosition - startPosition) * easedProgress;
+      container.scrollLeft = currentPosition;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        // Cập nhật trạng thái nút sau khi animation hoàn thành
+        updateScrollButtons();
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
+
+  // Kiểm tra vị trí scroll để hiển thị/ẩn nút
+  const updateScrollButtons = useCallback(() => {
+    if (subtitleScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = subtitleScrollRef.current;
+      const isAtStart = scrollLeft <= 0;
+      const isAtEnd = scrollLeft + clientWidth >= scrollWidth - 1; // -1 để tránh lỗi làm tròn
+      
+      setCanScrollLeft(!isAtStart);
+      setCanScrollRight(!isAtEnd);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -214,6 +267,35 @@ const HomePage: React.FC = () => {
     }));
   }, [searchQuery, filteredCategories]);
 
+  // Lắng nghe sự kiện scroll và cập nhật trạng thái nút
+  useEffect(() => {
+    const scrollContainer = subtitleScrollRef.current;
+    if (!scrollContainer) return;
+
+    // Kiểm tra trạng thái ban đầu sau khi DOM đã được cập nhật
+    const checkScrollState = () => {
+      updateScrollButtons();
+    };
+    
+    // Sử dụng setTimeout để đảm bảo DOM đã được render
+    const timeoutId = setTimeout(checkScrollState, 0);
+
+    // Lắng nghe sự kiện scroll
+    scrollContainer.addEventListener('scroll', updateScrollButtons);
+    
+    // Lắng nghe sự kiện resize để cập nhật khi kích thước thay đổi
+    const handleResize = () => {
+      updateScrollButtons();
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      scrollContainer.removeEventListener('scroll', updateScrollButtons);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [subtitleSuggestions, updateScrollButtons]); // Chạy lại khi subtitleSuggestions thay đổi
+
   const handleCategoryClick = (category: CategoriesSlide) => {
     // Nếu click lại vào category đang được chọn thì tắt split view
     if (selectedCategory && selectedCategory.id === category.id) {
@@ -331,23 +413,76 @@ const HomePage: React.FC = () => {
 
           {/* Subtitle Suggestions - Hiển thị khi có kết quả search */}
           {subtitleSuggestions.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {subtitleSuggestions.map((item, index) => (
+            <div className="relative mb-12">
+              {/* Left scroll button - chỉ hiện khi đã scroll sang phải */}
+              {canScrollLeft && (
                 <button
-                  key={index}
-                  className="px-4 py-2 rounded-full text-sm font-medium transition-opacity hover:opacity-80"
-                  style={{
-                    backgroundColor: hexToRgba(item.backgroundColor, 0.05),
-                    color: item.backgroundColor,
-                    border: 'none',
-                  }}
-                  onClick={() => {
-                    // Có thể thêm logic click nếu cần
-                  }}
+                  onClick={() => scrollSubtitleSuggestions('left')}
+                  className="absolute left-0 top-0 bottom-0 z-10 h-full pr-4 flex items-center justify-center bg-gradient-to-r from-white to-transparent transition-all duration-200 hover:scale-110"
+                  aria-label="Scroll left"
                 >
-                  {item.subtitle}
+                  <svg
+                    className="w-5 h-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
                 </button>
-              ))}
+              )}
+              
+              {/* Right scroll button - chỉ hiện khi chưa đến cuối */}
+              {canScrollRight && (
+                <button
+                  onClick={() => scrollSubtitleSuggestions('right')}
+                  className="absolute right-0 top-0 bottom-0 z-10 h-full pl-4 flex items-center justify-center bg-gradient-to-l from-white to-transparent transition-all duration-200 hover:scale-110"
+                  aria-label="Scroll right"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              )}
+
+              {/* Scroll container */}
+              <div 
+                ref={subtitleScrollRef}
+                className="flex gap-6 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
+                style={{ scrollBehavior: 'smooth' }}
+              >
+                {subtitleSuggestions.map((item, index) => (
+                  <button
+                    key={index}
+                    className="px-8 py-4 rounded-full text-lg font-medium transition-all duration-200 hover:scale-105 flex-shrink-0"
+                    style={{
+                      backgroundColor: hexToRgba(item.backgroundColor, 0.05),
+                      color: item.backgroundColor,
+                      border: 'none',
+                    }}
+                    onClick={() => {
+                      // Có thể thêm logic click nếu cần
+                    }}
+                  >
+                    {item.subtitle}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -362,7 +497,7 @@ const HomePage: React.FC = () => {
                 <>
                   {/* Hiển thị categories từ kết quả tìm kiếm - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-6">
                       {filteredCategories.map((category) => (
                         <CategoryCard
                           key={category.id}
@@ -379,8 +514,8 @@ const HomePage: React.FC = () => {
                   {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
                     <div className="mb-6">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI HÔM NAY</h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                         {filteredCategories.map((category) => (
                           <CategoryCard
                             key={category.id}
@@ -411,7 +546,7 @@ const HomePage: React.FC = () => {
           <>
             {/* Hiển thị subcategories từ kết quả tìm kiếm */}
             {filteredSubCategories.length > 0 && (
-              <HorizontalScroll title="">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                 {filteredSubCategories.map((subCategory) => {
                   const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                   const enrichedSub = {
@@ -429,12 +564,12 @@ const HomePage: React.FC = () => {
                     />
                   );
                 })}
-              </HorizontalScroll>
+              </div>
             )}
 
             {/* Hiển thị categories từ kết quả tìm kiếm - Grid view */}
             {filteredCategories.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                 {filteredCategories.map((category) => {
                   // Đảm bảo backgroundColor được truyền đúng
                   if (!category.backgroundColor) {
@@ -455,33 +590,36 @@ const HomePage: React.FC = () => {
           <>
             {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
             {filteredSubCategories.length > 0 && (
-              <HorizontalScroll title="ĐỀ MỚI">
-                {filteredSubCategories.map((subCategory) => {
-                  const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
-                  const enrichedSub = {
-                    ...subCategory,
-                    icon: subCategory.icon || iconFromMap || undefined,
-                  };
-                  return (
-                    <SubCategoryCard
-                      key={subCategory.id}
-                      subCategory={{
-                        ...enrichedSub,
-                        backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
-                      }}
-                      onClick={() => handleSubCategoryClick(enrichedSub)}
-                    />
-                  );
-                })}
-              </HorizontalScroll>
+              <div className="mb-12">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredSubCategories.slice(0, 8).map((subCategory) => {
+                    const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
+                    const enrichedSub = {
+                      ...subCategory,
+                      icon: subCategory.icon || iconFromMap || undefined,
+                    };
+                    return (
+                      <SubCategoryCard
+                        key={subCategory.id}
+                        subCategory={{
+                          ...enrichedSub,
+                          backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
+                        }}
+                        onClick={() => handleSubCategoryClick(enrichedSub)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             )}
 
             {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
             {filteredCategories.length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {filteredCategories.map((category, index) => {
+              <div className="my-24">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredCategories.slice(0, 8).map((category, index) => {
                     // Đảm bảo backgroundColor được truyền đúng
                     if (!category.backgroundColor) {
                       console.warn(`Category ${category.id} missing backgroundColor`);

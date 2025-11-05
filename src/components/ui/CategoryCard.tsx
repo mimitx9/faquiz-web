@@ -31,14 +31,12 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelect
   // - Nếu isSelected là undefined: opacity 100% (bình thường, không có category nào được chọn)
   // - Nếu isSelected là true: opacity 100% (card được chọn)
   // - Nếu isSelected là false: opacity 50% (card chưa chọn trong split-screen)
-  const opacity = isSelected === undefined ? 1 : (isSelected ? 1 : 0.5);
+  const opacity = isSelected === undefined ? 1 : (isSelected ? 1 : 0.25);
 
   return (
     <div
       onClick={onClick}
-      className={`rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:shadow-md transition-all overflow-hidden ${
-        isSelected ? 'ring-2 ring-offset-2' : ''
-      }`}
+      className={`rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:scale-105 transition-all overflow-hidden`}
       style={{
         backgroundColor: category.backgroundColor,
         opacity: opacity,

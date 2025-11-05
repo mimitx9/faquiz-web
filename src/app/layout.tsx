@@ -6,8 +6,11 @@ import { AuthProvider } from '@/hooks/useAuth';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'FA Quiz',
-  description: 'Quiz application',
+  title: 'FA Quiz - Trắc nghiệm Y khoa cục súc',
+  description: 'Tổng hợp +1.000.000 đề thi mới nhất đến từ các trường Y Việt Nam',
+  icons: {
+    icon: '/logos/favicon.png',
+  },
 };
 
 export default function RootLayout({

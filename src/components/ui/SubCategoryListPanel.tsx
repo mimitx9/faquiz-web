@@ -18,41 +18,27 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
   const subCategories = category.subCategoriesSlide || [];
 
   return (
-    <div className="flex-1 bg-white border-gray-200 overflow-hidden flex flex-col">
-      {/* Header với indicator và close button */}
-      <div className="px-6 py-4 border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: category.backgroundColor }}
-          />
-          <span
-            className="text-sm font-medium"
-            style={{ color: category.backgroundColor }}
-          >
-            {category.title} {category.subtitle !== 'Tổng hợp' ? category.subtitle : ''}
-          </span>
-        </div>
-        <button
-          onClick={onClose}
-          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="Đóng"
+    <div className="flex-1 bg-white border-gray-200 overflow-hidden flex flex-col relative">
+      {/* Close button - absolute ở góc phải trên */}
+      <button
+        onClick={onClose}
+        className="absolute top-0 right-6 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-full"
+        aria-label="Đóng"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
 
       {/* List content */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
