@@ -1,19 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Input from './Input';
+
+interface Suggestion {
+    title: string;
+    backgroundColor?: string;
+}
 
 interface SearchBarProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    suggestions?: Suggestion[];
+    onEnterPress?: () => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
                                                  value,
                                                  onChange,
                                                  placeholder = 'Tìm môn học',
+                                                 suggestions = [],
+                                                 onEnterPress,
                                              }) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const searchBarRef = useRef<HTMLDivElement>(null);
+    const suggestionsRef = useRef<HTMLDivElement>(null);
+
     const SearchIcon = () => (
         <svg
             className="w-5 h-5"
@@ -27,17 +41,128 @@ const SearchBar: React.FC<SearchBarProps> = ({
         </svg>
     );
 
+    const showSuggestions = isFocused && value.trim().length > 0 && suggestions.length > 0;
+
+    const handleSuggestionClick = (suggestion: Suggestion) => {
+        onChange(suggestion.title);
+        setIsFocused(false);
+        setSelectedIndex(-1);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            if (showSuggestions && selectedIndex >= 0) {
+                // Nếu có suggestion được chọn, chọn suggestion đó
+                e.preventDefault();
+                handleSuggestionClick(suggestions[selectedIndex]);
+            } else {
+                // Nếu không có suggestion nào được chọn, gọi onEnterPress để áp dụng logic search cũ
+                e.preventDefault();
+                // Đóng suggestions khi nhấn Enter
+                setIsFocused(false);
+                setSelectedIndex(-1);
+                if (onEnterPress) {
+                    onEnterPress();
+                }
+            }
+            return;
+        }
+
+        if (!showSuggestions) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setSelectedIndex((prev) => 
+                prev < suggestions.length - 1 ? prev + 1 : prev
+            );
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+        } else if (e.key === 'Escape') {
+            setIsFocused(false);
+            setSelectedIndex(-1);
+        }
+    };
+
+    // Reset selectedIndex khi suggestions thay đổi
+    useEffect(() => {
+        setSelectedIndex(-1);
+    }, [suggestions]);
+
+    // Scroll vào suggestion được chọn
+    useEffect(() => {
+        if (selectedIndex >= 0 && suggestionsRef.current) {
+            const selectedElement = suggestionsRef.current.children[selectedIndex] as HTMLElement;
+            if (selectedElement) {
+                selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+    }, [selectedIndex]);
+
+    // Đóng dropdown khi click bên ngoài
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchBarRef.current && !searchBarRef.current.contains(event.target as Node)) {
+                setIsFocused(false);
+                setSelectedIndex(-1);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
-        <div className="mt-4 mb-12">
+        <div className="mt-4 mb-12 relative" ref={searchBarRef}>
             <Input
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setIsFocused(true)}
+                onKeyDown={handleKeyDown}
                 placeholder={placeholder}
                 leftIcon={<SearchIcon />}
                 autoFocus
                 className="bg-transparent border-0 border-b-2 border-gray-100 rounded-none shadow-none focus:ring-0 focus:border-[#8D7EF7] text-2xl py-4 leading-[1.2] pl-14 placeholder:text-gray-300"
             />
+            
+            {/* Auto Complete Dropdown */}
+            {showSuggestions && (
+                <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+                >
+                    {suggestions.map((suggestion, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors ${
+                                index === selectedIndex ? 'bg-gray-100' : ''
+                            }`}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            style={{
+                                borderLeft: suggestion.backgroundColor
+                                    ? `4px solid ${suggestion.backgroundColor}`
+                                    : '4px solid transparent',
+                            }}
+                        >
+                            <div className="flex items-center gap-2">
+                                {suggestion.backgroundColor && (
+                                    <div
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{
+                                            backgroundColor: suggestion.backgroundColor,
+                                        }}
+                                    />
+                                )}
+                                <span className="text-gray-800">{suggestion.title}</span>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

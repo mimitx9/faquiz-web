@@ -1,21 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { CategoriesSlide } from '@/types';
 
 interface CategoryCardProps {
   category: CategoriesSlide;
   onClick?: () => void;
   isSelected?: boolean;
+  priority?: boolean;
 }
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelected }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelected, priority = false }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
   const imageUrl = category.iconUrl || category.icon;
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleImageError = () => {
     console.error('Failed to load image:', imageUrl);
     setImageError(true);
     setImageLoading(false);
@@ -46,17 +48,21 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelect
       {imageUrl && !imageError && (
         <div className="relative w-full h-full">
           {imageLoading && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center z-10">
               <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             </div>
           )}
-          <img
+          <Image
             src={imageUrl}
             alt={category.title || ''}
-            className={`w-full h-full object-cover ${imageLoading ? 'hidden' : ''}`}
+            fill
+            className={`object-cover ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
             onError={handleImageError}
-            onLoad={handleImageLoad}
+            onLoadingComplete={handleImageLoad}
             referrerPolicy="no-referrer"
+            priority={priority}
+            sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 200px"
+            quality={85}
           />
         </div>
       )}

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Subject } from '@/types';
 
 interface SubjectCardProps {
@@ -21,8 +22,16 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ subject, onClick }) => {
       <div className="text-white">
         <h3 className="font-bold text-lg mb-4">{subject.name}</h3>
         {subject.icon && (
-          <div className="flex items-center justify-center h-16">
-            <img src={subject.icon} alt={subject.name} className="w-16 h-16 opacity-80" />
+          <div className="flex items-center justify-center h-16 relative w-16">
+            <Image
+              src={subject.icon}
+              alt={subject.name}
+              width={64}
+              height={64}
+              className="opacity-80"
+              loading="lazy"
+              quality={85}
+            />
           </div>
         )}
       </div>

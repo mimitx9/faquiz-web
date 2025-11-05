@@ -650,15 +650,19 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Hiển thị ảnh nếu có */}
         {question.extraData?.image && (
           <div className="mb-6 flex justify-center">
-            <div className="relative w-full max-w-2xl">
-              <img
+            <div className="relative w-full max-w-2xl aspect-video">
+              <Image
                 src={question.extraData.image}
                 alt="Câu hỏi"
-                className="w-full h-auto rounded-lg shadow-sm"
+                fill
+                className="object-contain rounded-lg shadow-sm"
                 onError={(e) => {
                   console.error('Failed to load image:', question.extraData?.image);
                   e.currentTarget.style.display = 'none';
                 }}
+                loading="lazy"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 672px"
+                quality={85}
               />
             </div>
           </div>

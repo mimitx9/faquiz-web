@@ -10,7 +10,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import { categoryApiService } from '@/lib/api';
 import { CategoriesSlide, SubCategoriesSlide } from '@/types';
 import { useRouter } from 'next/navigation';
-import { normalizeSearchKeyword, matchesCategoryCode, hexToRgba } from '@/lib/utils';
+import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, hexToRgba } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
 const HomePage: React.FC = () => {
@@ -20,6 +20,7 @@ const HomePage: React.FC = () => {
   const [top10SubCategories, setTop10SubCategories] = useState<SubCategoriesSlide[]>([]);
   const [fullData, setFullData] = useState<CategoriesSlide[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchByCodeOnly, setSearchByCodeOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<CategoriesSlide | null>(null);
@@ -48,9 +49,15 @@ const HomePage: React.FC = () => {
   // Đóng split-screen khi searchQuery thay đổi
   useEffect(() => {
     setSelectedCategory(null);
+    // Reset searchByCodeOnly khi searchQuery thay đổi (trừ khi user vừa nhấn Enter)
+    if (!searchQuery.trim()) {
+      setSearchByCodeOnly(false);
+    }
   }, [searchQuery]);
 
-  // Tìm kiếm trong fullData theo code của category
+  // Tìm kiếm trong fullData theo code và title của category
+  // Nếu searchByCodeOnly = true, chỉ tìm theo code (logic cũ)
+  // Nếu searchByCodeOnly = false, tìm theo cả code và title
   const filteredCategories = useMemo(() => {
     if (!searchQuery.trim()) {
       return top10Categories;
@@ -66,16 +73,66 @@ const HomePage: React.FC = () => {
     const results: CategoriesSlide[] = [];
 
     fullData.forEach((category) => {
-      // Chỉ tìm kiếm theo code của category (match chính xác hoặc match dạng {keyword}-*)
+      // Tìm kiếm theo code của category (match chính xác hoặc match dạng {keyword}-*)
       // Ví dụ: tìm "GiaiPhau" sẽ match với "GiaiPhau", "GiaiPhau-HMU", "GiaiPhau-YDN", "GiaiPhau-TUMP"
-      if (category.code && matchesCategoryCode(category.code, normalizedKeyword)) {
-        // Trả về category với tất cả subcategories của nó
-        results.push(category);
+      const matchesCode = category.code && matchesCategoryCode(category.code, normalizedKeyword);
+      
+      // Nếu searchByCodeOnly = true, chỉ tìm theo code (logic cũ khi nhấn Enter)
+      if (searchByCodeOnly) {
+        if (matchesCode) {
+          results.push(category);
+        }
+      } else {
+        // Tìm kiếm theo title của category (wild card matching) - chỉ khi đang typing
+        const matchesTitle = category.title && matchesCategoryTitle(category.title, normalizedKeyword);
+        
+        if (matchesCode || matchesTitle) {
+          // Trả về category với tất cả subcategories của nó
+          results.push(category);
+        }
       }
     });
 
     return results;
-  }, [searchQuery, top10Categories, fullData]);
+  }, [searchQuery, searchByCodeOnly, top10Categories, fullData]);
+
+  // Tạo suggestions cho auto complete dựa trên title của categories
+  const autoCompleteSuggestions = useMemo(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      return [];
+    }
+
+    const normalizedKeyword = normalizeSearchKeyword(searchQuery);
+    
+    if (!normalizedKeyword) {
+      return [];
+    }
+
+    // Sử dụng Set để tránh duplicate titles
+    const suggestionMap = new Map<string, string>();
+    const maxSuggestions = 10; // Giới hạn số lượng suggestions
+
+    // Tìm kiếm trong fullData
+    for (const category of fullData) {
+      if (category.title && matchesCategoryTitle(category.title, normalizedKeyword)) {
+        // Chỉ thêm nếu chưa có hoặc nếu màu chưa được set
+        if (!suggestionMap.has(category.title) && suggestionMap.size < maxSuggestions) {
+          suggestionMap.set(category.title, category.backgroundColor || '');
+        }
+        
+        // Dừng khi đã đủ suggestions
+        if (suggestionMap.size >= maxSuggestions) {
+          break;
+        }
+      }
+    }
+
+    // Convert map thành array
+    return Array.from(suggestionMap.entries()).map(([title, backgroundColor]) => ({
+      title,
+      backgroundColor: backgroundColor || undefined,
+    }));
+  }, [searchQuery, fullData]);
 
   // Khi có searchQuery, không hiển thị subcategories riêng lẻ
   // Subcategories sẽ được hiển thị bên trong categories đã match
@@ -258,7 +315,19 @@ const HomePage: React.FC = () => {
       <main className={`pt-20 ${selectedCategory ? 'px-0' : 'px-8'} pb-8 ${selectedCategory ? 'max-w-full' : 'max-w-7xl'} mx-auto`}>
         {/* Search Bar */}
         <div className={`${selectedCategory ? 'px-8' : ''}`}>
-          <SearchBar value={searchQuery} onChange={setSearchQuery} />
+          <SearchBar 
+            value={searchQuery} 
+            onChange={(value) => {
+              setSearchQuery(value);
+              // Reset searchByCodeOnly khi user đang typing
+              setSearchByCodeOnly(false);
+            }}
+            onEnterPress={() => {
+              // Khi nhấn Enter mà không có suggestion nào được chọn, chỉ tìm theo code
+              setSearchByCodeOnly(true);
+            }}
+            suggestions={autoCompleteSuggestions}
+          />
 
           {/* Subtitle Suggestions - Hiển thị khi có kết quả search */}
           {subtitleSuggestions.length > 0 && (
@@ -356,7 +425,7 @@ const HomePage: React.FC = () => {
                         ...enrichedSub,
                         backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
                       }}
-                      onClick={() => handleSubCategoryClick(subCategory)}
+                      onClick={() => handleSubCategoryClick(enrichedSub)}
                     />
                   );
                 })}
@@ -400,7 +469,7 @@ const HomePage: React.FC = () => {
                         ...enrichedSub,
                         backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
                       }}
-                      onClick={() => handleSubCategoryClick(subCategory)}
+                      onClick={() => handleSubCategoryClick(enrichedSub)}
                     />
                   );
                 })}
@@ -412,16 +481,19 @@ const HomePage: React.FC = () => {
               <div className="mb-6">
                 <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {filteredCategories.map((category) => {
+                  {filteredCategories.map((category, index) => {
                     // Đảm bảo backgroundColor được truyền đúng
                     if (!category.backgroundColor) {
                       console.warn(`Category ${category.id} missing backgroundColor`);
                     }
+                    // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
+                    const isPriority = index < 5;
                     return (
                       <CategoryCard
                         key={category.id}
                         category={category}
                         onClick={() => handleCategoryClick(category)}
+                        priority={isPriority}
                       />
                     );
                   })}

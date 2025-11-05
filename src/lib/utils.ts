@@ -133,6 +133,26 @@ export function matchesCategoryCode(code: string, normalizedKeyword: string): bo
 }
 
 /**
+ * Kiểm tra xem title có match với keyword không (wild card matching):
+ * - Match bất kỳ phần nào trong title
+ * - Hỗ trợ tìm kiếm không dấu, không phân biệt hoa thường
+ * 
+ * @param title - Title của category/subcategory
+ * @param normalizedKeyword - Keyword đã được normalize (không có dấu gạch ngang)
+ */
+export function matchesCategoryTitle(title: string, normalizedKeyword: string): boolean {
+  if (!title || !normalizedKeyword) {
+    return false;
+  }
+  
+  // Normalize title (giống như normalizeSearchKeyword)
+  const normalizedTitle = normalizeSearchKeyword(title);
+  
+  // Wild card matching: kiểm tra xem normalizedKeyword có xuất hiện trong normalizedTitle không
+  return normalizedTitle.includes(normalizedKeyword);
+}
+
+/**
  * Chuyển đổi màu hex thành rgba với opacity cụ thể
  * @param hex - Màu hex (ví dụ: "#3B82F6" hoặc "3B82F6")
  * @param opacity - Opacity từ 0 đến 1 (ví dụ: 0.05 cho 5%)

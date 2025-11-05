@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,14 +58,27 @@ export default function Avatar({
 
   // Nếu có src và chưa lỗi thì hiển thị image
   if (src && !imageError) {
+    const sizeMap = {
+      sm: 24,
+      md: 32,
+      lg: 48,
+    };
+
     return (
-      <img
-        src={src}
-        alt={alt || name || 'User avatar'}
-        className={`${sizeClasses} rounded-full object-cover cursor-pointer ${className}`}
+      <div 
+        className={`${sizeClasses} rounded-full overflow-hidden cursor-pointer relative ${className}`}
         onClick={handleClick}
-        onError={() => setImageError(true)}
-      />
+      >
+        <Image
+          src={src}
+          alt={alt || name || 'User avatar'}
+          fill
+          className="object-cover"
+          onError={() => setImageError(true)}
+          sizes={`${sizeMap[size]}px`}
+          quality={85}
+        />
+      </div>
     );
   }
 
