@@ -281,6 +281,8 @@ const SubCategoryQuizPage: React.FC = () => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false); // Hiển thị modal nâng cấp
   const [upgradeModalMessage, setUpgradeModalMessage] = useState<string>(''); // Message cho modal
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref để clear interval
+  const [essayResults, setEssayResults] = useState<Record<number, boolean>>({}); // Lưu kết quả chấm điểm tự luận
+  const [isGradingEssay, setIsGradingEssay] = useState<Record<number, boolean>>({}); // Lưu trạng thái đang chấm điểm tự luận
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -382,8 +384,91 @@ const SubCategoryQuizPage: React.FC = () => {
     });
   };
 
+  // Hàm chấm điểm tự luận bằng OpenAI
+  const gradeEssay = async (questionId: number, question: Question, inputText: string) => {
+    if (!inputText || inputText.trim().length === 0) {
+      return;
+    }
+
+    if (!question.detailAnswer || question.detailAnswer.trim().length === 0) {
+      console.warn('Không có đáp án mẫu để chấm điểm');
+      return;
+    }
+
+    // Nếu đã chấm điểm rồi, không chấm lại
+    if (essayResults[questionId] !== undefined) {
+      return;
+    }
+
+    setIsGradingEssay(prev => ({ ...prev, [questionId]: true }));
+
+    try {
+      const response = await fetch('/api/grade-essay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          detailAnswer: question.detailAnswer,
+          inputText: inputText.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Lỗi khi chấm điểm tự luận');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setEssayResults(prev => ({ ...prev, [questionId]: data.isCorrect }));
+        
+        // Set message cho câu hỏi tự luận
+        if (!questionMessages[questionId]) {
+          const message = getRandomMessage(data.isCorrect);
+          setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
+        }
+      }
+    } catch (error) {
+      console.error('Error grading essay:', error);
+    } finally {
+      setIsGradingEssay(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
+
   const handleEssayChange = (questionId: number, value: string) => {
     setTextAnswers(prev => ({ ...prev, [questionId]: value }));
+    
+    // Clear kết quả và message cũ nếu người dùng đang sửa lại
+    if (essayResults[questionId] !== undefined) {
+      setEssayResults(prev => {
+        const newResults = { ...prev };
+        delete newResults[questionId];
+        return newResults;
+      });
+      setQuestionMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[questionId];
+        return newMessages;
+      });
+    }
+  };
+
+  // Handler khi user nhấn Enter hoặc click icon gửi
+  const handleEssaySubmit = (questionId: number, question: Question) => {
+    const inputText = textAnswers[questionId] || '';
+    if (inputText.trim().length > 0) {
+      gradeEssay(questionId, question, inputText);
+    }
+  };
+
+  // Handler cho Enter key trong textarea
+  const handleEssayKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, questionId: number, question: Question) => {
+    // Shift + Enter để xuống dòng mới, Enter để gửi
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleEssaySubmit(questionId, question);
+    }
   };
 
   const toggleSidebar = () => {
@@ -395,6 +480,11 @@ const SubCategoryQuizPage: React.FC = () => {
     if (!selectedAnswers) return false;
     const correctAnswerCount = getCorrectAnswerCount(question);
     return correctAnswerCount > 0 && selectedAnswers.size >= correctAnswerCount;
+  };
+
+  // Hàm kiểm tra xem câu tự luận đã được chấm điểm chưa
+  const isEssayVerified = (questionId: number) => {
+    return essayResults[questionId] !== undefined;
   };
 
   // Hàm kiểm tra xem câu trả lời có đúng không
@@ -511,9 +601,11 @@ const SubCategoryQuizPage: React.FC = () => {
     
     questions.forEach((question) => {
       if (isEssay(question)) {
-        // Đối với câu hỏi tự luận, tạm thời không tính điểm
-        // Có thể implement logic chấm điểm sau nếu cần
-        return;
+        // Đối với câu hỏi tự luận, kiểm tra kết quả chấm điểm từ OpenAI
+        const essayResult = essayResults[question.questionId];
+        if (essayResult === true) {
+          correctCount++;
+        }
       } else {
         const selectedAnswers = multiAnswers[question.questionId];
         if (selectedAnswers && isAnswerCorrect(question, selectedAnswers)) {
@@ -543,6 +635,8 @@ const SubCategoryQuizPage: React.FC = () => {
     setTextAnswers({});
     setMultiAnswers({});
     setQuestionMessages({});
+    setEssayResults({});
+    setIsGradingEssay({});
     setStartTime(Date.now());
     setTimeSpent(0);
   };
@@ -629,10 +723,16 @@ const SubCategoryQuizPage: React.FC = () => {
   const renderQuestion = (question: Question, index: number) => {
     const questionIsEssay = isEssay(question);
     const selectedAnswers = multiAnswers[question.questionId];
-    const verified = isVerified(question, selectedAnswers);
+    const verified = questionIsEssay 
+      ? isEssayVerified(question.questionId)
+      : isVerified(question, selectedAnswers);
     const isAnswered = verified;
     const message = questionMessages[question.questionId];
-    const isCorrect = verified ? isAnswerCorrect(question, selectedAnswers) : null;
+    const isCorrect = questionIsEssay
+      ? essayResults[question.questionId] ?? null
+      : (verified ? isAnswerCorrect(question, selectedAnswers) : null);
+    const isGrading = isGradingEssay[question.questionId] || false;
+    const hasTextAnswer = textAnswers[question.questionId] && textAnswers[question.questionId].trim().length > 0;
 
     return (
       <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
@@ -656,6 +756,15 @@ const SubCategoryQuizPage: React.FC = () => {
               }}
             >
               {message}
+            </p>
+          </div>
+        )}
+
+        {/* Hiển thị trạng thái đang chấm điểm tự luận */}
+        {questionIsEssay && isGrading && (
+          <div className="mb-4">
+            <p className="text-sm text-gray-500 italic">
+              Đang chấm điểm...
             </p>
           </div>
         )}
@@ -703,12 +812,54 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {questionIsEssay ? (
-          <textarea
-            className="w-full border rounded-lg p-3 min-h-[140px]"
-            placeholder="Nhập câu trả lời..."
-            value={textAnswers[question.questionId] || ''}
-            onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
-          />
+          <div className="relative">
+            <textarea
+              className={`w-full border rounded-lg p-3 min-h-[140px] pr-12 ${
+                verified ? 'pointer-events-none opacity-75' : ''
+              }`}
+              placeholder="Nhập câu trả lời... (Nhấn Enter hoặc click icon để gửi)"
+              value={textAnswers[question.questionId] || ''}
+              onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
+              onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
+              disabled={verified || isGrading}
+              style={{
+                borderColor: verified 
+                  ? (isCorrect ? '#00C800' : '#EC5300')
+                  : 'rgba(0, 0, 0, 0.05)'
+              }}
+            />
+            {/* Icon gửi */}
+            {!verified && hasTextAnswer && !isGrading && (
+              <button
+                onClick={() => handleEssaySubmit(question.questionId, question)}
+                className="absolute top-3 right-3 p-2 rounded-full transition-all duration-200 hover:opacity-80"
+                aria-label="Gửi câu trả lời"
+                style={{ backgroundColor: '#8D7EF7' }}
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            )}
+            {/* Hiển thị icon kết quả cho câu tự luận */}
+            {verified && (
+              <div className="absolute top-3 right-3">
+                {isCorrect ? (
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-3">
             {question.options?.map((opt, idx) => {
@@ -789,7 +940,7 @@ const SubCategoryQuizPage: React.FC = () => {
                   {questions.map((q, index) => {
                     const questionIsEssay = isEssay(q);
                     const isAnswered = questionIsEssay 
-                      ? textAnswers[q.questionId] !== undefined && textAnswers[q.questionId] !== ''
+                      ? (textAnswers[q.questionId] !== undefined && textAnswers[q.questionId] !== '') && essayResults[q.questionId] !== undefined
                       : multiAnswers[q.questionId] !== undefined && multiAnswers[q.questionId].size > 0;
 
                     return (
