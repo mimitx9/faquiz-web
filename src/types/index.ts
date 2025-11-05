@@ -291,6 +291,7 @@ export interface SubCategoriesSlide {
     categoryId: number;
     isPayment: boolean;
     categoryTitle: string;
+    slug: string;
 }
 
 export interface CategoriesSlide {
