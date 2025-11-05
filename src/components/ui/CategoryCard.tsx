@@ -34,7 +34,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelect
   return (
     <div
       onClick={onClick}
-      className={`rounded-lg shadow-sm w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:shadow-md transition-all overflow-hidden ${
+      className={`rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:shadow-md transition-all overflow-hidden ${
         isSelected ? 'ring-2 ring-offset-2' : ''
       }`}
       style={{
