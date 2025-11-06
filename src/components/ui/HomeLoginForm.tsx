@@ -67,7 +67,7 @@ const HomeLoginForm: React.FC<HomeLoginFormProps> = ({ onSuccess }) => {
     <div className="min-h-screen">
       {/* Login Modal */}
       <div className="min-h-[calc(100vh-80px)] flex items-center justify-center p-5">
-        <div className="w-full max-w-md bg-white p-8">
+        <div className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
           <div className="flex flex-col items-center justify-center mb-8">
             {error && (
               <div className="bg-red-50 text-red-600 px-5 py-3 rounded-3xl mb-5 text-sm font-medium text-center">
@@ -76,7 +76,7 @@ const HomeLoginForm: React.FC<HomeLoginFormProps> = ({ onSuccess }) => {
             )}
           </div>
 
-          <h2 className="text-center text-[#8D7EF7] text-xl font-medium mb-8">
+          <h2 className="text-center text-[#8D7EF7] dark:text-[#A694F7] text-xl font-medium mb-8">
             Đăng nhập tài khoản Pro
           </h2>
 
@@ -88,7 +88,7 @@ const HomeLoginForm: React.FC<HomeLoginFormProps> = ({ onSuccess }) => {
                 placeholder="Số điện thoại"
                 {...register('phone')}
                 autoFocus={true}
-                className={`w-full px-8 py-5 rounded-full text-base bg-white box-border transition focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed border-2 ${errors.phone ? 'border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-100 focus:border-[#FFBA08] focus:ring-2 focus:ring-[#FFBA08]/10'}`}
+                className={`w-full px-8 py-5 rounded-full text-base bg-white dark:bg-gray-700 dark:text-white box-border transition focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed border-2 ${errors.phone ? 'border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-100 dark:border-gray-600 focus:border-[#FFBA08] focus:ring-2 focus:ring-[#FFBA08]/10'}`}
                 disabled={isLoading}
               />
               {errors.phone && (
@@ -103,7 +103,7 @@ const HomeLoginForm: React.FC<HomeLoginFormProps> = ({ onSuccess }) => {
                   id="password"
                   placeholder="Mật khẩu"
                   {...register('password')}
-                  className={`w-full px-8 py-5 pr-12 rounded-full text-base bg-white box-border transition focus:outline-none disabled:bg-gray-100 disabled:cursor-not-allowed border-2 ${errors.password ? 'border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-100 focus:border-[#FFBA08] focus:ring-2 focus:ring-[#FFBA08]/10'}`}
+                  className={`w-full px-8 py-5 pr-12 rounded-full text-base bg-white dark:bg-gray-700 dark:text-white box-border transition focus:outline-none disabled:bg-gray-100 dark:disabled:bg-gray-600 disabled:cursor-not-allowed border-2 ${errors.password ? 'border-red-500 focus:ring-2 focus:ring-red-100' : 'border-gray-100 dark:border-gray-600 focus:border-[#FFBA08] focus:ring-2 focus:ring-[#FFBA08]/10'}`}
                   disabled={isLoading}
                 />
                 <button

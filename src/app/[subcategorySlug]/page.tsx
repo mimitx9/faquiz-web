@@ -743,10 +743,10 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"></div>
         </div>
       </div>
     );
@@ -754,10 +754,10 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
-          <p className="text-red-500">{error}</p>
+          <p className="text-red-500 dark:text-red-400">{error}</p>
         </div>
       </div>
     );
@@ -765,10 +765,10 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
-          <p className="text-gray-500">Không có câu hỏi</p>
+          <p className="text-gray-500 dark:text-gray-400">Không có câu hỏi</p>
         </div>
       </div>
     );
@@ -784,7 +784,7 @@ const SubCategoryQuizPage: React.FC = () => {
       currentSubCategoryId: subCategory?.id,
     });
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader 
           totalQuestions={questions.length}
           onTimerExpired={handleTimerExpired}
@@ -819,13 +819,13 @@ const SubCategoryQuizPage: React.FC = () => {
 
     return (
       <div className="p-8 mb-6">
-        <span className="text-xl font-bold" style={{ color: '#0000001A' }}>
+        <span className="text-xl font-bold dark:text-gray-500" style={{ color: '#0000001A' }}>
             Câu {index + 1}
         </span>
 
         {/* Chỉ hiển thị câu hỏi ở đây nếu không phải essay có ảnh */}
         {!(questionIsEssay && question.extraData?.image) && (
-          <h2 className="text-lg font-semibold text-gray-800 mt-3 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mt-3 mb-6">
             {question.question}
           </h2>
         )}
@@ -847,7 +847,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Hiển thị trạng thái đang chấm điểm tự luận */}
         {questionIsEssay && isGrading && (
           <div className="mb-4">
-            <p className="text-lg text-gray-500 italic">
+            <p className="text-lg text-gray-500 dark:text-gray-400 italic">
               Đang chấm...
             </p>
           </div>
@@ -910,7 +910,7 @@ const SubCategoryQuizPage: React.FC = () => {
                           {hasDetailAnswer && (
                             <Markdown
                               content={question.detailAnswer}
-                              className="text-gray-800 leading-relaxed text-lg"
+                              className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg"
                             />
                           )}
                         </div>
@@ -975,7 +975,7 @@ const SubCategoryQuizPage: React.FC = () => {
                       </div>
                       <Markdown
                         content={question.detailAnswer}
-                        className="text-gray-800 leading-relaxed text-lg"
+                        className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg"
                       />
                     </div>
                   </div>
@@ -992,13 +992,13 @@ const SubCategoryQuizPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
               {/* Cột trái: Câu hỏi và ô input */}
               <div className="flex flex-col">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
                   {question.question}
                 </h2>
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="relative">
                     <textarea
-                      className={`w-full border-2 border-gray-200 rounded-2xl bg-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
+                      className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 dark:text-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
                       placeholder="Viết đáp án..."
                       value={textAnswers[question.questionId] || ''}
                       onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -1084,7 +1084,7 @@ const SubCategoryQuizPage: React.FC = () => {
             // Layout thường khi không có ảnh
             <div className="relative">
               <textarea
-                className={`w-full border-2 rounded-lg px-6 py-3 bg-white min-h-[140px] pr-12 focus:outline-none transition-colors`}
+                className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-lg px-6 py-3 bg-white dark:bg-gray-800 dark:text-white min-h-[140px] pr-12 focus:outline-none transition-colors`}
                 placeholder="Viết đáp án..."
                 value={textAnswers[question.questionId] || ''}
                 onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -1166,10 +1166,10 @@ const SubCategoryQuizPage: React.FC = () => {
                     key={opt.answerId}
                     onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
                     disabled={isAnswered}
-                    className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white border-2 transition-all duration-200 ${
+                    className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white dark:bg-gray-800 border-2 transition-all duration-200 ${
                       isAnswered 
                         ? 'cursor-pointer' 
-                        : 'cursor-pointer hover:bg-gray-50 hover:scale-[1.02]'
+                        : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02]'
                     }`}
                     style={{
                       borderColor: (verified && opt?.isCorrect) 
@@ -1180,8 +1180,8 @@ const SubCategoryQuizPage: React.FC = () => {
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-lg text-gray-600" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
-                      <span className="text-lg" style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
+                      <span className="font-semibold text-lg text-gray-600 dark:text-gray-300" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
+                      <span className="text-lg dark:text-gray-200" style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
                     </div>
                     {renderVerifyIcon(opt, selectedAnswers, verified)}
                   </button>
@@ -1195,17 +1195,17 @@ const SubCategoryQuizPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <QuizHeader 
         totalQuestions={questions.length}
         onTimerExpired={handleTimerExpired}
       />
-      <main className="pt-20 bg-white relative">
+      <main className="pt-20 bg-white dark:bg-gray-900 relative">
         {/* Nút expand sidebar khi collapsed - cố định ở góc trái */}
         {isSidebarCollapsed && (
           <button
             onClick={toggleSidebar}
-            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300"
+            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-gray-900/50"
             aria-label="Mở rộng sidebar"
           >
             <Image
@@ -1213,14 +1213,14 @@ const SubCategoryQuizPage: React.FC = () => {
               alt="Expand"
               width={22}
               height={22}
-              className="rotate-180"
+              className="rotate-180 dark:invert"
             />
           </button>
         )}
 
         {/* Sidebar cố định bên trái */}
         {!isSidebarCollapsed && (
-          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white z-30">
+          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-30">
             {/* Header với category title và nút collapse */}
             <div className="flex items-center justify-between pl-8 pr-0 py-5">
               <div className="flex items-center gap-2">
@@ -1247,6 +1247,7 @@ const SubCategoryQuizPage: React.FC = () => {
                   alt="Collapse"
                   width={22}
                   height={22}
+                  className="dark:invert"
                 />
               </button>
             </div>
@@ -1272,16 +1273,16 @@ const SubCategoryQuizPage: React.FC = () => {
                           window.scrollTo({ top: y, behavior: 'smooth' });
                         }
                       }}
-                      className="w-full flex items-center gap-2 p-4 rounded-xl transition-colors hover:bg-gray-50"
+                      className="w-full flex items-center gap-2 p-4 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <div
                         className={`w-2 h-2 rounded-full mr-4 ${
                           isAnswered
                             ? 'bg-green-500'
-                            : 'bg-gray-100'
+                            : 'bg-gray-100 dark:bg-gray-700'
                         }`}
                       />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {index + 1}
                       </span>
                     </button>
@@ -1325,7 +1326,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Modal zoom ảnh */}
         {zoomedImage && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black bg-opacity-90 dark:bg-opacity-95 z-[100] flex items-center justify-center p-4"
             onClick={handleCloseZoom}
           >
             <div

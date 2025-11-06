@@ -150,7 +150,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 placeholder={placeholder}
                 leftIcon={<SearchIcon />}
                 autoFocus
-                className={`bg-transparent border-0 border-b-4 border-gray-100 rounded-none shadow-none focus:ring-0 text-4xl py-4 leading-[1.6] pl-14 placeholder:text-gray-300 ${
+                className={`bg-transparent border-0 border-b-4 border-gray-100 dark:border-gray-700 rounded-none shadow-none focus:ring-0 text-4xl py-4 leading-[1.6] pl-14 placeholder:text-gray-300 dark:placeholder:text-gray-500 text-gray-900 dark:text-white ${
                     isFocused ? 'rainbow-border-animation' : ''
                 }`}
             />
@@ -159,14 +159,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
             {showSuggestions && (
                 <div
                     ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 bg-white z-50 max-h-128 overflow-y-auto shadow-xl shadow-black/10 rounded-b-3xl pb-4"
+                    className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 z-50 max-h-128 overflow-y-auto shadow-xl shadow-black/10 rounded-b-3xl pb-4 border border-gray-200 dark:border-gray-700"
                 >
                     {suggestions.map((suggestion, index) => (
                         <button
                             key={index}
                             type="button"
-                            className={`w-full text-left px-14 py-4 hover:bg-gray-50 transition-colors ${
-                                index === selectedIndex ? 'bg-gray-100' : ''
+                            className={`w-full text-left px-14 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                                index === selectedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                             }`}
                             onMouseDown={(e) => {
                                 e.preventDefault(); // Prevent input blur before click
@@ -174,7 +174,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                             onClick={() => handleSuggestionClick(suggestion)}
                         >
                             
-                            <span className="text-gray-800 text-lg">{suggestion.title}</span>
+                            <span className="text-gray-800 dark:text-gray-200 text-lg">{suggestion.title}</span>
                         </button>
                     ))}
                 </div>

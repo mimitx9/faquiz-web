@@ -50,23 +50,25 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="rounded-3xl px-6 py-8 cursor-pointer transition-all mb-4 border-2 duration-200" 
+      className={`rounded-3xl px-6 py-8 cursor-pointer transition-all mb-4 border-2 duration-200 bg-white dark:bg-gray-800 dark:border-gray-700 hover:dark:bg-gray-700 ${
+        isHovered ? 'border-transparent' : ''
+      }`}
       style={{
         borderColor: isHovered 
           ? 'transparent' 
           : (backgroundColor ? hexToRgba(backgroundColor, 0.05) : undefined),
         backgroundColor: isHovered 
-          ? (backgroundColor ? hexToRgba(backgroundColor, 0.05) : 'white')
-          : 'white',
+          ? (backgroundColor ? hexToRgba(backgroundColor, 0.05) : undefined)
+          : undefined,
         transform: isHovered ? 'scale(1.02)' : 'scale(1)'
       }}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           {/* {year && (
-            <span className="text-sm font-semibold text-gray-700 mb-1 block">{year}</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1 block">{year}</span>
           )} */}
-          <h3 className="text-xl font-medium text-gray-900 line-clamp-2">
+          <h3 className="text-xl font-medium text-gray-900 dark:text-gray-100 line-clamp-2">
             {title}
           </h3>
           {/* {questionCount && (

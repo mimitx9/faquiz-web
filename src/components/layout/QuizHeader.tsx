@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 interface QuizHeaderProps {
   totalQuestions?: number; // Số lượng câu hỏi để tính thời gian
@@ -14,6 +16,7 @@ interface QuizHeaderProps {
 const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired }) => {
   const router = useRouter();
   const { user, isInitialized, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTimerEnabled, setIsTimerEnabled] = useState(false);
   const [isPracticeEnabled, setIsPracticeEnabled] = useState(false); // Ôn thi on/off
@@ -168,7 +171,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
   const remainingDays = calculateRemainingDays();
 
   return (
-    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white">
+    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
         <Link href="/" className="flex items-center relative h-8 w-auto">
@@ -217,7 +220,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <Link
           href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
-          className="text-sm font-medium duration-300 transition-all text-gray-400 tracking-wide hover:scale-110 hover:text-[#8D7EF7]"
+          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-gray-500 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#8D7EF7]"
         >
           TẢI APP
         </Link>
@@ -239,7 +242,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={handleAvatarClick}
-            className="cursor-pointer transition-opacity bg-white rounded-full flex items-center border-2 border-gray-100"
+            className="cursor-pointer transition-opacity bg-white dark:bg-gray-800 rounded-full flex items-center border-2 border-gray-100 dark:border-gray-700"
           >
             {user && user.avatar ? (
               <Image
@@ -268,17 +271,17 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div
-              className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 rounded-2xl bg-white"
+              className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-gray-900 shadow-lg"
             >
               <div className="py-2">
                 {/* Thông tin Pro/Upgrade */}
                 {isPaid ? (
                   <div className="flex items-center justify-between px-4 py-2">
-                    <span className="font-medium text-sm" 
+                    <span className="font-medium text-sm dark:text-white" 
                         style={{ color: '#FFBB00' }}>Pro</span>
                     {remainingDays !== null && (
                       <span
-                        className="text-sm font-medium"
+                        className="text-sm font-medium dark:text-white"
                         style={{ color: '#FFBB00' }}
                       >
                         {remainingDays > 999 ? 'Vĩnh viễn' : `Còn ${remainingDays} ngày`}
@@ -289,14 +292,14 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                   <Link
                     href="/upgrade"
                     onClick={() => setIsDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-black transition-colors"
+                    className="flex items-center px-4 py-2 text-black dark:text-white transition-colors"
                   >
                     <span className="font-medium text-sm" style={{ color: '#FFBB00' }}>Nâng cấp Pro</span>
                   </Link>
                 )}
 
                 {/* Config đếm giờ */}
-                <div className="flex items-center justify-between px-4 py-2 text-black transition-colors">
+                <div className="flex items-center justify-between px-4 py-2 text-black dark:text-white transition-colors">
                   <span className="text-sm">Đếm giờ</span>
                   <button
                     onClick={handleTimerToggle}
@@ -316,7 +319,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                 </div>
 
                 {/* Ôn thi on/off */}
-                <div className="flex items-center justify-between px-4 py-2 text-black transition-colors">
+                <div className="flex items-center justify-between px-4 py-2 text-black dark:text-white transition-colors">
                   <span className="text-sm">Ôn thi</span>
                   <button
                     onClick={handlePracticeToggle}
@@ -335,10 +338,16 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                   </button>
                 </div>
 
+                {/* Dark/Light mode toggle */}
+                <div className="flex items-center justify-between px-4 py-2 text-black dark:text-white transition-colors">
+                  <span className="text-sm">{theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}</span>
+                  <ThemeToggle />
+                </div>
+
                 {/* Đăng xuất */}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center px-4 py-2 text-gray-400 text-left hover:text-black transition-colors"
+                  className="w-full flex items-center px-4 py-2 text-gray-400 dark:text-gray-500 text-left hover:text-black dark:hover:text-white transition-colors"
                 >
                   <span className="text-sm">Đăng xuất</span>
                 </button>

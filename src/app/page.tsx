@@ -427,11 +427,11 @@ const HomePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader />
         <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
-            <div className="text-gray-500">Đang tải...</div>
+            <div className="text-gray-500 dark:text-gray-400">Đang tải...</div>
           </div>
         </main>
       </div>
@@ -440,11 +440,11 @@ const HomePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white dark:bg-gray-900">
         <QuizHeader />
         <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
-            <div className="text-red-500">{error}</div>
+            <div className="text-red-500 dark:text-red-400">{error}</div>
           </div>
         </main>
       </div>
@@ -452,7 +452,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <QuizHeader />
       <main className={`pt-20 ${selectedCategory ? 'px-0' : 'px-8'} pb-8 ${selectedCategory ? 'max-w-full' : 'max-w-7xl'} mx-auto`}>
         {/* Search Bar */}
@@ -512,11 +512,11 @@ const HomePage: React.FC = () => {
               {canScrollLeft && (
                 <button
                   onClick={() => scrollSubtitleSuggestions('left')}
-                  className="absolute left-0 top-0 bottom-0 z-10 h-full pr-4 flex items-center justify-center bg-gradient-to-r from-white to-transparent transition-all duration-200 hover:scale-110"
+                  className="absolute left-0 top-0 bottom-0 z-10 h-full pr-4 flex items-center justify-center bg-gradient-to-r from-white dark:from-gray-900 to-transparent transition-all duration-200 hover:scale-110"
                   aria-label="Scroll left"
                 >
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -535,11 +535,11 @@ const HomePage: React.FC = () => {
               {canScrollRight && (
                 <button
                   onClick={() => scrollSubtitleSuggestions('right')}
-                  className="absolute right-0 top-0 bottom-0 z-10 h-full pl-4 flex items-center justify-center bg-gradient-to-l from-white to-transparent transition-all duration-200 hover:scale-110"
+                  className="absolute right-0 top-0 bottom-0 z-10 h-full pl-4 flex items-center justify-center bg-gradient-to-l from-white dark:from-gray-900 to-transparent transition-all duration-200 hover:scale-110"
                   aria-label="Scroll right"
                 >
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 dark:text-gray-500"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -606,7 +606,7 @@ const HomePage: React.FC = () => {
                   {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
                     <div className="mb-6">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-4">MÔN MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-4">MÔN MỚI HÔM NAY</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                         {filteredCategories.map((category) => (
                           <CategoryCard
@@ -683,7 +683,7 @@ const HomePage: React.FC = () => {
             {/* GẦN ĐÂY Section - Hiển thị top10RecentSubCategories khi không có search */}
             {top10RecentSubCategories.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
+                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {top10RecentSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
@@ -709,7 +709,7 @@ const HomePage: React.FC = () => {
             {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
             {filteredCategories.length > 0 && (
               <div className="my-24">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredCategories.slice(0, 8).map((category, index) => {
                     // Đảm bảo backgroundColor được truyền đúng
@@ -734,7 +734,7 @@ const HomePage: React.FC = () => {
             {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
             {filteredSubCategories.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
@@ -762,7 +762,7 @@ const HomePage: React.FC = () => {
             {/* No results message */}
             {(searchQuery.trim() || appliedSubtitleFilter) && filteredCategories.length === 0 && filteredSubCategories.length === 0 && (
               <div className="text-center py-20">
-                <p className="text-gray-500">Không tìm thấy kết quả nào cho "{searchQuery}"</p>
+                <p className="text-gray-500 dark:text-gray-400">Không tìm thấy kết quả nào cho "{searchQuery}"</p>
               </div>
             )}
           </>

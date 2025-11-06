@@ -55,7 +55,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <div className="pt-32 pb-12 px-8">
         <div className="max-w-6xl mx-auto">
           {/* Results Summary Box */}
@@ -93,7 +93,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
             {/* Nút Làm lại */}
             <button
               onClick={onRetry}
-              className="col-span-1 flex flex-col items-center justify-center px-16 py-16 rounded-3xl transition-opacity hover:opacity-80 h-full"
+              className="col-span-1 flex flex-col items-center justify-center px-16 py-16 rounded-3xl transition-opacity hover:opacity-80 h-full dark:bg-gray-800/50"
               style={{ backgroundColor: 'rgba(141, 126, 247, 0.1)' }}
             >
               <svg
@@ -119,7 +119,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
           {/* Đề liên quan */}
           {filteredRelatedSubCategories.length > 0 && (
             <div className="mt-12">
-              <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ TƯƠNG TỰ</h2>
+              <h2 className="text-md text-gray-300 dark:text-gray-400 tracking-widest font-bold mb-8">ĐỀ TƯƠNG TỰ</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredRelatedSubCategories.map((subCategory) => {
                   // Convert SubCategoryInfo sang format SubCategoriesSlide để dùng với SubCategoryCard

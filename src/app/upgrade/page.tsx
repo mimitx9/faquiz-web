@@ -121,7 +121,7 @@ const UpgradePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-gray-900">
       <QuizHeader />
       <main className="pt-28 px-4 md:px-8 pb-8 max-w-6xl mx-auto">
         <div className="text-center mb-12">
@@ -143,18 +143,18 @@ const UpgradePage: React.FC = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-gray-700 text-sm md:text-base">{feature}</span>
+                <span className="text-gray-700 dark:text-gray-300 text-sm md:text-base">{feature}</span>
               </div>
             ))}
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-12 text-gray-600">
+          <div className="flex justify-center items-center py-12 text-gray-600 dark:text-gray-400">
             Đang tải gói nâng cấp...
           </div>
         ) : errorMessage ? (
-          <div className="flex justify-center items-center py-12 text-red-600">
+          <div className="flex justify-center items-center py-12 text-red-600 dark:text-red-400">
             {errorMessage}
           </div>
         ) : (
@@ -163,13 +163,13 @@ const UpgradePage: React.FC = () => {
               {plans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="bg-white rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-gray-100 hover:scale-110 transition-all hover:cursor-pointer"
+                  className="bg-white dark:bg-gray-800 rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-gray-100 dark:border-gray-700 hover:scale-110 transition-all hover:cursor-pointer"
                 >
-                  <h3 className="text-xl font-semibold text-gray-700 mb-4 text-center">
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 text-center">
                     {plan.name}
                   </h3>
                   <div className="flex justify-center items-center mb-6 flex-grow">
-                    <span className="text-6xl tracking-wide font-bold text-black">{plan.price}</span>
+                    <span className="text-6xl tracking-wide font-bold text-black dark:text-white">{plan.price}</span>
                   </div>
                   <div className="flex justify-center mb-3">
                     <button
@@ -201,10 +201,10 @@ const UpgradePage: React.FC = () => {
             </div>
 
             <div className="text-center mt-8">
-              <p className="text-gray-400 my-12">Hoặc</p>
+              <p className="text-gray-400 dark:text-gray-500 my-12">Hoặc</p>
               <button
                 onClick={() => window.open('https://m.me/appfaquiz', '_blank')}
-                className="text-[#8D7EF7] text-2xl font-semibold"
+                className="text-[#8D7EF7] dark:text-[#A694F7] text-2xl font-semibold"
               >
                 Đăng nhập tài khoản Pro →
               </button>

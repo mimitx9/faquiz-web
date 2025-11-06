@@ -18,11 +18,11 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
   const subCategories = category.subCategoriesSlide || [];
 
   return (
-    <div className="flex-1 bg-white border-gray-200 overflow-hidden flex flex-col relative">
+    <div className="flex-1 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col relative">
       {/* Close button - absolute ở góc phải trên */}
       <button
         onClick={onClose}
-        className="absolute top-0 right-5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-lg text-gray-300 hover:text-gray-600 transition-colors hover:bg-gray-100 rounded-full"
+        className="absolute top-0 right-5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg text-gray-300 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
         aria-label="Đóng"
       >
         <svg
@@ -54,7 +54,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <p>Không có subcategory nào</p>
           </div>
         )}
