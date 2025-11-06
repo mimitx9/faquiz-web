@@ -168,6 +168,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
                             className={`w-full text-left px-14 py-4 hover:bg-gray-50 transition-colors ${
                                 index === selectedIndex ? 'bg-gray-100' : ''
                             }`}
+                            onMouseDown={(e) => {
+                                e.preventDefault(); // Prevent input blur before click
+                            }}
                             onClick={() => handleSuggestionClick(suggestion)}
                         >
                             
