@@ -130,6 +130,16 @@ quizApiInstance.interceptors.request.use((config) => {
     return config;
 });
 
+quizBattleApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    // Ensure site header is always set
+    config.headers.site = 'BATTLE';
+    return config;
+});
+
 quizWebApiInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -178,6 +188,17 @@ quizApiInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 Quiz API: 401 error detected, but allowing quiz without token');
             // Không gọi handle401Error() để không redirect
+        }
+        return Promise.reject(error);
+    }
+);
+
+quizBattleApiInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            console.log('🔍 Quiz Battle API: 401 error detected, redirecting to login');
+            handle401Error();
         }
         return Promise.reject(error);
     }
