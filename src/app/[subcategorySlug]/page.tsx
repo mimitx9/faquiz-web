@@ -743,7 +743,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"></div>
@@ -754,7 +754,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
           <p className="text-red-500 dark:text-red-400">{error}</p>
@@ -765,7 +765,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
           <p className="text-gray-500 dark:text-gray-400">Không có câu hỏi</p>
@@ -784,7 +784,7 @@ const SubCategoryQuizPage: React.FC = () => {
       currentSubCategoryId: subCategory?.id,
     });
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader 
           totalQuestions={questions.length}
           onTimerExpired={handleTimerExpired}
@@ -1195,17 +1195,17 @@ const SubCategoryQuizPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
       <QuizHeader 
         totalQuestions={questions.length}
         onTimerExpired={handleTimerExpired}
       />
-      <main className="pt-20 bg-white dark:bg-gray-900 relative">
+      <main className="pt-20 bg-white dark:bg-black relative">
         {/* Nút expand sidebar khi collapsed - cố định ở góc trái */}
         {isSidebarCollapsed && (
           <button
             onClick={toggleSidebar}
-            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-gray-900/50"
+            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-black/50"
             aria-label="Mở rộng sidebar"
           >
             <Image
@@ -1220,7 +1220,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
         {/* Sidebar cố định bên trái */}
         {!isSidebarCollapsed && (
-          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-30">
+          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 z-30">
             {/* Header với category title và nút collapse */}
             <div className="flex items-center justify-between pl-8 pr-0 py-5">
               <div className="flex items-center gap-2">

@@ -2,3 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html.dark {
+    background-color: #000000;
+  }
+  
+  html.dark body {
+    background-color: #000000;
+    color: #ffffff;
+  }
+  
+  body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+

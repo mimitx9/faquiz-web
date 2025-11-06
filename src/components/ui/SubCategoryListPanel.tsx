@@ -18,7 +18,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
   const subCategories = category.subCategoriesSlide || [];
 
   return (
-    <div className="flex-1 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col relative">
+    <div className="flex-1 bg-white dark:bg-black border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col relative">
       {/* Close button - absolute ở góc phải trên */}
       <button
         onClick={onClose}

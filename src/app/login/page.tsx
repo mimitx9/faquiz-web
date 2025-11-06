@@ -28,7 +28,7 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-black">
       <QuizHeader />
       <HomeLoginForm onSuccess={handleLoginSuccess} />
     </div>

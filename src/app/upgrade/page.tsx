@@ -121,7 +121,7 @@ const UpgradePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-black">
       <QuizHeader />
       <main className="pt-28 px-4 md:px-8 pb-8 max-w-6xl mx-auto">
         <div className="text-center mb-12">

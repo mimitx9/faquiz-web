@@ -55,7 +55,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-black">
       <div className="pt-32 pb-12 px-8">
         <div className="max-w-6xl mx-auto">
           {/* Results Summary Box */}

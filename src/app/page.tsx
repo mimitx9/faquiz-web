@@ -427,7 +427,7 @@ const HomePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
@@ -440,7 +440,7 @@ const HomePage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900">
+      <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
@@ -452,7 +452,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="min-h-screen bg-white dark:bg-black">
       <QuizHeader />
       <main className={`pt-20 ${selectedCategory ? 'px-0' : 'px-8'} pb-8 ${selectedCategory ? 'max-w-full' : 'max-w-7xl'} mx-auto`}>
         {/* Search Bar */}

@@ -171,7 +171,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
   const remainingDays = calculateRemainingDays();
 
   return (
-    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
         <Link href="/" className="flex items-center relative h-8 w-auto">
@@ -218,6 +218,13 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
 
       {/* Cột 3: Nút Nâng Cấp/PRO và Avatar */}
       <div className="flex items-center justify-end space-x-4 w-1/3">
+        <Link
+          href="#"
+          className="text-sm font-medium duration-300 transition-all tracking-wide hover:scale-110"
+          style={{ color: '#8D7EF7' }}
+        >
+          GIẢI PHẪU 3D
+        </Link>
         <Link
           href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
           className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-gray-500 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#8D7EF7]"
@@ -271,7 +278,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
           {/* Dropdown Menu */}
           {isDropdownOpen && (
             <div
-              className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-gray-900 shadow-lg"
+              className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-black shadow-lg"
             >
               <div className="py-2">
                 {/* Thông tin Pro/Upgrade */}
