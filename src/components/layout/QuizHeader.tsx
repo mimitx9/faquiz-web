@@ -219,7 +219,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       {/* Cột 3: Nút Nâng Cấp/PRO và Avatar */}
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <Link
-          href="#"
+          href="/giai-phau-3d"
           className="text-sm font-medium duration-300 transition-all tracking-wide hover:scale-110"
           style={{ color: '#8D7EF7' }}
         >

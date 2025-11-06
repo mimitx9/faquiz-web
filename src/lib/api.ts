@@ -408,4 +408,38 @@ export const faquizApiService = {
     },
 };
 
+// Biodigital API
+export interface BiodigitalCategory {
+    id: number;
+    title: string;
+    searchTitle: string;
+    image: string;
+    color: string;
+    description: string; // URL của biodigital viewer
+}
+
+export interface BiodigitalCategoriesResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: BiodigitalCategory[];
+}
+
+export const biodigitalApiService = {
+    getAllCategories: async (): Promise<BiodigitalCategoriesResponse> => {
+        try {
+            console.log('🔍 API: Calling getAllCategories...');
+            const response = await faquizApiInstance.get<BiodigitalCategoriesResponse>('/biodigital/categories/all');
+            console.log('🔍 API: getAllCategories response:', response);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ API: getAllCategories failed:', error);
+            console.error('❌ API: Error response:', error.response?.data);
+            console.error('❌ API: Error status:', error.response?.status);
+            throw error;
+        }
+    },
+};
+
 export default api;
