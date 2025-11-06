@@ -229,6 +229,7 @@ export interface SubCategoryInfo {
     code: string;
     id: number;
     title: string;
+    slug: string;
     iconUrl: string;
     categoryId: number;
     categoryTitle: string;
@@ -243,6 +244,7 @@ export interface QuestionsBySubCategoryResponse {
     data: {
         category: CategoryInfo;
         subCategories: SubCategoryInfo[];
+        relatedSubCategories: SubCategoryInfo[];
         questions: Question[];
     };
 }
