@@ -273,7 +273,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
   const [multiAnswers, setMultiAnswers] = useState<Record<number, Set<number>>>({}); // Lưu các answerId đã chọn cho mỗi câu hỏi
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true); // Mặc định collapsed
   const [questionMessages, setQuestionMessages] = useState<Record<number, string>>({}); // Lưu message cho mỗi câu hỏi
   const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái đã nộp bài
   const [startTime, setStartTime] = useState<number | null>(null); // Thời gian bắt đầu làm bài
@@ -283,6 +283,8 @@ const SubCategoryQuizPage: React.FC = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref để clear interval
   const [essayResults, setEssayResults] = useState<Record<number, boolean>>({}); // Lưu kết quả chấm điểm tự luận
   const [isGradingEssay, setIsGradingEssay] = useState<Record<number, boolean>>({}); // Lưu trạng thái đang chấm điểm tự luận
+  const [showSubmitButton, setShowSubmitButton] = useState(true); // Hiển thị nút nộp bài
+  const lastScrollY = useRef(0); // Lưu vị trí scroll trước đó
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -344,6 +346,25 @@ const SubCategoryQuizPage: React.FC = () => {
       }
     };
   }, [startTime, isSubmitted, loading]);
+
+  // Xử lý scroll để ẩn/hiện nút nộp bài
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Nếu scroll xuống (scrollY tăng) thì ẩn, scroll lên (scrollY giảm) thì hiện
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        setShowSubmitButton(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        setShowSubmitButton(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Đếm số lượng đáp án đúng trong một câu hỏi
   const getCorrectAnswerCount = (question: Question) => {
@@ -525,8 +546,8 @@ const SubCategoryQuizPage: React.FC = () => {
     // Nếu option này là đáp án đúng (isCorrect = true), hiển thị icon check (xanh)
     if (option?.isCorrect) {
       return (
-        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
-          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
+          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
         </div>
@@ -535,8 +556,8 @@ const SubCategoryQuizPage: React.FC = () => {
     // Nếu user chọn option này nhưng option này không đúng (isCorrect = false), hiển thị icon X (cam)
     else if (selectedAnswers?.has(option.answerId) && !option?.isCorrect) {
       return (
-        <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
-          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+        <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
+          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
             <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
         </div>
@@ -551,22 +572,22 @@ const SubCategoryQuizPage: React.FC = () => {
     selectedAnswers: Set<number> | undefined,
     isVerified: boolean
   ) => {
-    // Chỉ hiển thị border màu khi đã verify
-    if (!isVerified) {
-      return 'rgba(0, 0, 0, 0.05)';
-    }
-    
-    // Nếu option này là đáp án đúng, border màu xanh
-    if (option?.isCorrect) {
+    // Nếu đã verify, đáp án đúng luôn hiển thị border màu xanh
+    if (isVerified && option?.isCorrect) {
       return '#00C800';
     }
     
-    // Nếu user chọn option này nhưng sai, border màu cam
-    if (selectedAnswers?.has(option.answerId) && !option?.isCorrect) {
-      return '#EC5300';
+    // Nếu đã chọn option này, border sẽ giống textColor
+    if (selectedAnswers?.has(option.answerId)) {
+      // Nếu đã verify nhưng không phải đáp án đúng (đã xử lý ở trên), border màu cam
+      if (isVerified) {
+        return '#EC5300';
+      }
+      // Nếu chưa verify nhưng đã chọn, dùng màu mặc định cho border khi chọn
+      return '#8D7EF7'; // Màu tím khi đã chọn nhưng chưa verify
     }
     
-    // Mặc định
+    // Mặc định khi chưa chọn
     return 'rgba(0, 0, 0, 0.05)';
   };
 
@@ -576,19 +597,22 @@ const SubCategoryQuizPage: React.FC = () => {
     selectedAnswers: Set<number> | undefined,
     isVerified: boolean
   ) => {
-    // Chỉ đổi màu text khi đã verify
-    if (!isVerified) {
-      return undefined; // Màu mặc định
+    // Nếu đã verify
+    if (isVerified) {
+      // Nếu option này là đáp án đúng, text màu xanh
+      if (option?.isCorrect) {
+        return '#00C800';
+      }
+      
+      // Nếu user chọn option này nhưng sai, text màu cam
+      if (selectedAnswers?.has(option.answerId) && !option?.isCorrect) {
+        return '#EC5300';
+      }
     }
     
-    // Nếu option này là đáp án đúng, text màu xanh
-    if (option?.isCorrect) {
-      return '#00C800';
-    }
-    
-    // Nếu user chọn option này nhưng sai, text màu cam
-    if (selectedAnswers?.has(option.answerId) && !option?.isCorrect) {
-      return '#EC5300';
+    // Nếu đã chọn nhưng chưa verify, text màu tím
+    if (selectedAnswers?.has(option.answerId) && !isVerified) {
+      return '#8D7EF7';
     }
     
     // Mặc định
@@ -735,22 +759,20 @@ const SubCategoryQuizPage: React.FC = () => {
     const hasTextAnswer = textAnswers[question.questionId] && textAnswers[question.questionId].trim().length > 0;
 
     return (
-      <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
-        <div className="mb-6">
-          <span className="text-xl bold" style={{ color: '#0000001A' }}>
+      <div className="p-8 mb-6">
+        <span className="text-xl font-bold" style={{ color: '#0000001A' }}>
             Câu {index + 1}
-          </span>
-        </div>
+        </span>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 mt-3 mb-6">
           {question.question}
-        </h1>
+        </h2>
 
         {/* Hiển thị message khi đã verify */}
         {verified && message && (
           <div className="mb-6">
             <p 
-              className="text-base font-medium"
+              className="text-lg font-bold"
               style={{ 
                 color: isCorrect ? '#00C800' : '#EC5300' 
               }}
@@ -763,8 +785,8 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Hiển thị trạng thái đang chấm điểm tự luận */}
         {questionIsEssay && isGrading && (
           <div className="mb-4">
-            <p className="text-sm text-gray-500 italic">
-              Đang chấm điểm...
+            <p className="text-lg text-gray-500 italic">
+              Đang chấm...
             </p>
           </div>
         )}
@@ -773,16 +795,15 @@ const SubCategoryQuizPage: React.FC = () => {
         {verified && (question.detailAnswer && question.detailAnswer.trim().length > 0) && (
           <div className="mb-6">
             <div className="flex items-start gap-3">
-              <div className="w-1 self-stretch rounded" style={{ backgroundColor: '#8D7EF7' }} />
+              <div className="w-1.5 self-stretch" style={{ backgroundColor: '#8D7EF7' }} />
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="text-sm">
+                  <div className="text-sm mb-2">
                     <span className="font-semibold" style={{ color: '#8D7EF7' }}>Quiz thông thái</span>
-                    <span className="mx-2 text-gray-400">&gt;</span>
-                    <span className="text-gray-500">Giải thích tham khảo</span>
+                    <span className="opacity-30" style={{ color: '#8D7EF7' }}>&nbsp; › &nbsp;Giải thích tham khảo</span>
                   </div>
                 </div>
-                <div className="text-gray-800 leading-relaxed">
+                <div className="text-gray-800 leading-relaxed text-lg">
                   {question.detailAnswer}
                 </div>
               </div>
@@ -814,9 +835,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {questionIsEssay ? (
           <div className="relative">
             <textarea
-              className={`w-full border rounded-lg p-3 min-h-[140px] pr-12 ${
-                verified ? 'pointer-events-none opacity-75' : ''
-              }`}
+              className={`w-full border rounded-lg p-3 min-h-[140px] pr-12}`}
               placeholder="Nhập câu trả lời... (Nhấn Enter hoặc click icon để gửi)"
               value={textAnswers[question.questionId] || ''}
               onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -873,17 +892,22 @@ const SubCategoryQuizPage: React.FC = () => {
                   key={opt.answerId}
                   onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
                   disabled={isAnswered}
-                  className={`w-full text-left p-4 rounded-lg transition-colors flex items-center justify-between bg-white ${
-                    isAnswered ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'
+                  className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white border-2 transition-all duration-200 ${
+                    isAnswered 
+                      ? 'cursor-pointer' 
+                      : 'cursor-pointer hover:bg-gray-50 hover:scale-[1.02]'
                   }`}
                   style={{
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: '8px'
+                    borderColor: (verified && opt?.isCorrect) 
+                      ? '#00C800' // Đáp án đúng khi đã verify luôn có border xanh
+                      : (selectedAnswers?.has(opt.answerId) && textColor 
+                        ? textColor 
+                        : (borderColor || '#E5E7EB'))
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
-                    <span style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
+                    <span className="font-semibold text-lg text-gray-600" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
+                    <span className="text-lg" style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
                   </div>
                   {renderVerifyIcon(opt, selectedAnswers, verified)}
                 </button>
@@ -901,124 +925,104 @@ const SubCategoryQuizPage: React.FC = () => {
         totalQuestions={questions.length}
         onTimerExpired={handleTimerExpired}
       />
-      <main className="pt-20">
-        <div className={`flex transition-all duration-300 ${isSidebarCollapsed ? 'justify-center' : ''}`}>
-          {/* Cột 1: Sidebar với danh sách câu hỏi */}
-          {!isSidebarCollapsed && (
-            <div className="w-1/3 min-w-[280px] max-w-[320px] h-[calc(100vh-5rem)] flex flex-col border-r border-gray-200 bg-white shrink-0">
-              {/* Header với category title và nút collapse */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: categoryBackgroundColor }}
-                  />
-                  <h2 
-                    className="text-base font-semibold"
-                    style={{ color: categoryBackgroundColor }}
-                  >
-                    {categoryTitle}
-                  </h2>
-                </div>
-                <button
-                  onClick={toggleSidebar}
-                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                  aria-label="Thu gọn sidebar"
+      <main className="pt-20 bg-white relative">
+        {/* Nút expand sidebar khi collapsed - cố định ở góc trái */}
+        {isSidebarCollapsed && (
+          <button
+            onClick={toggleSidebar}
+            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300"
+            aria-label="Mở rộng sidebar"
+          >
+            <Image
+              src="/collapse.svg"
+              alt="Expand"
+              width={22}
+              height={22}
+              className="rotate-180"
+            />
+          </button>
+        )}
+
+        {/* Sidebar cố định bên trái */}
+        {!isSidebarCollapsed && (
+          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white z-30">
+            {/* Header với category title và nút collapse */}
+            <div className="flex items-center justify-between pl-8 pr-0 py-5">
+              <div className="flex items-center gap-2">
+                <h2 
+                  className="text-sm font-semibold"
+                  style={{ color: categoryBackgroundColor }}
                 >
-                  <Image
-                    src="/collapse.svg"
-                    alt="Collapse"
-                    width={22}
-                    height={22}
-                  />
-                </button>
-              </div>
-
-              {/* Danh sách câu hỏi - có thể scroll */}
-              <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-2">
-                  {questions.map((q, index) => {
-                    const questionIsEssay = isEssay(q);
-                    const isAnswered = questionIsEssay 
-                      ? (textAnswers[q.questionId] !== undefined && textAnswers[q.questionId] !== '') && essayResults[q.questionId] !== undefined
-                      : multiAnswers[q.questionId] !== undefined && multiAnswers[q.questionId].size > 0;
-
-                    return (
-                      <button
-                        key={q.questionId}
-                        onClick={() => {
-                          // Scroll đến câu hỏi tương ứng trong container scroll
-                          const element = document.getElementById(`question-${q.questionId}`);
-                          const scrollContainer = document.getElementById('questions-scroll-container');
-                          if (element && scrollContainer) {
-                            const containerRect = scrollContainer.getBoundingClientRect();
-                            const elementRect = element.getBoundingClientRect();
-                            const scrollTop = scrollContainer.scrollTop + elementRect.top - containerRect.top - 20; // 20px offset
-                            scrollContainer.scrollTo({ top: scrollTop, behavior: 'smooth' });
-                          }
-                        }}
-                        className="w-full flex items-center gap-2 p-2 rounded-md transition-colors hover:bg-gray-50"
-                      >
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            isAnswered
-                              ? 'bg-green-500'
-                              : 'bg-gray-300'
-                          }`}
-                        />
-                        <span className="text-sm font-medium text-gray-700">
-                          {index + 1}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Footer với subcategory title */}
-              <div className="p-4 border-t border-gray-200 relative">
+                  {categoryTitle}
+                </h2>
                 <p 
-                  className="text-sm pl-28"
-                  style={{ color: '#0000001A' }}
-                >
-                  {subcategoryTitle}
-                </p>
-                <button
-                  onClick={handleSubmit}
-                  aria-label="Nộp bài"
-                  className="absolute left-4 bottom-3 z-10 px-4 py-2 rounded-lg text-white shadow-md transition-opacity hover:opacity-80"
-                  style={{ backgroundColor: '#8D7EF7' }}
-                >
-                  Nộp bài
-                </button>
+                className="text-sm opacity-30"
+                style={{ color: categoryBackgroundColor }}
+              >
+               &nbsp; › &nbsp;{subcategoryTitle}
+              </p>
+              </div>
+              <button
+                onClick={toggleSidebar}
+                aria-label="Thu gọn sidebar"
+                className="hover:scale-110 rounded transition-all duration-300"
+              >
+                <Image
+                  src="/collapse.svg"
+                  alt="Collapse"
+                  width={22}
+                  height={22}
+                />
+              </button>
+            </div>
+
+            {/* Danh sách câu hỏi - có thể scroll */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-2">
+                {questions.map((q, index) => {
+                  const questionIsEssay = isEssay(q);
+                  const isAnswered = questionIsEssay 
+                    ? (textAnswers[q.questionId] !== undefined && textAnswers[q.questionId] !== '') && essayResults[q.questionId] !== undefined
+                    : multiAnswers[q.questionId] !== undefined && multiAnswers[q.questionId].size > 0;
+
+                  return (
+                    <button
+                      key={q.questionId}
+                      onClick={() => {
+                        // Scroll đến câu hỏi tương ứng trên toàn trang
+                        const element = document.getElementById(`question-${q.questionId}`);
+                        if (element) {
+                          const yOffset = -100; // 100px offset từ top
+                          const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 p-4 rounded-xl transition-colors hover:bg-gray-50"
+                    >
+                      <div
+                        className={`w-2 h-2 rounded-full mr-4 ${
+                          isAnswered
+                            ? 'bg-green-500'
+                            : 'bg-gray-100'
+                        }`}
+                      />
+                      <span className="text-sm font-medium text-gray-700">
+                        {index + 1}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Cột 2: Danh sách tất cả câu hỏi scroll được */}
-          <div className={`${isSidebarCollapsed ? 'w-full max-w-4xl mx-auto' : 'w-2/3'} transition-all duration-300`}>
+        {/* Content area với margin để tránh bị che bởi sidebar */}
+        <div className={`transition-all duration-300 ${!isSidebarCollapsed ? 'ml-[280px] lg:ml-[320px]' : ''}`}>
+          <div className="max-w-6xl mx-auto">
             <div className="p-8">
-              {/* Nút expand sidebar nếu đã collapse */}
-              {isSidebarCollapsed && (
-                <div className="mb-6 flex justify-start">
-                  <button
-                    onClick={toggleSidebar}
-                    className="p-2 hover:bg-gray-100 rounded transition-colors"
-                    aria-label="Mở rộng sidebar"
-                  >
-                    <Image
-                      src="/collapse.svg"
-                      alt="Expand"
-                      width={22}
-                      height={22}
-                      className="rotate-180"
-                    />
-                  </button>
-                </div>
-              )}
-
               {/* Danh sách tất cả câu hỏi - scroll được */}
-              <div id="questions-scroll-container" className="overflow-y-auto max-h-[calc(100vh-8rem)]">
+              <div id="questions-scroll-container">
                 {questions.map((question, index) => (
                   <div id={`question-${question.questionId}`} key={question.questionId}>
                     {renderQuestion(question, index)}
@@ -1028,6 +1032,20 @@ const SubCategoryQuizPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Nút nộp bài floating ở bottom center */}
+        <button
+          onClick={handleSubmit}
+          aria-label="Nộp bài"
+          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full text-white shadow-2xl transition-all hover:scale-110 duration-300 z-50 tracking-wide ${
+            showSubmitButton 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-4 pointer-events-none'
+          }`}
+          style={{ backgroundColor: '#8D7EF7' }}
+        >
+          <span className="text-lg font-semibold">Nộp Bài</span>
+        </button>
       </main>
     </div>
   );

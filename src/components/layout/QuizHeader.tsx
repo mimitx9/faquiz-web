@@ -193,9 +193,9 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <Link
           href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
-          className="text-sm font-bold hover:opacity-80 transition-opacity"
+          className="text-sm font-medium hover:text-black duration-300 transition-all text-gray-400"
         >
-          TẢI APP
+          Tải App
         </Link>
         <button
           onClick={handleUpgradeClick}
