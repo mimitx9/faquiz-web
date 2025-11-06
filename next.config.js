@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'drive.google.com', 'google.com', 'lh3.googleusercontent.com', 'storage.googleapis.com'],
+    domains: ['localhost', 'drive.google.com', 'google.com', 'lh3.googleusercontent.com', 'storage.googleapis.com', 'facourse.com'],
     unoptimized: true, // Tắt image optimization để tránh lỗi 402 PAYMENT_REQUIRED từ Vercel
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -20,6 +20,10 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'storage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'facourse.com',
       },
     ],
   },

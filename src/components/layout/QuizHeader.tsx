@@ -191,6 +191,12 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
 
       {/* Cột 3: Nút Nâng Cấp/PRO và Avatar */}
       <div className="flex items-center justify-end space-x-4 w-1/3">
+        <Link
+          href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
+          className="text-sm font-bold hover:opacity-80 transition-opacity"
+        >
+          TẢI APP
+        </Link>
         <button
           onClick={handleUpgradeClick}
           className={`rounded-full text-sm font-semibold tracking-wide px-5 py-2 transition-colors duration-300 ${
