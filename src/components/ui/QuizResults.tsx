@@ -130,7 +130,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
                     categoryId: subCategory.categoryId,
                     isPayment: subCategory.isPayment,
                     categoryTitle: subCategory.categoryTitle,
-                    slug: createSubCategorySlug(subCategory.code, subCategory.title),
+                    slug: subCategory.slug,
                     backgroundColor: categoryBackgroundColor,
                   };
                   

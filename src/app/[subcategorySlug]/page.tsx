@@ -929,8 +929,8 @@ const SubCategoryQuizPage: React.FC = () => {
                             e.currentTarget.style.display = 'none';
                           }}
                           loading="lazy"
-                          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                          quality={90}
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          quality={85}
                         />
                       </div>
                     </div>
@@ -1073,10 +1073,9 @@ const SubCategoryQuizPage: React.FC = () => {
                       console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
                     }}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    priority={index === 0}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 40vw"
-                    quality={90}
+                    loading="lazy"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    quality={85}
                   />
                 </div>
               </div>
@@ -1147,10 +1146,9 @@ const SubCategoryQuizPage: React.FC = () => {
                       console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
                     }}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    priority={index === 0}
-                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 90vw, (max-width: 1200px) 80vw, 672px"
-                    quality={90}
+                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 672px"
+                    quality={85}
                   />
                 </div>
               </div>
@@ -1216,8 +1214,6 @@ const SubCategoryQuizPage: React.FC = () => {
               width={22}
               height={22}
               className="rotate-180"
-              priority
-              quality={100}
             />
           </button>
         )}
@@ -1251,8 +1247,6 @@ const SubCategoryQuizPage: React.FC = () => {
                   alt="Collapse"
                   width={22}
                   height={22}
-                  priority
-                  quality={100}
                 />
               </button>
             </div>
@@ -1350,9 +1344,8 @@ const SubCategoryQuizPage: React.FC = () => {
                   alt="Ảnh phóng to"
                   fill
                   className="object-contain"
-                  quality={95}
+                  quality={100}
                   sizes="100vw"
-                  priority
                 />
               </div>
               {/* Container các nút điều khiển ở phía dưới */}
