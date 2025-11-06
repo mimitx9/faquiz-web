@@ -301,6 +301,7 @@ export interface CategoriesSlideStruct {
 export interface SlideFastResponse {
     top10Categories: CategoriesSlide[];
     top10SubCategories: SubCategoriesSlide[];
+    top10RecentSubCategories: SubCategoriesSlide[];
     fullData: CategoriesSlideStruct;
 }
 

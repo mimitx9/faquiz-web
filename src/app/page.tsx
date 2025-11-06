@@ -17,6 +17,7 @@ const HomePage: React.FC = () => {
   const { user, isInitialized } = useAuth();
   const [top10Categories, setTop10Categories] = useState<CategoriesSlide[]>([]);
   const [top10SubCategories, setTop10SubCategories] = useState<SubCategoriesSlide[]>([]);
+  const [top10RecentSubCategories, setTop10RecentSubCategories] = useState<SubCategoriesSlide[]>([]);
   const [fullData, setFullData] = useState<CategoriesSlide[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchByCodeOnly, setSearchByCodeOnly] = useState(false);
@@ -86,6 +87,7 @@ const HomePage: React.FC = () => {
         if (response.data) {
           setTop10Categories(response.data.top10Categories || []);
           setTop10SubCategories(response.data.top10SubCategories || []);
+          setTop10RecentSubCategories(response.data.top10RecentSubCategories || []);
           setFullData(response.data.fullData?.categoriesSlide || []);
         }
       } catch (err: any) {
@@ -588,12 +590,12 @@ const HomePage: React.FC = () => {
           </>
         ) : (
           <>
-            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
-            {filteredSubCategories.length > 0 && (
+            {/* GẦN ĐÂY Section - Hiển thị top10RecentSubCategories khi không có search */}
+            {top10RecentSubCategories.length > 0 && (
               <div className="mb-12">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {filteredSubCategories.slice(0, 8).map((subCategory) => {
+                  {top10RecentSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {
                       ...subCategory,
@@ -632,6 +634,32 @@ const HomePage: React.FC = () => {
                         category={category}
                         onClick={() => handleCategoryClick(category)}
                         priority={isPriority}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
+            {filteredSubCategories.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredSubCategories.slice(0, 8).map((subCategory) => {
+                    const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
+                    const enrichedSub = {
+                      ...subCategory,
+                      icon: subCategory.icon || iconFromMap || undefined,
+                    };
+                    return (
+                      <SubCategoryCard
+                        key={subCategory.id}
+                        subCategory={{
+                          ...enrichedSub,
+                          backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
+                        }}
+                        onClick={() => handleSubCategoryClick(enrichedSub)}
                       />
                     );
                   })}
