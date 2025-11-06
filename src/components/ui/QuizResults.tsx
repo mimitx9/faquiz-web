@@ -50,7 +50,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
 
   // Handler khi click vào subcategory card
   const handleSubCategoryClick = (subCategory: SubCategoryInfo) => {
-    const slug = createSubCategorySlug(subCategory.code, subCategory.title);
+    const slug = subCategory.slug;
     router.push(`/${slug}`);
   };
 
