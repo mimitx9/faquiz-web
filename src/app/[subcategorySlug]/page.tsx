@@ -806,9 +806,12 @@ const SubCategoryQuizPage: React.FC = () => {
             Câu {index + 1}
         </span>
 
-        <h2 className="text-lg font-semibold text-gray-800 mt-3 mb-6">
-          {question.question}
-        </h2>
+        {/* Chỉ hiển thị câu hỏi ở đây nếu không phải essay có ảnh */}
+        {!(questionIsEssay && question.extraData?.image) && (
+          <h2 className="text-lg font-semibold text-gray-800 mt-3 mb-6">
+            {question.question}
+          </h2>
+        )}
 
         {/* Hiển thị message khi đã verify */}
         {verified && message && (
@@ -853,109 +856,205 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
         )}
 
-        {/* Hiển thị ảnh nếu có */}
-        {question.extraData?.image && (
-          <div className="mb-6 flex justify-center">
-            <div className="relative w-full max-w-2xl aspect-video">
-              <Image
-                src={question.extraData.image}
-                alt="Câu hỏi"
-                fill
-                className="object-contain rounded-lg shadow-sm"
-                onError={(e) => {
-                  console.error('Failed to load image:', question.extraData?.image);
-                  e.currentTarget.style.display = 'none';
-                }}
-                loading="lazy"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 672px"
-                quality={85}
-              />
-            </div>
-          </div>
-        )}
-
         {questionIsEssay ? (
-          <div className="relative">
-            <textarea
-              className={`w-full border rounded-lg p-3 min-h-[140px] pr-12}`}
-              placeholder="Nhập câu trả lời... (Nhấn Enter hoặc click icon để gửi)"
-              value={textAnswers[question.questionId] || ''}
-              onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
-              onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
-              disabled={verified || isGrading}
-              style={{
-                borderColor: verified 
-                  ? (isCorrect ? '#00C800' : '#EC5300')
-                  : 'rgba(0, 0, 0, 0.05)'
-              }}
-            />
-            {/* Icon gửi */}
-            {!verified && hasTextAnswer && !isGrading && (
-              <button
-                onClick={() => handleEssaySubmit(question.questionId, question)}
-                className="absolute top-3 right-3 p-2 rounded-full transition-all duration-200 hover:opacity-80"
-                aria-label="Gửi câu trả lời"
-                style={{ backgroundColor: '#8D7EF7' }}
-              >
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
-            )}
-            {/* Hiển thị icon kết quả cho câu tự luận */}
-            {verified && (
-              <div className="absolute top-3 right-3">
-                {isCorrect ? (
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+          // Layout cho essay: nếu có ảnh thì 2 cột, không có ảnh thì layout thường
+          question.extraData?.image ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+              {/* Cột trái: Câu hỏi và ô input */}
+              <div className="flex flex-col">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                  {question.question}
+                </h2>
+                <div className="flex-1 flex flex-col justify-end">
+                  <div className="relative">
+                    <textarea
+                      className={`w-full border-2 border-gray-200 rounded-2xl px-4 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden`}
+                      placeholder="Viết đáp án..."
+                      value={textAnswers[question.questionId] || ''}
+                      onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
+                      onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
+                      disabled={verified || isGrading}
+                      rows={1}
+                      style={{
+                        borderColor: verified 
+                          ? (isCorrect ? '#00C800' : '#EC5300')
+                          : 'rgba(0, 0, 0, 0.05)',
+                        minHeight: '5rem',
+                        maxHeight: '7rem',
+                        lineHeight: '1.5rem',
+                        paddingTop: '1.75rem',
+                        paddingBottom: '1.75rem',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}
+                      onInput={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        const newHeight = Math.min(target.scrollHeight, 7 * 16); // 7rem = 112px
+                        target.style.height = `${newHeight}px`;
+                      }}
+                    />
+                    {/* Icon gửi */}
+                    {!verified && hasTextAnswer && !isGrading && (
+                      <button
+                        onClick={() => handleEssaySubmit(question.questionId, question)}
+                        className="absolute top-1/2 -translate-y-1/2 right-1.5 p-1.5 rounded-full transition-all duration-200 hover:opacity-80"
+                        aria-label="Gửi câu trả lời"
+                      >
+                        <img 
+                          src="data:image/svg+xml,%3csvg%20width='20'%20height='18'%20viewBox='0%200%2020%2018'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M17.5436%200.892072C19.0975%200.879563%2020.0714%202.56646%2019.2837%203.90592L11.7367%2016.738C10.8525%2018.2414%208.60201%2017.9717%208.09803%2016.3021L7.03905%2012.7937C6.6797%2011.6032%207.09208%2010.3144%208.07577%209.55366L12.4962%206.13506C12.7265%205.95691%2012.5179%205.59555%2012.2484%205.70597L7.08027%207.82378C5.92829%208.29584%204.60446%208.00736%203.75333%207.09879L1.2057%204.37923C0.0141876%203.1073%200.906414%201.026%202.6492%201.01197L17.5436%200.892072Z'%20fill='%238D7EF7'/%3e%3c/svg%3e"
+                          alt="Gửi"
+                          className="w-5 h-5"
+                        />
+                      </button>
+                    )}
+                    {/* Hiển thị icon kết quả cho câu tự luận */}
+                    {verified && (
+                      <div className="absolute top-1/2 -translate-y-1/2 right-1.5">
+                        {isCorrect ? (
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
+                </div>
+              </div>
+              {/* Cột phải: Ảnh */}
+              <div className="flex items-start">
+                <div className="relative w-full aspect-video">
+                  <Image
+                    src={question.extraData.image}
+                    alt="Câu hỏi"
+                    fill
+                    className="object-contain rounded-lg shadow-sm"
+                    onError={(e) => {
+                      console.error('Failed to load image:', question.extraData?.image);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    loading="lazy"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    quality={85}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Layout thường khi không có ảnh
+            <div className="relative">
+              <textarea
+                className={`w-full border rounded-lg p-3 min-h-[140px] pr-12}`}
+                placeholder="Viết đáp án..."
+                value={textAnswers[question.questionId] || ''}
+                onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
+                onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
+                disabled={verified || isGrading}
+                style={{
+                  borderColor: verified 
+                    ? (isCorrect ? '#00C800' : '#EC5300')
+                    : 'rgba(0, 0, 0, 0.05)'
+                }}
+              />
+              {/* Icon gửi */}
+              {!verified && hasTextAnswer && !isGrading && (
+                <button
+                  onClick={() => handleEssaySubmit(question.questionId, question)}
+                  className="absolute top-3 right-3 p-2 rounded-full transition-all duration-200 hover:opacity-80"
+                  aria-label="Gửi câu trả lời"
+                  style={{ backgroundColor: '#8D7EF7' }}
+                >
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              )}
+              {/* Hiển thị icon kết quả cho câu tự luận */}
+              {verified && (
+                <div className="absolute top-3 right-3">
+                  {isCorrect ? (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#E05B00'}}>
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          <>
+            {/* Hiển thị ảnh nếu có (cho câu hỏi không phải essay) */}
+            {question.extraData?.image && (
+              <div className="mb-6 flex justify-center">
+                <div className="relative w-full max-w-2xl aspect-video">
+                  <Image
+                    src={question.extraData.image}
+                    alt="Câu hỏi"
+                    fill
+                    className="object-contain rounded-lg shadow-sm"
+                    onError={(e) => {
+                      console.error('Failed to load image:', question.extraData?.image);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 672px"
+                    quality={85}
+                  />
+                </div>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {question.options?.map((opt, idx) => {
-              const correctAnswerCount = getCorrectAnswerCount(question);
-              const optionLetter = String.fromCharCode(65 + idx);
-              const borderColor = getBorderColor(opt, selectedAnswers, verified);
-              const textColor = getTextColor(opt, selectedAnswers, verified);
-              
-              return (
-                <button
-                  key={opt.answerId}
-                  onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
-                  disabled={isAnswered}
-                  className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white border-2 transition-all duration-200 ${
-                    isAnswered 
-                      ? 'cursor-pointer' 
-                      : 'cursor-pointer hover:bg-gray-50 hover:scale-[1.02]'
-                  }`}
-                  style={{
-                    borderColor: (verified && opt?.isCorrect) 
-                      ? '#00C800' // Đáp án đúng khi đã verify luôn có border xanh
-                      : (selectedAnswers?.has(opt.answerId) && textColor 
-                        ? textColor 
-                        : (borderColor || '#E5E7EB'))
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-lg text-gray-600" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
-                    <span className="text-lg" style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
-                  </div>
-                  {renderVerifyIcon(opt, selectedAnswers, verified)}
-                </button>
-              );
-            })}
-          </div>
+            {/* Hiển thị các options cho câu hỏi trắc nghiệm */}
+            <div className="space-y-3">
+              {question.options?.map((opt, idx) => {
+                const correctAnswerCount = getCorrectAnswerCount(question);
+                const optionLetter = String.fromCharCode(65 + idx);
+                const borderColor = getBorderColor(opt, selectedAnswers, verified);
+                const textColor = getTextColor(opt, selectedAnswers, verified);
+                
+                return (
+                  <button
+                    key={opt.answerId}
+                    onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
+                    disabled={isAnswered}
+                    className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white border-2 transition-all duration-200 ${
+                      isAnswered 
+                        ? 'cursor-pointer' 
+                        : 'cursor-pointer hover:bg-gray-50 hover:scale-[1.02]'
+                    }`}
+                    style={{
+                      borderColor: (verified && opt?.isCorrect) 
+                        ? '#00C800' // Đáp án đúng khi đã verify luôn có border xanh
+                        : (selectedAnswers?.has(opt.answerId) && textColor 
+                          ? textColor 
+                          : (borderColor || '#E5E7EB'))
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-lg text-gray-600" style={textColor ? { color: textColor } : undefined}>{optionLetter}.</span>
+                      <span className="text-lg" style={textColor ? { color: textColor } : undefined}>{opt.text}</span>
+                    </div>
+                    {renderVerifyIcon(opt, selectedAnswers, verified)}
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     );
