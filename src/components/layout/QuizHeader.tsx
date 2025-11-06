@@ -131,6 +131,16 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
     router.push('/login');
   };
 
+  const handleAvatarClick = () => {
+    // Nếu đã đăng nhập thì mở dropdown
+    if (user) {
+      setIsDropdownOpen(!isDropdownOpen);
+    } else {
+      // Nếu chưa đăng nhập thì redirect đến trang login
+      router.push('/login');
+    }
+  };
+
   // Calculate remaining days
   const calculateRemainingDays = (): number | null => {
     if (!user?.faQuizInfo?.expireTime) return null;
@@ -193,13 +203,13 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       <div className="flex items-center justify-end space-x-4 w-1/3">
         <Link
           href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
-          className="text-sm font-medium hover:text-black duration-300 transition-all text-gray-400"
+          className="text-sm font-medium duration-300 transition-all text-gray-400 tracking-wide hover:scale-110 hover:text-[#8D7EF7]"
         >
-          Tải App
+          TẢI APP
         </Link>
         <button
           onClick={handleUpgradeClick}
-          className={`rounded-full text-sm font-semibold tracking-wide px-5 py-2 transition-colors duration-300 ${
+          className={`rounded-full text-sm font-semibold tracking-wide px-5 py-2 transition-all duration-300 hover:scale-110 ${
             isPaid ? 'cursor-default' : 'hover:!bg-[#FFBB00] hover:!text-white'
           }`}
           style={{
@@ -214,7 +224,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
         {/* Avatar with dropdown menu */}
         <div className="relative" ref={dropdownRef}>
           <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            onClick={handleAvatarClick}
             className="cursor-pointer transition-opacity bg-white rounded-full flex items-center border-2 border-gray-100"
           >
             {user && user.avatar ? (
@@ -231,7 +241,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                 alt="Avatar"
                 width={32}
                 height={32}
-                className="w-8 h-8"
+                className="w-8 h-8 opacity-30"
               />
             )}
           </button>
