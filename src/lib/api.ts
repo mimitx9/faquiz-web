@@ -25,6 +25,7 @@ const QUIZ_BATTLE_API_BASE_URL = `${BASE_URL}/v1/quiz-battle`;
 const MASTER_API_BASE_URL = `${BASE_URL}/v1/master`;
 const QUIZ_WEB_API_BASE_URL = `${BASE_URL}/v1/quiz-web`;
 const CATEGORY_API_BASE_URL = `${BASE_URL}/v1/category`;
+const FAQUIZ_API_BASE_URL = `${BASE_URL}/faquiz/v1`;
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -95,6 +96,14 @@ const categoryApiInstance = axios.create({
     },
 });
 
+const faquizApiInstance = axios.create({
+    baseURL: FAQUIZ_API_BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
 // Add auth token to requests
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
@@ -155,6 +164,14 @@ categoryApiInstance.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers.site = 'QUIZ_WEB';
+    return config;
+});
+
+faquizApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
 });
 
@@ -222,6 +239,17 @@ categoryApiInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 Category API: 401 error detected, redirecting to login');
             handle401Error();
+        }
+        return Promise.reject(error);
+    }
+);
+
+faquizApiInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        // Không redirect 401 cho faquiz API - cho phép submit quiz không cần token
+        if (error.response?.status === 401) {
+            console.log('🔍 FaQuiz API: 401 error detected, but allowing quiz submission without token');
         }
         return Promise.reject(error);
     }
@@ -348,6 +376,34 @@ export const categoryApiService = {
             console.error('❌ API: Error response:', error.response?.data);
             console.error('❌ API: Error status:', error.response?.status);
             throw error;
+        }
+    },
+};
+
+// FaQuiz API
+export interface SubmitQuizRequest {
+    totalCorrect: number;
+    totalQuestion: number;
+    subCategoryCode: string;
+    quizDuration: number; // Thời gian cần làm (giây)
+    endDuration: number; // Thời gian hoàn thành (giây)
+    categoryCode: string;
+}
+
+export const faquizApiService = {
+    submitQuiz: async (payload: SubmitQuizRequest): Promise<void> => {
+        try {
+            console.log('🔍 API: Calling submitQuiz with payload:', payload);
+            // Gọi async, không cần quan tâm response
+            faquizApiInstance.post('/user-quiz', payload).catch((error) => {
+                // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
+                console.error('❌ API: submitQuiz failed (non-blocking):', error);
+                console.error('❌ API: Error response:', error.response?.data);
+                console.error('❌ API: Error status:', error.response?.status);
+            });
+        } catch (error: any) {
+            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
+            console.error('❌ API: submitQuiz failed (non-blocking):', error);
         }
     },
 };
