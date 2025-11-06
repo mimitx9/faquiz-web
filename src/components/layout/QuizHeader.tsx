@@ -262,7 +262,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                         className="text-sm font-medium"
                         style={{ color: '#FFBB00' }}
                       >
-                        Còn {remainingDays} ngày
+                        {remainingDays > 999 ? 'Vĩnh viễn' : `Còn ${remainingDays} ngày`}
                       </span>
                     )}
                   </div>
