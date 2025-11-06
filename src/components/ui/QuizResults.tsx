@@ -1,12 +1,19 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import SubCategoryCard from './SubCategoryCard';
+import { SubCategoryInfo } from '@/types';
+import { createSubCategorySlug } from '@/lib/utils';
 
 interface QuizResultsProps {
   totalScore: number; // Số câu đúng
   totalQuestions: number; // Tổng số câu hỏi
   timeSpent: number; // Thời gian làm bài tính bằng giây
   onRetry: () => void;
+  relatedSubCategories?: SubCategoryInfo[]; // Danh sách subcategories liên quan
+  categoryBackgroundColor?: string; // Màu của category
+  currentSubCategoryId?: number; // ID của subcategory hiện tại
 }
 
 const QuizResults: React.FC<QuizResultsProps> = ({
@@ -14,7 +21,12 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   totalQuestions,
   timeSpent,
   onRetry,
+  relatedSubCategories = [],
+  categoryBackgroundColor = '#3B82F6',
+  currentSubCategoryId,
 }) => {
+  const router = useRouter();
+
   // Format thời gian từ giây sang MM:SS
   const formatTime = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -26,6 +38,21 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   const scoreOutOf10 = totalQuestions > 0 
     ? Math.round((totalScore / totalQuestions) * 10)
     : 0;
+
+  // Filter các subcategory liên quan (loại bỏ subcategory hiện tại)
+  const filteredRelatedSubCategories = relatedSubCategories.filter(
+    sub => sub.id !== currentSubCategoryId
+  );
+
+  console.log('🔍 QuizResults - relatedSubCategories:', relatedSubCategories);
+  console.log('🔍 QuizResults - filteredRelatedSubCategories:', filteredRelatedSubCategories);
+  console.log('🔍 QuizResults - currentSubCategoryId:', currentSubCategoryId);
+
+  // Handler khi click vào subcategory card
+  const handleSubCategoryClick = (subCategory: SubCategoryInfo) => {
+    const slug = createSubCategorySlug(subCategory.code, subCategory.title);
+    router.push(`/${slug}`);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -88,6 +115,36 @@ const QuizResults: React.FC<QuizResultsProps> = ({
               </span>
             </button>
           </div>
+
+          {/* Đề liên quan */}
+          {filteredRelatedSubCategories.length > 0 && (
+            <div className="mt-12">
+              <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ LIÊN QUAN</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredRelatedSubCategories.map((subCategory) => {
+                  // Convert SubCategoryInfo sang format SubCategoriesSlide để dùng với SubCategoryCard
+                  const subCategoryCardData = {
+                    code: subCategory.code,
+                    id: subCategory.id,
+                    title: subCategory.title,
+                    categoryId: subCategory.categoryId,
+                    isPayment: subCategory.isPayment,
+                    categoryTitle: subCategory.categoryTitle,
+                    slug: createSubCategorySlug(subCategory.code, subCategory.title),
+                    backgroundColor: categoryBackgroundColor,
+                  };
+                  
+                  return (
+                    <SubCategoryCard
+                      key={subCategory.id}
+                      subCategory={subCategoryCardData}
+                      onClick={() => handleSubCategoryClick(subCategory)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

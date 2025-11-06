@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
-import { quizBattleApiService } from '@/lib/api';
+import { quizBattleApiService, categoryApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 
 const COMMENT_MESSAGE_SUCCESS = [
@@ -268,6 +268,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [category, setCategory] = useState<CategoryInfo | null>(null);
   const [subCategory, setSubCategory] = useState<SubCategoryInfo | null>(null);
+  const [subCategories, setSubCategories] = useState<SubCategoryInfo[]>([]); // Danh sách tất cả subcategories trong cùng category
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({});
@@ -295,18 +296,67 @@ const SubCategoryQuizPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const res = await quizBattleApiService.getQuestionsBySubCategory({ slug: slugParam });
+        console.log('🔍 API Response:', res);
+        console.log('🔍 SubCategories:', res?.data?.subCategories);
         setQuestions(res?.data?.questions || []);
         
         // Set category và subcategory từ API response
+        let currentCategory: CategoryInfo | null = null;
         if (res.data.category) {
           setCategory(res.data.category);
+          currentCategory = res.data.category;
         }
+        
+        // Tìm subcategory hiện tại từ API response
+        let currentSubCategory: SubCategoryInfo | null = null;
         if (res.data.subCategories && res.data.subCategories.length > 0) {
           // Tìm subcategory phù hợp với slug hoặc lấy đầu tiên
-          const matchedSubCategory = res.data.subCategories.find(
+          currentSubCategory = res.data.subCategories.find(
             sub => sub.code === slugParam.split('-')[0] || slugParam.includes(sub.code)
           ) || res.data.subCategories[0];
-          setSubCategory(matchedSubCategory);
+          setSubCategory(currentSubCategory);
+        }
+        
+        // Luôn lấy tất cả subcategories từ slide-fast API để có đầy đủ danh sách
+        // (API getQuestionsBySubCategory chỉ trả về 1 subcategory hiện tại)
+        try {
+          const slideFastRes = await categoryApiService.getSlideFast();
+          if (slideFastRes.data?.fullData?.categoriesSlide && currentCategory) {
+            // Tìm category phù hợp với category hiện tại
+            const matchedCategory = slideFastRes.data.fullData.categoriesSlide.find(
+              cat => cat.id === currentCategory.id
+            );
+            if (matchedCategory && matchedCategory.subCategoriesSlide && matchedCategory.subCategoriesSlide.length > 0) {
+              // Convert SubCategoriesSlide sang SubCategoryInfo format
+              const subCategoriesInfo: SubCategoryInfo[] = matchedCategory.subCategoriesSlide.map(sub => ({
+                code: sub.code,
+                id: sub.id,
+                title: sub.title,
+                iconUrl: sub.icon || '',
+                categoryId: sub.categoryId,
+                categoryTitle: sub.categoryTitle,
+                isPayment: sub.isPayment || false,
+              }));
+              setSubCategories(subCategoriesInfo);
+              console.log('🔍 Set subCategories from slide-fast:', subCategoriesInfo);
+              
+              // Nếu chưa có currentSubCategory, tìm từ danh sách này
+              if (!currentSubCategory) {
+                const matchedSubCategory = subCategoriesInfo.find(
+                  sub => sub.code === slugParam.split('-')[0] || slugParam.includes(sub.code)
+                ) || subCategoriesInfo[0];
+                if (matchedSubCategory) {
+                  setSubCategory(matchedSubCategory);
+                }
+              }
+            }
+          }
+        } catch (slideFastError) {
+          console.error('❌ Error fetching slide-fast:', slideFastError);
+          // Fallback: Nếu slide-fast fail, dùng subcategories từ API response (nếu có)
+          if (res.data.subCategories && res.data.subCategories.length > 0) {
+            setSubCategories(res.data.subCategories);
+          }
         }
         
         // Bắt đầu đếm thời gian khi tải xong câu hỏi
@@ -710,6 +760,12 @@ const SubCategoryQuizPage: React.FC = () => {
   // Hiển thị màn hình kết quả khi đã nộp bài
   if (isSubmitted) {
     const correctAnswers = calculateCorrectAnswers();
+    console.log('🔍 Rendering QuizResults with:', {
+      subCategories: subCategories,
+      subCategoriesLength: subCategories.length,
+      categoryBackgroundColor: category?.backgroundColor,
+      currentSubCategoryId: subCategory?.id,
+    });
     return (
       <div className="min-h-screen bg-white">
         <QuizHeader 
@@ -721,6 +777,9 @@ const SubCategoryQuizPage: React.FC = () => {
           totalQuestions={questions.length}
           timeSpent={timeSpent}
           onRetry={handleRetry}
+          relatedSubCategories={subCategories}
+          categoryBackgroundColor={category?.backgroundColor}
+          currentSubCategoryId={subCategory?.id}
         />
       </div>
     );
