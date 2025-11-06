@@ -367,6 +367,21 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleSubtitleSuggestionClick = (subtitle: string) => {
+    // Thêm subtitle vào sau keyword hiện tại trong searchQuery (chuyển thành chữ thường)
+    const trimmedQuery = searchQuery.trim();
+    const lowerSubtitle = subtitle.toLowerCase();
+    if (trimmedQuery) {
+      // Nếu đã có keyword, thêm space và subtitle
+      setSearchQuery(`${trimmedQuery} ${lowerSubtitle}`);
+    } else {
+      // Nếu chưa có keyword, chỉ set subtitle
+      setSearchQuery(lowerSubtitle);
+    }
+    // Reset searchByCodeOnly khi user đang typing
+    setSearchByCodeOnly(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
@@ -477,9 +492,7 @@ const HomePage: React.FC = () => {
                       color: item.backgroundColor,
                       border: 'none',
                     }}
-                    onClick={() => {
-                      // Có thể thêm logic click nếu cần
-                    }}
+                    onClick={() => handleSubtitleSuggestionClick(item.subtitle)}
                   >
                     {item.subtitle}
                   </button>
