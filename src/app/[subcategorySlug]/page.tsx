@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
-import UpgradeModal from '@/components/ui/UpgradeModal';
 import { quizBattleApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 
@@ -278,8 +277,6 @@ const SubCategoryQuizPage: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false); // Trạng thái đã nộp bài
   const [startTime, setStartTime] = useState<number | null>(null); // Thời gian bắt đầu làm bài
   const [timeSpent, setTimeSpent] = useState<number>(0); // Thời gian đã làm bài (giây)
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false); // Hiển thị modal nâng cấp
-  const [upgradeModalMessage, setUpgradeModalMessage] = useState<string>(''); // Message cho modal
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Ref để clear interval
   const [essayResults, setEssayResults] = useState<Record<number, boolean>>({}); // Lưu kết quả chấm điểm tự luận
   const [isGradingEssay, setIsGradingEssay] = useState<Record<number, boolean>>({}); // Lưu trạng thái đang chấm điểm tự luận
@@ -319,9 +316,9 @@ const SubCategoryQuizPage: React.FC = () => {
         console.error(e);
         // Kiểm tra HTTP status code 403 và mã lỗi 40300401 - yêu cầu thanh toán
         if (e.response?.status === 403 && e.response?.data?.meta?.code === 40300401) {
-          const errorMessage = e.response?.data?.meta?.message || 'SubCategory này yêu cầu thanh toán. Vui lòng đăng nhập để truy cập nội dung này';
-          setUpgradeModalMessage(errorMessage);
-          setShowUpgradeModal(true);
+          // Redirect trực tiếp đến trang upgrade
+          router.push('/upgrade');
+          return;
         } else {
           setError('Không thể tải câu hỏi, vui lòng thử lại.');
         }
@@ -684,20 +681,6 @@ const SubCategoryQuizPage: React.FC = () => {
         <div className="flex justify-center items-center py-20 pt-32">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
         </div>
-      </div>
-    );
-  }
-
-  // Nếu có modal upgrade thì hiển thị modal, không hiển thị lỗi hay "Không có câu hỏi"
-  if (showUpgradeModal) {
-    return (
-      <div className="min-h-screen bg-white">
-        <QuizHeader />
-        <UpgradeModal 
-          isOpen={showUpgradeModal}
-          onClose={() => setShowUpgradeModal(false)}
-          message={upgradeModalMessage}
-        />
       </div>
     );
   }
