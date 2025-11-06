@@ -179,7 +179,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
             height={48}
             className="h-10 w-auto"
             priority
-            quality={90}
+            quality={95}
+            sizes="120px"
           />
         </Link>
       </div>
@@ -247,6 +248,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                 width={32}
                 height={32}
                 className="w-8 h-8 rounded-full object-cover"
+                sizes="32px"
+                quality={90}
               />
             ) : (
               <Image
@@ -255,6 +258,9 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                 width={32}
                 height={32}
                 className="w-8 h-8 opacity-30"
+                priority
+                quality={100}
+                sizes="32px"
               />
             )}
           </button>

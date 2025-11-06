@@ -30,7 +30,8 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ subject, onClick }) => {
               height={64}
               className="opacity-80"
               loading="lazy"
-              quality={85}
+              quality={90}
+              sizes="64px"
             />
           </div>
         )}

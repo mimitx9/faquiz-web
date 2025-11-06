@@ -76,7 +76,7 @@ export default function Avatar({
           className="object-cover"
           onError={() => setImageError(true)}
           sizes={`${sizeMap[size]}px`}
-          quality={85}
+          quality={90}
         />
       </div>
     );

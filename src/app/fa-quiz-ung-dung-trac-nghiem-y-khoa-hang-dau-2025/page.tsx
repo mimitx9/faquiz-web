@@ -113,6 +113,9 @@ export default function FAQuizLandingPage() {
                       width={600}
                       height={186}
                       className="w-full h-auto rounded-lg hover:opacity-90 transition-opacity"
+                      priority
+                      quality={90}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   </Link>
                 </figure>
@@ -124,6 +127,9 @@ export default function FAQuizLandingPage() {
                       width={600}
                       height={186}
                       className="w-full h-auto rounded-lg hover:opacity-90 transition-opacity"
+                      priority
+                      quality={90}
+                      sizes="(max-width: 768px) 100vw, 50vw"
                     />
                   </Link>
                 </figure>

@@ -59,8 +59,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelect
             onLoadingComplete={handleImageLoad}
             referrerPolicy="no-referrer"
             priority={priority}
-            sizes="(max-width: 640px) 200px, (max-width: 1024px) 240px, 200px"
-            quality={85}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            quality={90}
+            loading={priority ? "eager" : "lazy"}
           />
         </div>
       )}
