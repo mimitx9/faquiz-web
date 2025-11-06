@@ -590,37 +590,63 @@ const HomePage: React.FC = () => {
           </>
         ) : (
           <>
-
-          {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
-          {filteredCategories.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredCategories.slice(0, 8).map((category, index) => {
-                  // Đảm bảo backgroundColor được truyền đúng
-                  if (!category.backgroundColor) {
-                    console.warn(`Category ${category.id} missing backgroundColor`);
-                  }
-                  // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
-                  const isPriority = index < 5;
-                  return (
-                    <CategoryCard
-                      key={category.id}
-                      category={category}
-                      onClick={() => handleCategoryClick(category)}
-                      priority={isPriority}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
-            {filteredSubCategories.length > 0 && (
-              <div className="my-24">
-                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+            {/* GẦN ĐÂY Section - Hiển thị top10RecentSubCategories khi không có search */}
+            {top10RecentSubCategories.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {top10RecentSubCategories.slice(0, 8).map((subCategory) => {
+                    const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
+                    const enrichedSub = {
+                      ...subCategory,
+                      icon: subCategory.icon || iconFromMap || undefined,
+                    };
+                    return (
+                      <SubCategoryCard
+                        key={subCategory.id}
+                        subCategory={{
+                          ...enrichedSub,
+                          backgroundColor: categoryColorMap.colorMap.get(subCategory.id) || undefined,
+                        }}
+                        onClick={() => handleSubCategoryClick(enrichedSub)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
+            {filteredCategories.length > 0 && (
+              <div className="my-24">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredCategories.slice(0, 8).map((category, index) => {
+                    // Đảm bảo backgroundColor được truyền đúng
+                    if (!category.backgroundColor) {
+                      console.warn(`Category ${category.id} missing backgroundColor`);
+                    }
+                    // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
+                    const isPriority = index < 5;
+                    return (
+                      <CategoryCard
+                        key={category.id}
+                        category={category}
+                        onClick={() => handleCategoryClick(category)}
+                        priority={isPriority}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
+            {filteredSubCategories.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-md text-gray-300 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {filteredSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {
                       ...subCategory,
