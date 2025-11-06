@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
-import { quizBattleApiService, categoryApiService } from '@/lib/api';
+import { quizBattleApiService, categoryApiService, faquizApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 
 const COMMENT_MESSAGE_SUCCESS = [
@@ -695,8 +695,27 @@ const SubCategoryQuizPage: React.FC = () => {
     }
     setIsSubmitted(true);
     // Tính toán thời gian cuối cùng
+    let finalTimeSpent = timeSpent;
     if (startTime) {
-      setTimeSpent(Math.floor((Date.now() - startTime) / 1000));
+      finalTimeSpent = Math.floor((Date.now() - startTime) / 1000);
+      setTimeSpent(finalTimeSpent);
+    }
+    
+    // Gọi API submit quiz (async, không cần quan tâm response)
+    const correctAnswers = calculateCorrectAnswers();
+    const quizDuration = questions.length * 15; // Số câu x 15 giây (giống như trong QuizHeader)
+    
+    if (category?.code && subCategory?.code) {
+      faquizApiService.submitQuiz({
+        totalCorrect: correctAnswers,
+        totalQuestion: questions.length,
+        subCategoryCode: subCategory.code,
+        quizDuration: quizDuration,
+        endDuration: finalTimeSpent,
+        categoryCode: category.code,
+      });
+    } else {
+      console.warn('⚠️ Cannot submit quiz: missing category or subCategory code');
     }
   };
 

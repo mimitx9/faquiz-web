@@ -27,6 +27,7 @@ const HomePage: React.FC = () => {
   const subtitleScrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [appliedSubtitleFilter, setAppliedSubtitleFilter] = useState<{ subtitle: string; backgroundColor: string } | null>(null);
 
   const scrollSubtitleSuggestions = (direction: 'left' | 'right') => {
     if (!subtitleScrollRef.current) return;
@@ -101,55 +102,90 @@ const HomePage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Đóng split-screen khi searchQuery thay đổi
+  // Đóng split-screen khi searchQuery thay đổi hoặc khi filter được apply/remove
   useEffect(() => {
     setSelectedCategory(null);
     // Reset searchByCodeOnly khi searchQuery thay đổi (trừ khi user vừa nhấn Enter)
     if (!searchQuery.trim()) {
       setSearchByCodeOnly(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, appliedSubtitleFilter]);
 
   // Tìm kiếm trong fullData theo code và title của category
   // Nếu searchByCodeOnly = true, chỉ tìm theo code (logic cũ)
   // Nếu searchByCodeOnly = false, tìm theo cả code và title
+  // Nếu có appliedSubtitleFilter, filter theo subtitle đó
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
+    let baseCategories: CategoriesSlide[] = [];
+
+    // Nếu có subtitle filter được apply, filter theo subtitle đó
+    if (appliedSubtitleFilter) {
+      fullData.forEach((category) => {
+        if (category.subtitle === appliedSubtitleFilter.subtitle) {
+          baseCategories.push(category);
+        }
+      });
+    } else if (!searchQuery.trim()) {
       return top10Categories;
-    }
-
-    // Chuẩn hóa keyword: convert tiếng Việt về không dấu, loại bỏ space
-    const normalizedKeyword = normalizeSearchKeyword(searchQuery);
-    
-    if (!normalizedKeyword) {
-      return top10Categories;
-    }
-
-    const results: CategoriesSlide[] = [];
-
-    fullData.forEach((category) => {
-      // Tìm kiếm theo code của category (match chính xác hoặc match dạng {keyword}-*)
-      // Ví dụ: tìm "GiaiPhau" sẽ match với "GiaiPhau", "GiaiPhau-HMU", "GiaiPhau-YDN", "GiaiPhau-TUMP"
-      const matchesCode = category.code && matchesCategoryCode(category.code, normalizedKeyword);
+    } else {
+      // Chuẩn hóa keyword: convert tiếng Việt về không dấu, loại bỏ space
+      const normalizedKeyword = normalizeSearchKeyword(searchQuery);
       
-      // Nếu searchByCodeOnly = true, chỉ tìm theo code (logic cũ khi nhấn Enter)
-      if (searchByCodeOnly) {
-        if (matchesCode) {
-          results.push(category);
-        }
-      } else {
-        // Tìm kiếm theo title của category (wild card matching) - chỉ khi đang typing
-        const matchesTitle = category.title && matchesCategoryTitle(category.title, normalizedKeyword);
-        
-        if (matchesCode || matchesTitle) {
-          // Trả về category với tất cả subcategories của nó
-          results.push(category);
-        }
+      if (!normalizedKeyword) {
+        return top10Categories;
       }
-    });
 
-    return results;
-  }, [searchQuery, searchByCodeOnly, top10Categories, fullData]);
+      fullData.forEach((category) => {
+        // Tìm kiếm theo code của category (match chính xác hoặc match dạng {keyword}-*)
+        // Ví dụ: tìm "GiaiPhau" sẽ match với "GiaiPhau", "GiaiPhau-HMU", "GiaiPhau-YDN", "GiaiPhau-TUMP"
+        const matchesCode = category.code && matchesCategoryCode(category.code, normalizedKeyword);
+        
+        // Nếu searchByCodeOnly = true, chỉ tìm theo code (logic cũ khi nhấn Enter)
+        if (searchByCodeOnly) {
+          if (matchesCode) {
+            baseCategories.push(category);
+          }
+        } else {
+          // Tìm kiếm theo title của category (wild card matching) - chỉ khi đang typing
+          const matchesTitle = category.title && matchesCategoryTitle(category.title, normalizedKeyword);
+          
+          if (matchesCode || matchesTitle) {
+            // Trả về category với tất cả subcategories của nó
+            baseCategories.push(category);
+          }
+        }
+      });
+    }
+
+    // Nếu có cả searchQuery và subtitle filter, filter thêm theo searchQuery
+    if (appliedSubtitleFilter && searchQuery.trim()) {
+      const normalizedKeyword = normalizeSearchKeyword(searchQuery);
+      
+      if (normalizedKeyword) {
+        const filtered: CategoriesSlide[] = [];
+        
+        baseCategories.forEach((category) => {
+          const matchesCode = category.code && matchesCategoryCode(category.code, normalizedKeyword);
+          
+          if (searchByCodeOnly) {
+            if (matchesCode) {
+              filtered.push(category);
+            }
+          } else {
+            const matchesTitle = category.title && matchesCategoryTitle(category.title, normalizedKeyword);
+            
+            if (matchesCode || matchesTitle) {
+              filtered.push(category);
+            }
+          }
+        });
+        
+        return filtered;
+      }
+    }
+
+    return baseCategories;
+  }, [searchQuery, searchByCodeOnly, top10Categories, fullData, appliedSubtitleFilter]);
 
   // Tạo suggestions cho auto complete dựa trên title của categories
   const autoCompleteSuggestions = useMemo(() => {
@@ -189,15 +225,15 @@ const HomePage: React.FC = () => {
     }));
   }, [searchQuery, fullData]);
 
-  // Khi có searchQuery, không hiển thị subcategories riêng lẻ
+  // Khi có searchQuery hoặc đang áp dụng subtitle filter, không hiển thị subcategories riêng lẻ
   // Subcategories sẽ được hiển thị bên trong categories đã match
   const filteredSubCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && !appliedSubtitleFilter) {
       return top10SubCategories;
     }
     // Khi có searchQuery, không trả về subcategories riêng lẻ
     return [];
-  }, [searchQuery, top10SubCategories]);
+  }, [searchQuery, top10SubCategories, appliedSubtitleFilter]);
 
   // Tạo map để lấy backgroundColor và icon từ category cha cho subcategories
   const categoryColorMap = useMemo(() => {
@@ -240,8 +276,14 @@ const HomePage: React.FC = () => {
     return { colorMap, iconMap };
   }, [fullData, top10Categories]);
 
-  // Lấy danh sách subtitle unique từ filteredCategories khi có searchQuery
+  // Lấy danh sách subtitle unique từ filteredCategories khi có searchQuery hoặc khi không có filter
   const subtitleSuggestions = useMemo(() => {
+    // Nếu đã có filter được apply, không hiển thị suggestions
+    if (appliedSubtitleFilter) {
+      return [];
+    }
+
+    // Nếu không có searchQuery, không hiển thị suggestions
     if (!searchQuery.trim()) {
       return [];
     }
@@ -249,7 +291,8 @@ const HomePage: React.FC = () => {
     // Tạo map để tránh duplicate subtitle và giữ backgroundColor
     const subtitleMap = new Map<string, string>();
     
-    filteredCategories.forEach((category) => {
+    // Lấy từ fullData để có đầy đủ subtitle options
+    fullData.forEach((category) => {
       if (category.subtitle && category.backgroundColor) {
         // Bỏ qua subtitle "Tổng hợp"
         if (category.subtitle === 'Tổng hợp') {
@@ -267,7 +310,7 @@ const HomePage: React.FC = () => {
       subtitle,
       backgroundColor,
     }));
-  }, [searchQuery, filteredCategories]);
+  }, [searchQuery, fullData, appliedSubtitleFilter]);
 
   // Lắng nghe sự kiện scroll và cập nhật trạng thái nút
   useEffect(() => {
@@ -367,19 +410,19 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleSubtitleSuggestionClick = (subtitle: string) => {
-    // Thêm subtitle vào sau keyword hiện tại trong searchQuery (chuyển thành chữ thường)
-    const trimmedQuery = searchQuery.trim();
-    const lowerSubtitle = subtitle.toLowerCase();
-    if (trimmedQuery) {
-      // Nếu đã có keyword, thêm space và subtitle
-      setSearchQuery(`${trimmedQuery} ${lowerSubtitle}`);
-    } else {
-      // Nếu chưa có keyword, chỉ set subtitle
-      setSearchQuery(lowerSubtitle);
-    }
-    // Reset searchByCodeOnly khi user đang typing
+  const handleSubtitleSuggestionClick = (subtitle: string, backgroundColor: string) => {
+    // Apply filter theo subtitle (không thêm vào searchQuery)
+    setAppliedSubtitleFilter({ subtitle, backgroundColor });
+    // Reset searchByCodeOnly khi apply filter
     setSearchByCodeOnly(false);
+    // Clear input để sẵn sàng user nhập mới
+    setSearchQuery('');
+  };
+
+  const handleRemoveSubtitleFilter = () => {
+    setAppliedSubtitleFilter(null);
+    // Trở về giao diện home bình thường
+    setSearchQuery('');
   };
 
   if (loading) {
@@ -428,7 +471,41 @@ const HomePage: React.FC = () => {
             suggestions={autoCompleteSuggestions}
           />
 
-          {/* Subtitle Suggestions - Hiển thị khi có kết quả search */}
+          {/* Applied Subtitle Filter Badge */}
+          {appliedSubtitleFilter && (
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full relative"
+                style={{
+                  backgroundColor: hexToRgba(appliedSubtitleFilter.backgroundColor, 0.1),
+                  color: appliedSubtitleFilter.backgroundColor,
+                }}
+              >
+                <span className="text-lg font-medium pr-2">{appliedSubtitleFilter.subtitle}</span>
+                <button
+                  onClick={handleRemoveSubtitleFilter}
+                  className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-black/10 transition-colors"
+                  aria-label="Remove filter"
+                  style={{ color: appliedSubtitleFilter.backgroundColor }}
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Subtitle Suggestions - Hiển thị khi có kết quả search và chưa có filter */}
           {subtitleSuggestions.length > 0 && (
             <div className="relative mb-12">
               {/* Left scroll button - chỉ hiện khi đã scroll sang phải */}
@@ -492,7 +569,7 @@ const HomePage: React.FC = () => {
                       color: item.backgroundColor,
                       border: 'none',
                     }}
-                    onClick={() => handleSubtitleSuggestionClick(item.subtitle)}
+                    onClick={() => handleSubtitleSuggestionClick(item.subtitle, item.backgroundColor)}
                   >
                     {item.subtitle}
                   </button>
@@ -556,8 +633,8 @@ const HomePage: React.FC = () => {
         ) : (
           <>
             {/* Normal layout khi không có selectedCategory */}
-            {/* Hiển thị kết quả tìm kiếm từ fullData khi có searchQuery */}
-            {searchQuery.trim() ? (
+            {/* Hiển thị kết quả tìm kiếm từ fullData khi có searchQuery hoặc khi có filter subtitle */}
+            {(searchQuery.trim() || appliedSubtitleFilter) ? (
           <>
             {/* Hiển thị subcategories từ kết quả tìm kiếm */}
             {filteredSubCategories.length > 0 && (
@@ -683,7 +760,7 @@ const HomePage: React.FC = () => {
         )}
 
             {/* No results message */}
-            {searchQuery.trim() && filteredCategories.length === 0 && filteredSubCategories.length === 0 && (
+            {(searchQuery.trim() || appliedSubtitleFilter) && filteredCategories.length === 0 && filteredSubCategories.length === 0 && (
               <div className="text-center py-20">
                 <p className="text-gray-500">Không tìm thấy kết quả nào cho "{searchQuery}"</p>
               </div>
