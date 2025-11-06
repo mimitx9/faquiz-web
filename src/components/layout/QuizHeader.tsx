@@ -16,6 +16,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
   const { user, isInitialized, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isTimerEnabled, setIsTimerEnabled] = useState(false);
+  const [isPracticeEnabled, setIsPracticeEnabled] = useState(false); // Ôn thi on/off
   const [remainingTime, setRemainingTime] = useState<number>(0); // Thời gian còn lại (giây)
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,6 +35,10 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       const savedTimerSetting = localStorage.getItem('timer_enabled');
       const enabled = savedTimerSetting === 'true';
       setIsTimerEnabled(enabled);
+      // Load practice (Ôn thi) setting
+      const savedPracticeSetting = localStorage.getItem('practice_enabled');
+      const practice = savedPracticeSetting === 'true';
+      setIsPracticeEnabled(practice);
     }
   }, []);
 
@@ -122,6 +127,14 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
     setIsTimerEnabled(newValue);
     if (typeof window !== 'undefined') {
       localStorage.setItem('timer_enabled', String(newValue));
+    }
+  };
+
+  const handlePracticeToggle = () => {
+    const newValue = !isPracticeEnabled;
+    setIsPracticeEnabled(newValue);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('practice_enabled', String(newValue));
     }
   };
 
@@ -291,6 +304,26 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                         isTimerEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Ôn thi on/off */}
+                <div className="flex items-center justify-between px-4 py-2 text-black transition-colors">
+                  <span className="text-sm">Ôn thi</span>
+                  <button
+                    onClick={handlePracticeToggle}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      isPracticeEnabled ? '' : 'bg-gray-300'
+                    }`}
+                    style={{
+                      backgroundColor: isPracticeEnabled ? '#10B981' : undefined,
+                    }}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        isPracticeEnabled ? 'translate-x-6' : 'translate-x-1'
                       }`}
                     />
                   </button>

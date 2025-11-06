@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import Image from 'next/image';
+import Markdown from '@/components/common/Markdown';
 import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
@@ -820,24 +821,137 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
         )}
 
-        {/* Quote giải thích tham khảo */}
-        {verified && (question.detailAnswer && question.detailAnswer.trim().length > 0) && (
-          <div className="mb-6">
-            <div className="flex items-start gap-3">
-              <div className="w-1.5 self-stretch" style={{ backgroundColor: '#8D7EF7' }} />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="text-sm mb-2">
-                    <span className="font-semibold" style={{ color: '#8D7EF7' }}>Quiz thông thái</span>
-                    <span className="opacity-30" style={{ color: '#8D7EF7' }}>&nbsp; › &nbsp;Giải thích tham khảo</span>
+        {/* Giải thích tham khảo + ảnh detailImg của đáp án đúng (nếu có) cho câu trắc nghiệm */}
+        {verified && (
+          (() => {
+            const correctDetailImg = !questionIsEssay
+              ? question.options?.find(opt => opt.isCorrect && (opt as any)?.extraData?.detailImg)?.extraData?.detailImg
+              : undefined;
+            const hasDetailAnswer = !!(question.detailAnswer && question.detailAnswer.trim().length > 0);
+            if (!hasDetailAnswer && !correctDetailImg) return null;
+            const correctOptionText = !questionIsEssay
+              ? (question.options?.find(opt => opt.isCorrect)?.text || '')
+              : '';
+            const normalize = (s: string) => (s || '').trim().toLowerCase();
+            const useVerifiedGreen = !question.isReference && hasDetailAnswer && normalize(question.detailAnswer) !== normalize(correctOptionText);
+            const accentColor = useVerifiedGreen ? '#00C800' : '#8D7EF7';
+            const quizLabel = useVerifiedGreen ? 'Quiz cục súc' : 'Quiz thông thái';
+            const subtitleLabel = useVerifiedGreen ? 'Đã kiểm chứng' : 'Giải thích tham khảo';
+            // Nếu có ảnh detail của đáp án đúng thì hiển thị dạng 2 cột: trái giải thích, phải ảnh
+            if (correctDetailImg) {
+              return (
+                <div className="mb-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                    {/* Cột trái: giải thích */}
+                    <div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-1.5 self-stretch" style={{ backgroundColor: accentColor }} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="text-sm mb-2">
+                              <span className="font-semibold" style={{ color: accentColor }}>{quizLabel}</span>
+                              <span className="opacity-30 inline-flex items-center gap-1" style={{ color: accentColor }}>
+                                &nbsp; › &nbsp;
+                                {useVerifiedGreen && (
+                                  <span className="inline-flex items-center justify-center w-[14px] h-[14px] rounded-full" style={{ backgroundColor: accentColor }}>
+                                    <svg
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 20 20"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="inline-block align-middle"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        clipRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        fill="#FFFFFF"
+                                      />
+                                    </svg>
+                                  </span>
+                                )}
+                                {subtitleLabel}
+                              </span>
+                            </div>
+                          </div>
+                          {hasDetailAnswer && (
+                            <Markdown
+                              content={question.detailAnswer}
+                              className="text-gray-800 leading-relaxed text-lg"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Cột phải: ảnh detail của đáp án đúng */}
+                    <div className="flex items-start">
+                      <div className="relative w-full aspect-video">
+                        <Image
+                          src={correctDetailImg}
+                          alt="Giải thích minh hoạ"
+                          fill
+                          className="object-contain rounded-lg shadow-sm"
+                          onError={(e) => {
+                            console.error('Failed to load detail image:', correctDetailImg);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          loading="lazy"
+                          sizes="(max-width: 1024px) 100vw, 50vw"
+                          quality={85}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="text-gray-800 leading-relaxed text-lg">
-                  {question.detailAnswer}
+              );
+            }
+            // Mặc định: chỉ có giải thích (không có ảnh)
+            if (hasDetailAnswer) {
+              return (
+                <div className="mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 self-stretch" style={{ backgroundColor: accentColor }} />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="text-sm mb-2">
+                          <span className="font-semibold" style={{ color: accentColor }}>{quizLabel}</span>
+                          <span className="opacity-30 inline-flex items-center gap-1" style={{ color: accentColor }}>
+                            &nbsp; › &nbsp;
+                            {useVerifiedGreen && (
+                              <span className="inline-flex items-center justify-center w-[14px] h-[14px] rounded-full" style={{ backgroundColor: accentColor }}>
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 20 20"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="inline-block align-middle"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    clipRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    fill="#FFFFFF"
+                                  />
+                                </svg>
+                              </span>
+                            )}
+                            {subtitleLabel}
+                          </span>
+                        </div>
+                      </div>
+                      <Markdown
+                        content={question.detailAnswer}
+                        className="text-gray-800 leading-relaxed text-lg"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              );
+            }
+            return null;
+          })()
         )}
 
         {questionIsEssay ? (

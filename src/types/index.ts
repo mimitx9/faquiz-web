@@ -28,29 +28,6 @@ export interface RegisterRequest {
     universityId: number;
 }
 
-// Global ranking info for user profiles
-export interface GlobalRank {
-    userId: number;
-    url: string;
-    title: string;
-    color: string;
-    level: number;
-    levelId: number;
-    extraData?: {
-        currentCountAchieve?: number;
-        currentCountLose?: number;
-        currentCountWin?: number;
-        nextRank?: {
-            url: string;
-            title: string;
-            color: string;
-            level: number;
-            levelId: number;
-        };
-        targetNextLevel?: number;
-        userRanking?: number;
-    };
-}
 
 // Subject type used by SubjectCard and subject lists
 export interface Subject {
@@ -188,6 +165,7 @@ export interface Question {
     detailAnswer: string;
     needDetail: boolean;
     isPaymentRequired: boolean;
+    isReference: boolean;
     extraData: {
         categorySubCode?: string;
         categorySubTitle?: string;

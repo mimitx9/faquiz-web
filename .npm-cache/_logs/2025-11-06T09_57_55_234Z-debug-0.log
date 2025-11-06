@@ -1,0 +1,1534 @@
+0 verbose cli /opt/homebrew/Cellar/node/21.6.2_1/bin/node /opt/homebrew/bin/npm
+1 info using npm@10.5.0
+2 info using node@v21.6.2
+3 timing npm:load:whichnode Completed in 1ms
+4 timing config:load:defaults Completed in 1ms
+5 timing config:load:file:/opt/homebrew/lib/node_modules/npm/npmrc Completed in 1ms
+6 timing config:load:builtin Completed in 1ms
+7 timing config:load:cli Completed in 1ms
+8 timing config:load:env Completed in 0ms
+9 timing config:load:file:/Users/duc/Desktop/faquiz-web/.npmrc Completed in 0ms
+10 timing config:load:project Completed in 0ms
+11 timing config:load:file:/Users/duc/.npmrc Completed in 0ms
+12 timing config:load:user Completed in 0ms
+13 timing config:load:file:/opt/homebrew/etc/npmrc Completed in 1ms
+14 timing config:load:global Completed in 1ms
+15 timing config:load:setEnvs Completed in 0ms
+16 timing config:load Completed in 5ms
+17 timing npm:load:configload Completed in 5ms
+18 timing config:load:flatten Completed in 1ms
+19 timing npm:load:mkdirpcache Completed in 1ms
+20 timing npm:load:mkdirplogs Completed in 0ms
+21 verbose title npm install react-markdown remark-gfm
+22 verbose argv "install" "react-markdown" "remark-gfm"
+23 timing npm:load:setTitle Completed in 0ms
+24 timing npm:load:display Completed in 1ms
+25 verbose logfile logs-max:10 dir:/Users/duc/Desktop/faquiz-web/.npm-cache/_logs/2025-11-06T09_57_55_234Z-
+26 verbose logfile /Users/duc/Desktop/faquiz-web/.npm-cache/_logs/2025-11-06T09_57_55_234Z-debug-0.log
+27 timing npm:load:logFile Completed in 3ms
+28 timing npm:load:timers Completed in 0ms
+29 timing npm:load:configScope Completed in 0ms
+30 timing npm:load Completed in 17ms
+31 timing arborist:ctor Completed in 1ms
+32 silly logfile done cleaning log files
+33 timing idealTree:init Completed in 70ms
+34 timing idealTree:userRequests Completed in 0ms
+35 silly idealTree buildDeps
+36 silly fetch manifest react-markdown@*
+37 timing arborist:ctor Completed in 0ms
+38 http fetch GET 200 https://registry.npmjs.org/react-markdown 370ms (cache miss)
+39 silly fetch manifest @types/react@^18.2.0
+40 http fetch GET 200 https://registry.npmjs.org/npm 521ms
+41 http fetch GET 200 https://registry.npmjs.org/@types%2freact 374ms (cache miss)
+42 silly fetch manifest react@^18.2.0
+43 http fetch GET 200 https://registry.npmjs.org/react 622ms (cache miss)
+44 silly fetch manifest remark-gfm@*
+45 http fetch GET 200 https://registry.npmjs.org/remark-gfm 145ms (cache miss)
+46 silly placeDep ROOT react-markdown@10.1.0 OK for: faquiz-web@0.1.0 want: *
+47 silly placeDep ROOT remark-gfm@4.0.1 OK for: faquiz-web@0.1.0 want: *
+48 silly fetch manifest @types/hast@^3.0.0
+49 silly fetch manifest @types/mdast@^4.0.0
+50 silly fetch manifest devlop@^1.0.0
+51 silly fetch manifest hast-util-to-jsx-runtime@^2.0.0
+52 silly fetch manifest html-url-attributes@^3.0.0
+53 silly fetch manifest mdast-util-to-hast@^13.0.0
+54 silly fetch manifest remark-parse@^11.0.0
+55 silly fetch manifest remark-rehype@^11.0.0
+56 silly fetch manifest unified@^11.0.0
+57 silly fetch manifest unist-util-visit@^5.0.0
+58 silly fetch manifest vfile@^6.0.0
+59 http fetch GET 200 https://registry.npmjs.org/@types%2fhast 170ms (cache miss)
+60 http fetch GET 200 https://registry.npmjs.org/@types%2fmdast 206ms (cache miss)
+61 silly fetch manifest mdast-util-gfm@^3.0.0
+62 silly fetch manifest micromark-extension-gfm@^3.0.0
+63 http fetch GET 200 https://registry.npmjs.org/remark-parse 310ms (cache miss)
+64 silly fetch manifest remark-stringify@^11.0.0
+65 http fetch GET 200 https://registry.npmjs.org/unist-util-visit 346ms (cache miss)
+66 http fetch GET 200 https://registry.npmjs.org/remark-rehype 349ms (cache miss)
+67 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm 146ms (cache miss)
+68 http fetch GET 200 https://registry.npmjs.org/devlop 374ms (cache miss)
+69 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm 173ms (cache miss)
+70 http fetch GET 200 https://registry.npmjs.org/hast-util-to-jsx-runtime 381ms (cache miss)
+71 http fetch GET 200 https://registry.npmjs.org/vfile 409ms (cache miss)
+72 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-hast 440ms (cache miss)
+73 http fetch GET 200 https://registry.npmjs.org/unified 442ms (cache miss)
+74 http fetch GET 200 https://registry.npmjs.org/html-url-attributes 444ms (cache miss)
+75 http fetch GET 200 https://registry.npmjs.org/remark-stringify 153ms (cache miss)
+76 timing idealTree:#root Completed in 2056ms
+77 silly placeDep ROOT @types/hast@3.0.4 OK for: react-markdown@10.1.0 want: ^3.0.0
+78 silly placeDep ROOT @types/mdast@4.0.4 OK for: react-markdown@10.1.0 want: ^4.0.0
+79 silly placeDep ROOT devlop@1.1.0 OK for: react-markdown@10.1.0 want: ^1.0.0
+80 silly placeDep ROOT hast-util-to-jsx-runtime@2.3.6 OK for: react-markdown@10.1.0 want: ^2.0.0
+81 silly placeDep ROOT html-url-attributes@3.0.1 OK for: react-markdown@10.1.0 want: ^3.0.0
+82 silly placeDep ROOT mdast-util-to-hast@13.2.0 OK for: react-markdown@10.1.0 want: ^13.0.0
+83 silly placeDep ROOT remark-parse@11.0.0 OK for: react-markdown@10.1.0 want: ^11.0.0
+84 silly placeDep ROOT remark-rehype@11.1.2 OK for: react-markdown@10.1.0 want: ^11.0.0
+85 silly placeDep ROOT unified@11.0.5 OK for: react-markdown@10.1.0 want: ^11.0.0
+86 silly placeDep ROOT unist-util-visit@5.0.0 OK for: react-markdown@10.1.0 want: ^5.0.0
+87 silly placeDep ROOT vfile@6.0.3 OK for: react-markdown@10.1.0 want: ^6.0.0
+88 silly fetch manifest @types/unist@*
+89 silly fetch manifest dequal@^2.0.0
+90 silly fetch manifest @types/estree@^1.0.0
+91 silly fetch manifest @types/unist@^3.0.0
+92 silly fetch manifest comma-separated-tokens@^2.0.0
+93 silly fetch manifest estree-util-is-identifier-name@^3.0.0
+94 silly fetch manifest hast-util-whitespace@^3.0.0
+95 silly fetch manifest mdast-util-mdx-expression@^2.0.0
+96 silly fetch manifest mdast-util-mdx-jsx@^3.0.0
+97 silly fetch manifest mdast-util-mdxjs-esm@^2.0.0
+98 http fetch GET 200 https://registry.npmjs.org/dequal 130ms (cache miss)
+99 silly fetch manifest property-information@^7.0.0
+100 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdxjs-esm 158ms (cache miss)
+101 silly fetch manifest space-separated-tokens@^2.0.0
+102 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdx-jsx 160ms (cache miss)
+103 silly fetch manifest style-to-js@^1.0.0
+104 http fetch GET 200 https://registry.npmjs.org/comma-separated-tokens 165ms (cache miss)
+105 silly fetch manifest unist-util-position@^5.0.0
+106 http fetch GET 200 https://registry.npmjs.org/hast-util-whitespace 177ms (cache miss)
+107 silly fetch manifest vfile-message@^4.0.0
+108 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdx-expression 184ms (cache miss)
+109 silly fetch manifest micromark-util-sanitize-uri@^2.0.0
+110 http fetch GET 200 https://registry.npmjs.org/estree-util-is-identifier-name 200ms (cache miss)
+111 silly fetch manifest trim-lines@^3.0.0
+112 http fetch GET 200 https://registry.npmjs.org/@types%2funist 204ms (cache miss)
+113 silly fetch manifest mdast-util-from-markdown@^2.0.0
+114 http fetch GET 200 https://registry.npmjs.org/@types%2funist 207ms (cache miss)
+115 silly fetch manifest micromark-util-types@^2.0.0
+116 http fetch GET 200 https://registry.npmjs.org/@types%2festree 223ms (cache miss)
+117 silly fetch manifest bail@^2.0.0
+118 http fetch GET 200 https://registry.npmjs.org/space-separated-tokens 134ms (cache miss)
+119 silly fetch manifest extend@^3.0.0
+120 http fetch GET 200 https://registry.npmjs.org/property-information 167ms (cache miss)
+121 silly fetch manifest is-plain-obj@^4.0.0
+122 http fetch GET 200 https://registry.npmjs.org/style-to-js 145ms (cache miss)
+123 silly fetch manifest trough@^2.0.0
+124 http fetch GET 200 https://registry.npmjs.org/unist-util-position 155ms (cache miss)
+125 silly fetch manifest unist-util-is@^6.0.0
+126 silly fetch manifest unist-util-visit-parents@^6.0.0
+127 http fetch GET 200 https://registry.npmjs.org/trim-lines 122ms (cache miss)
+128 http fetch GET 200 https://registry.npmjs.org/micromark-util-sanitize-uri 139ms (cache miss)
+129 http fetch GET 200 https://registry.npmjs.org/vfile-message 185ms (cache miss)
+130 http fetch GET 200 https://registry.npmjs.org/mdast-util-from-markdown 159ms (cache miss)
+131 http fetch GET 200 https://registry.npmjs.org/micromark-util-types 159ms (cache miss)
+132 http fetch GET 200 https://registry.npmjs.org/bail 176ms (cache miss)
+133 http fetch GET 200 https://registry.npmjs.org/extend 143ms (cache miss)
+134 http fetch GET 200 https://registry.npmjs.org/unist-util-is 119ms (cache miss)
+135 http fetch GET 200 https://registry.npmjs.org/is-plain-obj 156ms (cache miss)
+136 http fetch GET 200 https://registry.npmjs.org/unist-util-visit-parents 136ms (cache miss)
+137 http fetch GET 200 https://registry.npmjs.org/trough 151ms (cache miss)
+138 timing idealTree:node_modules/react-markdown Completed in 466ms
+139 silly placeDep ROOT @types/unist@3.0.3 OK for: @types/hast@3.0.4 want: *
+140 timing idealTree:node_modules/@types/hast Completed in 1ms
+141 timing idealTree:node_modules/@types/mdast Completed in 0ms
+142 timing idealTree:node_modules/@types/unist Completed in 0ms
+143 silly placeDep ROOT dequal@2.0.3 OK for: devlop@1.1.0 want: ^2.0.0
+144 timing idealTree:node_modules/devlop Completed in 1ms
+145 timing idealTree:node_modules/dequal Completed in 0ms
+146 silly placeDep ROOT @types/estree@1.0.8 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^1.0.0
+147 silly placeDep ROOT comma-separated-tokens@2.0.3 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^2.0.0
+148 silly placeDep ROOT estree-util-is-identifier-name@3.0.0 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^3.0.0
+149 silly placeDep ROOT hast-util-whitespace@3.0.0 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^3.0.0
+150 silly placeDep ROOT mdast-util-mdx-expression@2.0.1 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^2.0.0
+151 silly placeDep ROOT mdast-util-mdx-jsx@3.2.0 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^3.0.0
+152 silly placeDep ROOT mdast-util-mdxjs-esm@2.0.1 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^2.0.0
+153 silly placeDep ROOT property-information@7.1.0 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^7.0.0
+154 silly placeDep ROOT space-separated-tokens@2.0.2 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^2.0.0
+155 silly placeDep ROOT style-to-js@1.1.19 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^1.0.0
+156 silly placeDep ROOT unist-util-position@5.0.0 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^5.0.0
+157 silly placeDep ROOT vfile-message@4.0.3 OK for: hast-util-to-jsx-runtime@2.3.6 want: ^4.0.0
+158 silly fetch manifest @types/estree-jsx@^1.0.0
+159 silly fetch manifest mdast-util-to-markdown@^2.0.0
+160 silly fetch manifest ccount@^2.0.0
+161 silly fetch manifest parse-entities@^4.0.0
+162 silly fetch manifest stringify-entities@^4.0.0
+163 silly fetch manifest unist-util-stringify-position@^4.0.0
+164 silly fetch manifest style-to-object@1.0.12
+165 http fetch GET 200 https://registry.npmjs.org/ccount 140ms (cache miss)
+166 http fetch GET 200 https://registry.npmjs.org/parse-entities 152ms (cache miss)
+167 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-markdown 158ms (cache miss)
+168 http fetch GET 200 https://registry.npmjs.org/unist-util-stringify-position 165ms (cache miss)
+169 http fetch GET 200 https://registry.npmjs.org/stringify-entities 178ms (cache miss)
+170 http fetch GET 200 https://registry.npmjs.org/@types%2festree-jsx 178ms (cache miss)
+171 http fetch GET 200 https://registry.npmjs.org/style-to-object 178ms (cache miss)
+172 timing idealTree:node_modules/hast-util-to-jsx-runtime Completed in 186ms
+173 timing idealTree:node_modules/@types/estree Completed in 0ms
+174 timing idealTree:node_modules/comma-separated-tokens Completed in 0ms
+175 timing idealTree:node_modules/estree-util-is-identifier-name Completed in 0ms
+176 timing idealTree:node_modules/hast-util-whitespace Completed in 0ms
+177 timing idealTree:node_modules/html-url-attributes Completed in 0ms
+178 silly placeDep ROOT @types/estree-jsx@1.0.5 OK for: mdast-util-mdx-expression@2.0.1 want: ^1.0.0
+179 silly placeDep ROOT mdast-util-from-markdown@2.0.2 OK for: mdast-util-mdx-expression@2.0.1 want: ^2.0.0
+180 silly placeDep ROOT mdast-util-to-markdown@2.1.2 OK for: mdast-util-mdx-expression@2.0.1 want: ^2.0.0
+181 silly fetch manifest decode-named-character-reference@^1.0.0
+182 silly fetch manifest mdast-util-to-string@^4.0.0
+183 silly fetch manifest micromark@^4.0.0
+184 silly fetch manifest micromark-util-decode-numeric-character-reference@^2.0.0
+185 silly fetch manifest micromark-util-decode-string@^2.0.0
+186 silly fetch manifest micromark-util-normalize-identifier@^2.0.0
+187 silly fetch manifest micromark-util-symbol@^2.0.0
+188 silly fetch manifest longest-streak@^3.0.0
+189 silly fetch manifest mdast-util-phrasing@^4.0.0
+190 silly fetch manifest micromark-util-classify-character@^2.0.0
+191 http fetch GET 200 https://registry.npmjs.org/micromark-util-symbol 146ms (cache miss)
+192 http fetch GET 200 https://registry.npmjs.org/decode-named-character-reference 146ms (cache miss)
+193 silly fetch manifest zwitch@^2.0.0
+194 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-string 157ms (cache miss)
+195 http fetch GET 200 https://registry.npmjs.org/micromark-util-normalize-identifier 158ms (cache miss)
+196 http fetch GET 200 https://registry.npmjs.org/micromark-util-classify-character 157ms (cache miss)
+197 http fetch GET 200 https://registry.npmjs.org/longest-streak 164ms (cache miss)
+198 http fetch GET 200 https://registry.npmjs.org/micromark-util-decode-string 172ms (cache miss)
+199 http fetch GET 200 https://registry.npmjs.org/micromark 181ms (cache miss)
+200 http fetch GET 200 https://registry.npmjs.org/micromark-util-decode-numeric-character-reference 182ms (cache miss)
+201 http fetch GET 200 https://registry.npmjs.org/mdast-util-phrasing 183ms (cache miss)
+202 http fetch GET 200 https://registry.npmjs.org/zwitch 140ms (cache miss)
+203 timing idealTree:node_modules/mdast-util-mdx-expression Completed in 289ms
+204 timing idealTree:node_modules/@types/estree-jsx Completed in 0ms
+205 silly placeDep ROOT decode-named-character-reference@1.2.0 OK for: mdast-util-from-markdown@2.0.2 want: ^1.0.0
+206 silly placeDep ROOT mdast-util-to-string@4.0.0 OK for: mdast-util-from-markdown@2.0.2 want: ^4.0.0
+207 silly placeDep ROOT micromark@4.0.2 OK for: mdast-util-from-markdown@2.0.2 want: ^4.0.0
+208 silly placeDep ROOT micromark-util-decode-numeric-character-reference@2.0.2 OK for: mdast-util-from-markdown@2.0.2 want: ^2.0.0
+209 silly placeDep ROOT micromark-util-decode-string@2.0.1 OK for: mdast-util-from-markdown@2.0.2 want: ^2.0.0
+210 silly placeDep ROOT micromark-util-normalize-identifier@2.0.1 OK for: mdast-util-from-markdown@2.0.2 want: ^2.0.0
+211 silly placeDep ROOT micromark-util-symbol@2.0.1 OK for: mdast-util-from-markdown@2.0.2 want: ^2.0.0
+212 silly placeDep ROOT micromark-util-types@2.0.2 OK for: mdast-util-from-markdown@2.0.2 want: ^2.0.0
+213 silly placeDep ROOT unist-util-stringify-position@4.0.0 OK for: mdast-util-from-markdown@2.0.2 want: ^4.0.0
+214 silly fetch manifest character-entities@^2.0.0
+215 silly fetch manifest @types/debug@^4.0.0
+216 silly fetch manifest micromark-core-commonmark@^2.0.0
+217 silly fetch manifest micromark-factory-space@^2.0.0
+218 silly fetch manifest micromark-util-character@^2.0.0
+219 silly fetch manifest micromark-util-chunked@^2.0.0
+220 silly fetch manifest micromark-util-combine-extensions@^2.0.0
+221 silly fetch manifest micromark-util-encode@^2.0.0
+222 silly fetch manifest micromark-util-resolve-all@^2.0.0
+223 silly fetch manifest micromark-util-subtokenize@^2.0.0
+224 http fetch GET 200 https://registry.npmjs.org/micromark-util-chunked 143ms (cache miss)
+225 http fetch GET 200 https://registry.npmjs.org/micromark-util-resolve-all 143ms (cache miss)
+226 http fetch GET 200 https://registry.npmjs.org/micromark-factory-space 162ms (cache miss)
+227 http fetch GET 200 https://registry.npmjs.org/micromark-util-character 162ms (cache miss)
+228 http fetch GET 200 https://registry.npmjs.org/character-entities 163ms (cache miss)
+229 http fetch GET 200 https://registry.npmjs.org/micromark-util-encode 163ms (cache miss)
+230 http fetch GET 200 https://registry.npmjs.org/micromark-util-combine-extensions 181ms (cache miss)
+231 http fetch GET 200 https://registry.npmjs.org/micromark-util-subtokenize 181ms (cache miss)
+232 http fetch GET 200 https://registry.npmjs.org/micromark-core-commonmark 182ms (cache miss)
+233 http fetch GET 200 https://registry.npmjs.org/@types%2fdebug 234ms (cache miss)
+234 timing idealTree:node_modules/mdast-util-from-markdown Completed in 239ms
+235 silly placeDep ROOT character-entities@2.0.2 OK for: decode-named-character-reference@1.2.0 want: ^2.0.0
+236 timing idealTree:node_modules/decode-named-character-reference Completed in 1ms
+237 timing idealTree:node_modules/character-entities Completed in 0ms
+238 silly placeDep ROOT ccount@2.0.1 OK for: mdast-util-mdx-jsx@3.2.0 want: ^2.0.0
+239 silly placeDep ROOT parse-entities@4.0.2 OK for: mdast-util-mdx-jsx@3.2.0 want: ^4.0.0
+240 silly placeDep ROOT stringify-entities@4.0.4 OK for: mdast-util-mdx-jsx@3.2.0 want: ^4.0.0
+241 silly fetch manifest @types/unist@^2.0.0
+242 silly fetch manifest character-entities-legacy@^3.0.0
+243 silly fetch manifest character-reference-invalid@^2.0.0
+244 silly fetch manifest is-alphanumerical@^2.0.0
+245 silly fetch manifest is-decimal@^2.0.0
+246 silly fetch manifest is-hexadecimal@^2.0.0
+247 silly fetch manifest character-entities-html4@^2.0.0
+248 http fetch GET 200 https://registry.npmjs.org/character-entities-legacy 119ms (cache miss)
+249 http fetch GET 200 https://registry.npmjs.org/character-reference-invalid 131ms (cache miss)
+250 http fetch GET 200 https://registry.npmjs.org/is-hexadecimal 142ms (cache miss)
+251 http fetch GET 200 https://registry.npmjs.org/character-entities-html4 142ms (cache miss)
+252 http fetch GET 200 https://registry.npmjs.org/is-alphanumerical 153ms (cache miss)
+253 http fetch GET 200 https://registry.npmjs.org/is-decimal 158ms (cache miss)
+254 timing idealTree:node_modules/mdast-util-mdx-jsx Completed in 161ms
+255 timing idealTree:node_modules/ccount Completed in 0ms
+256 timing idealTree:node_modules/mdast-util-mdxjs-esm Completed in 0ms
+257 silly placeDep ROOT micromark-util-sanitize-uri@2.0.1 OK for: mdast-util-to-hast@13.2.0 want: ^2.0.0
+258 silly placeDep ROOT trim-lines@3.0.1 OK for: mdast-util-to-hast@13.2.0 want: ^3.0.0
+259 timing idealTree:node_modules/mdast-util-to-hast Completed in 1ms
+260 silly placeDep ROOT longest-streak@3.1.0 OK for: mdast-util-to-markdown@2.1.2 want: ^3.0.0
+261 silly placeDep ROOT mdast-util-phrasing@4.1.0 OK for: mdast-util-to-markdown@2.1.2 want: ^4.0.0
+262 silly placeDep ROOT micromark-util-classify-character@2.0.1 OK for: mdast-util-to-markdown@2.1.2 want: ^2.0.0
+263 silly placeDep ROOT zwitch@2.0.4 OK for: mdast-util-to-markdown@2.1.2 want: ^2.0.0
+264 timing idealTree:node_modules/mdast-util-to-markdown Completed in 2ms
+265 timing idealTree:node_modules/longest-streak Completed in 0ms
+266 silly placeDep ROOT unist-util-is@6.0.1 OK for: mdast-util-phrasing@4.1.0 want: ^6.0.0
+267 timing idealTree:node_modules/mdast-util-phrasing Completed in 0ms
+268 timing idealTree:node_modules/mdast-util-to-string Completed in 0ms
+269 silly placeDep ROOT @types/debug@4.1.12 OK for: micromark@4.0.2 want: ^4.0.0
+270 silly placeDep ROOT micromark-core-commonmark@2.0.3 OK for: micromark@4.0.2 want: ^2.0.0
+271 silly placeDep ROOT micromark-factory-space@2.0.1 OK for: micromark@4.0.2 want: ^2.0.0
+272 silly placeDep ROOT micromark-util-character@2.1.1 OK for: micromark@4.0.2 want: ^2.0.0
+273 silly placeDep ROOT micromark-util-chunked@2.0.1 OK for: micromark@4.0.2 want: ^2.0.0
+274 silly placeDep ROOT micromark-util-combine-extensions@2.0.1 OK for: micromark@4.0.2 want: ^2.0.0
+275 silly placeDep ROOT micromark-util-encode@2.0.1 OK for: micromark@4.0.2 want: ^2.0.0
+276 silly placeDep ROOT micromark-util-resolve-all@2.0.1 OK for: micromark@4.0.2 want: ^2.0.0
+277 silly placeDep ROOT micromark-util-subtokenize@2.1.0 OK for: micromark@4.0.2 want: ^2.0.0
+278 silly fetch manifest @types/ms@*
+279 silly fetch manifest micromark-factory-destination@^2.0.0
+280 silly fetch manifest micromark-factory-label@^2.0.0
+281 silly fetch manifest micromark-factory-title@^2.0.0
+282 silly fetch manifest micromark-factory-whitespace@^2.0.0
+283 silly fetch manifest micromark-util-html-tag-name@^2.0.0
+284 http fetch GET 200 https://registry.npmjs.org/micromark-util-html-tag-name 142ms (cache miss)
+285 http fetch GET 200 https://registry.npmjs.org/micromark-factory-label 142ms (cache miss)
+286 http fetch GET 200 https://registry.npmjs.org/micromark-factory-title 156ms (cache miss)
+287 http fetch GET 200 https://registry.npmjs.org/micromark-factory-whitespace 162ms (cache miss)
+288 http fetch GET 200 https://registry.npmjs.org/micromark-factory-destination 209ms (cache miss)
+289 http fetch GET 200 https://registry.npmjs.org/@types%2fms 224ms (cache miss)
+290 timing idealTree:node_modules/micromark Completed in 230ms
+291 silly placeDep ROOT @types/ms@2.1.0 OK for: @types/debug@4.1.12 want: *
+292 timing idealTree:node_modules/@types/debug Completed in 0ms
+293 timing idealTree:node_modules/@types/ms Completed in 0ms
+294 silly placeDep ROOT micromark-factory-destination@2.0.1 OK for: micromark-core-commonmark@2.0.3 want: ^2.0.0
+295 silly placeDep ROOT micromark-factory-label@2.0.1 OK for: micromark-core-commonmark@2.0.3 want: ^2.0.0
+296 silly placeDep ROOT micromark-factory-title@2.0.1 OK for: micromark-core-commonmark@2.0.3 want: ^2.0.0
+297 silly placeDep ROOT micromark-factory-whitespace@2.0.1 OK for: micromark-core-commonmark@2.0.3 want: ^2.0.0
+298 silly placeDep ROOT micromark-util-html-tag-name@2.0.1 OK for: micromark-core-commonmark@2.0.3 want: ^2.0.0
+299 timing idealTree:node_modules/micromark-core-commonmark Completed in 4ms
+300 timing idealTree:node_modules/micromark-factory-destination Completed in 0ms
+301 timing idealTree:node_modules/micromark-factory-label Completed in 0ms
+302 timing idealTree:node_modules/micromark-factory-space Completed in 0ms
+303 timing idealTree:node_modules/micromark-factory-title Completed in 0ms
+304 timing idealTree:node_modules/micromark-factory-whitespace Completed in 0ms
+305 timing idealTree:node_modules/micromark-util-character Completed in 0ms
+306 timing idealTree:node_modules/micromark-util-chunked Completed in 0ms
+307 timing idealTree:node_modules/micromark-util-classify-character Completed in 0ms
+308 timing idealTree:node_modules/micromark-util-combine-extensions Completed in 0ms
+309 timing idealTree:node_modules/micromark-util-decode-numeric-character-reference Completed in 0ms
+310 timing idealTree:node_modules/micromark-util-decode-string Completed in 0ms
+311 timing idealTree:node_modules/micromark-util-encode Completed in 0ms
+312 timing idealTree:node_modules/micromark-util-html-tag-name Completed in 0ms
+313 timing idealTree:node_modules/micromark-util-normalize-identifier Completed in 0ms
+314 timing idealTree:node_modules/micromark-util-resolve-all Completed in 0ms
+315 timing idealTree:node_modules/micromark-util-sanitize-uri Completed in 0ms
+316 timing idealTree:node_modules/micromark-util-subtokenize Completed in 0ms
+317 timing idealTree:node_modules/micromark-util-symbol Completed in 0ms
+318 timing idealTree:node_modules/micromark-util-types Completed in 0ms
+319 silly placeDep node_modules/parse-entities @types/unist@2.0.11 OK for: parse-entities@4.0.2 want: ^2.0.0
+320 silly placeDep ROOT character-entities-legacy@3.0.0 OK for: parse-entities@4.0.2 want: ^3.0.0
+321 silly placeDep ROOT character-reference-invalid@2.0.1 OK for: parse-entities@4.0.2 want: ^2.0.0
+322 silly placeDep ROOT is-alphanumerical@2.0.1 OK for: parse-entities@4.0.2 want: ^2.0.0
+323 silly placeDep ROOT is-decimal@2.0.1 OK for: parse-entities@4.0.2 want: ^2.0.0
+324 silly placeDep ROOT is-hexadecimal@2.0.1 OK for: parse-entities@4.0.2 want: ^2.0.0
+325 silly fetch manifest is-alphabetical@^2.0.0
+326 http fetch GET 200 https://registry.npmjs.org/is-alphabetical 148ms (cache miss)
+327 timing idealTree:node_modules/parse-entities Completed in 154ms
+328 timing idealTree:node_modules/character-entities-legacy Completed in 0ms
+329 timing idealTree:node_modules/character-reference-invalid Completed in 0ms
+330 silly placeDep ROOT is-alphabetical@2.0.1 OK for: is-alphanumerical@2.0.1 want: ^2.0.0
+331 timing idealTree:node_modules/is-alphanumerical Completed in 1ms
+332 timing idealTree:node_modules/is-alphabetical Completed in 0ms
+333 timing idealTree:node_modules/is-decimal Completed in 0ms
+334 timing idealTree:node_modules/is-hexadecimal Completed in 0ms
+335 timing idealTree:node_modules/property-information Completed in 0ms
+336 silly placeDep ROOT mdast-util-gfm@3.1.0 OK for: remark-gfm@4.0.1 want: ^3.0.0
+337 silly placeDep ROOT micromark-extension-gfm@3.0.0 OK for: remark-gfm@4.0.1 want: ^3.0.0
+338 silly placeDep ROOT remark-stringify@11.0.0 OK for: remark-gfm@4.0.1 want: ^11.0.0
+339 silly fetch manifest mdast-util-gfm-autolink-literal@^2.0.0
+340 silly fetch manifest mdast-util-gfm-footnote@^2.0.0
+341 silly fetch manifest mdast-util-gfm-strikethrough@^2.0.0
+342 silly fetch manifest mdast-util-gfm-table@^2.0.0
+343 silly fetch manifest mdast-util-gfm-task-list-item@^2.0.0
+344 silly fetch manifest micromark-extension-gfm-autolink-literal@^2.0.0
+345 silly fetch manifest micromark-extension-gfm-footnote@^2.0.0
+346 silly fetch manifest micromark-extension-gfm-strikethrough@^2.0.0
+347 silly fetch manifest micromark-extension-gfm-table@^2.0.0
+348 silly fetch manifest micromark-extension-gfm-tagfilter@^2.0.0
+349 silly fetch manifest micromark-extension-gfm-task-list-item@^2.0.0
+350 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-footnote 139ms (cache miss)
+351 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-table 140ms (cache miss)
+352 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-strikethrough 144ms (cache miss)
+353 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-autolink-literal 158ms (cache miss)
+354 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-footnote 212ms (cache miss)
+355 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-task-list-item 214ms (cache miss)
+356 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-strikethrough 224ms (cache miss)
+357 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-table 230ms (cache miss)
+358 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-task-list-item 231ms (cache miss)
+359 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-tagfilter 231ms (cache miss)
+360 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-autolink-literal 233ms (cache miss)
+361 timing idealTree:node_modules/remark-gfm Completed in 236ms
+362 silly placeDep ROOT mdast-util-gfm-autolink-literal@2.0.1 OK for: mdast-util-gfm@3.1.0 want: ^2.0.0
+363 silly placeDep ROOT mdast-util-gfm-footnote@2.1.0 OK for: mdast-util-gfm@3.1.0 want: ^2.0.0
+364 silly placeDep ROOT mdast-util-gfm-strikethrough@2.0.0 OK for: mdast-util-gfm@3.1.0 want: ^2.0.0
+365 silly placeDep ROOT mdast-util-gfm-table@2.0.0 OK for: mdast-util-gfm@3.1.0 want: ^2.0.0
+366 silly placeDep ROOT mdast-util-gfm-task-list-item@2.0.0 OK for: mdast-util-gfm@3.1.0 want: ^2.0.0
+367 silly fetch manifest mdast-util-find-and-replace@^3.0.0
+368 silly fetch manifest markdown-table@^3.0.0
+369 http fetch GET 200 https://registry.npmjs.org/markdown-table 137ms (cache miss)
+370 http fetch GET 200 https://registry.npmjs.org/mdast-util-find-and-replace 140ms (cache miss)
+371 timing idealTree:node_modules/mdast-util-gfm Completed in 156ms
+372 silly placeDep ROOT mdast-util-find-and-replace@3.0.2 OK for: mdast-util-gfm-autolink-literal@2.0.1 want: ^3.0.0
+373 silly fetch manifest escape-string-regexp@^5.0.0
+374 http fetch GET 200 https://registry.npmjs.org/escape-string-regexp 125ms (cache miss)
+375 timing idealTree:node_modules/mdast-util-gfm-autolink-literal Completed in 127ms
+376 silly placeDep node_modules/mdast-util-find-and-replace escape-string-regexp@5.0.0 OK for: mdast-util-find-and-replace@3.0.2 want: ^5.0.0
+377 silly placeDep ROOT unist-util-visit-parents@6.0.2 OK for: mdast-util-find-and-replace@3.0.2 want: ^6.0.0
+378 timing idealTree:node_modules/mdast-util-find-and-replace Completed in 3ms
+379 timing idealTree:node_modules/mdast-util-gfm-footnote Completed in 0ms
+380 timing idealTree:node_modules/mdast-util-gfm-strikethrough Completed in 0ms
+381 silly placeDep ROOT markdown-table@3.0.4 OK for: mdast-util-gfm-table@2.0.0 want: ^3.0.0
+382 timing idealTree:node_modules/mdast-util-gfm-table Completed in 0ms
+383 timing idealTree:node_modules/markdown-table Completed in 0ms
+384 timing idealTree:node_modules/mdast-util-gfm-task-list-item Completed in 0ms
+385 silly placeDep ROOT micromark-extension-gfm-autolink-literal@2.1.0 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+386 silly placeDep ROOT micromark-extension-gfm-footnote@2.1.0 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+387 silly placeDep ROOT micromark-extension-gfm-strikethrough@2.1.0 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+388 silly placeDep ROOT micromark-extension-gfm-table@2.1.1 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+389 silly placeDep ROOT micromark-extension-gfm-tagfilter@2.0.0 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+390 silly placeDep ROOT micromark-extension-gfm-task-list-item@2.1.0 OK for: micromark-extension-gfm@3.0.0 want: ^2.0.0
+391 timing idealTree:node_modules/micromark-extension-gfm Completed in 4ms
+392 timing idealTree:node_modules/micromark-extension-gfm-autolink-literal Completed in 0ms
+393 timing idealTree:node_modules/micromark-extension-gfm-footnote Completed in 0ms
+394 timing idealTree:node_modules/micromark-extension-gfm-strikethrough Completed in 0ms
+395 timing idealTree:node_modules/micromark-extension-gfm-table Completed in 0ms
+396 timing idealTree:node_modules/micromark-extension-gfm-tagfilter Completed in 0ms
+397 timing idealTree:node_modules/micromark-extension-gfm-task-list-item Completed in 0ms
+398 timing idealTree:node_modules/remark-parse Completed in 0ms
+399 timing idealTree:node_modules/remark-rehype Completed in 0ms
+400 timing idealTree:node_modules/remark-stringify Completed in 0ms
+401 timing idealTree:node_modules/space-separated-tokens Completed in 0ms
+402 silly placeDep ROOT character-entities-html4@2.1.0 OK for: stringify-entities@4.0.4 want: ^2.0.0
+403 timing idealTree:node_modules/stringify-entities Completed in 0ms
+404 timing idealTree:node_modules/character-entities-html4 Completed in 0ms
+405 silly placeDep ROOT style-to-object@1.0.12 OK for: style-to-js@1.1.19 want: 1.0.12
+406 silly fetch manifest inline-style-parser@0.2.6
+407 http fetch GET 200 https://registry.npmjs.org/inline-style-parser 144ms (cache miss)
+408 timing idealTree:node_modules/style-to-js Completed in 145ms
+409 silly placeDep ROOT inline-style-parser@0.2.6 OK for: style-to-object@1.0.12 want: 0.2.6
+410 timing idealTree:node_modules/style-to-object Completed in 1ms
+411 timing idealTree:node_modules/inline-style-parser Completed in 0ms
+412 timing idealTree:node_modules/trim-lines Completed in 0ms
+413 silly placeDep ROOT bail@2.0.2 OK for: unified@11.0.5 want: ^2.0.0
+414 silly placeDep ROOT extend@3.0.2 OK for: unified@11.0.5 want: ^3.0.0
+415 silly placeDep ROOT is-plain-obj@4.1.0 OK for: unified@11.0.5 want: ^4.0.0
+416 silly placeDep ROOT trough@2.2.0 OK for: unified@11.0.5 want: ^2.0.0
+417 timing idealTree:node_modules/unified Completed in 1ms
+418 timing idealTree:node_modules/bail Completed in 0ms
+419 timing idealTree:node_modules/extend Completed in 0ms
+420 timing idealTree:node_modules/is-plain-obj Completed in 0ms
+421 timing idealTree:node_modules/trough Completed in 0ms
+422 timing idealTree:node_modules/unist-util-is Completed in 0ms
+423 timing idealTree:node_modules/unist-util-position Completed in 0ms
+424 timing idealTree:node_modules/unist-util-stringify-position Completed in 0ms
+425 timing idealTree:node_modules/unist-util-visit Completed in 0ms
+426 timing idealTree:node_modules/unist-util-visit-parents Completed in 0ms
+427 timing idealTree:node_modules/vfile Completed in 0ms
+428 timing idealTree:node_modules/vfile-message Completed in 0ms
+429 timing idealTree:node_modules/zwitch Completed in 0ms
+430 timing idealTree:node_modules/mdast-util-find-and-replace/node_modules/escape-string-regexp Completed in 0ms
+431 timing idealTree:node_modules/parse-entities/node_modules/@types/unist Completed in 0ms
+432 timing idealTree:buildDeps Completed in 4469ms
+433 timing idealTree:fixDepFlags Completed in 2ms
+434 timing idealTree Completed in 4543ms
+435 timing reify:loadTrees Completed in 4543ms
+436 timing reify:diffTrees Completed in 4ms
+437 silly reify moves {}
+438 timing reify:retireShallow Completed in 0ms
+439 timing reify:createSparse Completed in 7ms
+440 timing reify:loadBundles Completed in 0ms
+441 silly audit bulk request {
+441 silly audit   '@alloc/quick-lru': [ '5.2.0' ],
+441 silly audit   '@emnapi/core': [ '1.7.0' ],
+441 silly audit   '@emnapi/runtime': [ '1.7.0' ],
+441 silly audit   '@emnapi/wasi-threads': [ '1.1.0' ],
+441 silly audit   '@eslint-community/eslint-utils': [ '4.9.0' ],
+441 silly audit   '@eslint-community/regexpp': [ '4.12.2' ],
+441 silly audit   '@eslint/eslintrc': [ '2.1.4' ],
+441 silly audit   '@eslint/js': [ '8.57.1' ],
+441 silly audit   '@hookform/resolvers': [ '3.10.0' ],
+441 silly audit   '@humanwhocodes/config-array': [ '0.13.0' ],
+441 silly audit   '@humanwhocodes/module-importer': [ '1.0.1' ],
+441 silly audit   '@humanwhocodes/object-schema': [ '2.0.3' ],
+441 silly audit   '@isaacs/cliui': [ '8.0.2' ],
+441 silly audit   'ansi-regex': [ '6.2.2', '5.0.1' ],
+441 silly audit   'strip-ansi': [ '7.1.2', '6.0.1' ],
+441 silly audit   '@jridgewell/gen-mapping': [ '0.3.13' ],
+441 silly audit   '@jridgewell/resolve-uri': [ '3.1.2' ],
+441 silly audit   '@jridgewell/sourcemap-codec': [ '1.5.5' ],
+441 silly audit   '@jridgewell/trace-mapping': [ '0.3.31' ],
+441 silly audit   '@napi-rs/wasm-runtime': [ '0.2.12' ],
+441 silly audit   '@next/env': [ '14.2.33' ],
+441 silly audit   '@next/eslint-plugin-next': [ '14.2.33' ],
+441 silly audit   '@next/swc-darwin-arm64': [ '14.2.33' ],
+441 silly audit   '@next/swc-darwin-x64': [ '14.2.33' ],
+441 silly audit   '@next/swc-linux-arm64-gnu': [ '14.2.33' ],
+441 silly audit   '@next/swc-linux-arm64-musl': [ '14.2.33' ],
+441 silly audit   '@next/swc-linux-x64-gnu': [ '14.2.33' ],
+441 silly audit   '@next/swc-linux-x64-musl': [ '14.2.33' ],
+441 silly audit   '@next/swc-win32-arm64-msvc': [ '14.2.33' ],
+441 silly audit   '@next/swc-win32-ia32-msvc': [ '14.2.33' ],
+441 silly audit   '@next/swc-win32-x64-msvc': [ '14.2.33' ],
+441 silly audit   '@nodelib/fs.scandir': [ '2.1.5' ],
+441 silly audit   '@nodelib/fs.stat': [ '2.0.5' ],
+441 silly audit   '@nodelib/fs.walk': [ '1.2.8' ],
+441 silly audit   '@nolyfill/is-core-module': [ '1.0.39' ],
+441 silly audit   '@pkgjs/parseargs': [ '0.11.0' ],
+441 silly audit   '@rtsao/scc': [ '1.1.0' ],
+441 silly audit   '@rushstack/eslint-patch': [ '1.14.1' ],
+441 silly audit   '@swc/counter': [ '0.1.3' ],
+441 silly audit   '@swc/helpers': [ '0.5.5' ],
+441 silly audit   '@tybys/wasm-util': [ '0.10.1' ],
+441 silly audit   '@types/json5': [ '0.0.29' ],
+441 silly audit   '@types/node': [ '20.19.24' ],
+441 silly audit   '@types/prop-types': [ '15.7.15' ],
+441 silly audit   '@types/react': [ '18.3.26' ],
+441 silly audit   '@types/react-dom': [ '18.3.7' ],
+441 silly audit   '@typescript-eslint/eslint-plugin': [ '8.46.3' ],
+441 silly audit   ignore: [ '7.0.5', '5.3.2' ],
+441 silly audit   '@typescript-eslint/parser': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/project-service': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/scope-manager': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/tsconfig-utils': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/type-utils': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/types': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/typescript-estree': [ '8.46.3' ],
+441 silly audit   'brace-expansion': [ '2.0.2', '1.1.12' ],
+441 silly audit   minimatch: [ '9.0.5', '3.1.2' ],
+441 silly audit   '@typescript-eslint/utils': [ '8.46.3' ],
+441 silly audit   '@typescript-eslint/visitor-keys': [ '8.46.3' ],
+441 silly audit   'eslint-visitor-keys': [ '4.2.1', '3.4.3' ],
+441 silly audit   '@ungap/structured-clone': [ '1.3.0' ],
+441 silly audit   '@unrs/resolver-binding-android-arm-eabi': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-android-arm64': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-darwin-arm64': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-darwin-x64': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-freebsd-x64': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-arm-gnueabihf': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-arm-musleabihf': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-arm64-gnu': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-arm64-musl': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-ppc64-gnu': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-riscv64-gnu': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-riscv64-musl': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-s390x-gnu': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-x64-gnu': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-linux-x64-musl': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-wasm32-wasi': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-win32-arm64-msvc': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-win32-ia32-msvc': [ '1.11.1' ],
+441 silly audit   '@unrs/resolver-binding-win32-x64-msvc': [ '1.11.1' ],
+441 silly audit   acorn: [ '8.15.0' ],
+441 silly audit   'acorn-jsx': [ '5.3.2' ],
+441 silly audit   ajv: [ '6.12.6' ],
+441 silly audit   'ansi-styles': [ '4.3.0', '6.2.3' ],
+441 silly audit   'any-promise': [ '1.3.0' ],
+441 silly audit   anymatch: [ '3.1.3' ],
+441 silly audit   arg: [ '5.0.2' ],
+441 silly audit   argparse: [ '2.0.1' ],
+441 silly audit   'aria-query': [ '5.3.2' ],
+441 silly audit   'array-buffer-byte-length': [ '1.0.2' ],
+441 silly audit   'array-includes': [ '3.1.9' ],
+441 silly audit   'array.prototype.findlast': [ '1.2.5' ],
+441 silly audit   'array.prototype.findlastindex': [ '1.2.6' ],
+441 silly audit   'array.prototype.flat': [ '1.3.3' ],
+441 silly audit   'array.prototype.flatmap': [ '1.3.3' ],
+441 silly audit   'array.prototype.tosorted': [ '1.1.4' ],
+441 silly audit   'arraybuffer.prototype.slice': [ '1.0.4' ],
+441 silly audit   'ast-types-flow': [ '0.0.8' ],
+441 silly audit   'async-function': [ '1.0.0' ],
+441 silly audit   asynckit: [ '0.4.0' ],
+441 silly audit   autoprefixer: [ '10.4.21' ],
+441 silly audit   'available-typed-arrays': [ '1.0.7' ],
+441 silly audit   'axe-core': [ '4.11.0' ],
+441 silly audit   axios: [ '1.13.1' ],
+441 silly audit   'axobject-query': [ '4.1.0' ],
+441 silly audit   'balanced-match': [ '1.0.2' ],
+441 silly audit   'baseline-browser-mapping': [ '2.8.23' ],
+441 silly audit   'binary-extensions': [ '2.3.0' ],
+441 silly audit   braces: [ '3.0.3' ],
+441 silly audit   browserslist: [ '4.27.0' ],
+441 silly audit   busboy: [ '1.6.0' ],
+441 silly audit   'call-bind': [ '1.0.8' ],
+441 silly audit   'call-bind-apply-helpers': [ '1.0.2' ],
+441 silly audit   'call-bound': [ '1.0.4' ],
+441 silly audit   callsites: [ '3.1.0' ],
+441 silly audit   'camelcase-css': [ '2.0.1' ],
+441 silly audit   'caniuse-lite': [ '1.0.30001753' ],
+441 silly audit   chalk: [ '4.1.2' ],
+441 silly audit   chokidar: [ '3.6.0' ],
+441 silly audit   'glob-parent': [ '5.1.2', '6.0.2' ],
+441 silly audit   'client-only': [ '0.0.1' ],
+441 silly audit   clsx: [ '2.1.1' ],
+441 silly audit   'color-convert': [ '2.0.1' ],
+441 silly audit   'color-name': [ '1.1.4' ],
+441 silly audit   'combined-stream': [ '1.0.8' ],
+441 silly audit   commander: [ '4.1.1' ],
+441 silly audit   'concat-map': [ '0.0.1' ],
+441 silly audit   'cross-spawn': [ '7.0.6' ],
+441 silly audit   cssesc: [ '3.0.0' ],
+441 silly audit   csstype: [ '3.1.3' ],
+441 silly audit   'damerau-levenshtein': [ '1.0.8' ],
+441 silly audit   'data-view-buffer': [ '1.0.2' ],
+441 silly audit   'data-view-byte-length': [ '1.0.2' ],
+441 silly audit   'data-view-byte-offset': [ '1.0.1' ],
+441 silly audit   debug: [ '4.4.3', '3.2.7' ],
+441 silly audit   'deep-is': [ '0.1.4' ],
+441 silly audit   'define-data-property': [ '1.1.4' ],
+441 silly audit   'define-properties': [ '1.2.1' ],
+441 silly audit   'delayed-stream': [ '1.0.0' ],
+441 silly audit   didyoumean: [ '1.2.2' ],
+441 silly audit   dlv: [ '1.1.3' ],
+441 silly audit   doctrine: [ '3.0.0', '2.1.0' ],
+441 silly audit   'dunder-proto': [ '1.0.1' ],
+441 silly audit   eastasianwidth: [ '0.2.0' ],
+441 silly audit   'electron-to-chromium': [ '1.5.244' ],
+441 silly audit   'emoji-regex': [ '9.2.2', '8.0.0' ],
+441 silly audit   'es-abstract': [ '1.24.0' ],
+441 silly audit   'es-define-property': [ '1.0.1' ],
+441 silly audit   'es-errors': [ '1.3.0' ],
+441 silly audit   'es-iterator-helpers': [ '1.2.1' ],
+441 silly audit   'es-object-atoms': [ '1.1.1' ],
+441 silly audit   'es-set-tostringtag': [ '2.1.0' ],
+441 silly audit   'es-shim-unscopables': [ '1.1.0' ],
+441 silly audit   'es-to-primitive': [ '1.3.0' ],
+441 silly audit   escalade: [ '3.2.0' ],
+441 silly audit   'escape-string-regexp': [ '4.0.0', '5.0.0' ],
+441 silly audit   eslint: [ '8.57.1' ],
+441 silly audit   'eslint-config-next': [ '14.2.33' ],
+441 silly audit   'eslint-import-resolver-node': [ '0.3.9' ],
+441 silly audit   'eslint-import-resolver-typescript': [ '3.10.1' ],
+441 silly audit   'eslint-module-utils': [ '2.12.1' ],
+441 silly audit   'eslint-plugin-import': [ '2.32.0' ],
+441 silly audit   semver: [ '6.3.1', '7.7.3' ],
+441 silly audit   'eslint-plugin-jsx-a11y': [ '6.10.2' ],
+441 silly audit   'eslint-plugin-react': [ '7.37.5' ],
+441 silly audit   'eslint-plugin-react-hooks': [ '5.0.0-canary-7118f5dd7-20230705' ],
+441 silly audit   resolve: [ '2.0.0-next.5', '1.22.11' ],
+441 silly audit   'eslint-scope': [ '7.2.2' ],
+441 silly audit   espree: [ '9.6.1' ],
+441 silly audit   esquery: [ '1.6.0' ],
+441 silly audit   esrecurse: [ '4.3.0' ],
+441 silly audit   estraverse: [ '5.3.0' ],
+441 silly audit   esutils: [ '2.0.3' ],
+441 silly audit   'fast-deep-equal': [ '3.1.3' ],
+441 silly audit   'fast-glob': [ '3.3.3' ],
+441 silly audit   'fast-json-stable-stringify': [ '2.1.0' ],
+441 silly audit   'fast-levenshtein': [ '2.0.6' ],
+441 silly audit   fastq: [ '1.19.1' ],
+441 silly audit   'file-entry-cache': [ '6.0.1' ],
+441 silly audit   'fill-range': [ '7.1.1' ],
+441 silly audit   'find-up': [ '5.0.0' ],
+441 silly audit   'flat-cache': [ '3.2.0' ],
+441 silly audit   flatted: [ '3.3.3' ],
+441 silly audit   'follow-redirects': [ '1.15.11' ],
+441 silly audit   'for-each': [ '0.3.5' ],
+441 silly audit   'foreground-child': [ '3.3.1' ],
+441 silly audit   'form-data': [ '4.0.4' ],
+441 silly audit   'fraction.js': [ '4.3.7' ],
+441 silly audit   'fs.realpath': [ '1.0.0' ],
+441 silly audit   fsevents: [ '2.3.3' ],
+441 silly audit   'function-bind': [ '1.1.2' ],
+441 silly audit   'function.prototype.name': [ '1.1.8' ],
+441 silly audit   'functions-have-names': [ '1.2.3' ],
+441 silly audit   'generator-function': [ '2.0.1' ],
+441 silly audit   'get-intrinsic': [ '1.3.0' ],
+441 silly audit   'get-proto': [ '1.0.1' ],
+441 silly audit   'get-symbol-description': [ '1.1.0' ],
+441 silly audit   'get-tsconfig': [ '4.13.0' ],
+441 silly audit   glob: [ '10.3.10', '7.2.3' ],
+441 silly audit   globals: [ '13.24.0' ],
+441 silly audit   globalthis: [ '1.0.4' ],
+441 silly audit   gopd: [ '1.2.0' ],
+441 silly audit   'graceful-fs': [ '4.2.11' ],
+441 silly audit   graphemer: [ '1.4.0' ],
+441 silly audit   'has-bigints': [ '1.1.0' ],
+441 silly audit   'has-flag': [ '4.0.0' ],
+441 silly audit   'has-property-descriptors': [ '1.0.2' ],
+441 silly audit   'has-proto': [ '1.2.0' ],
+441 silly audit   'has-symbols': [ '1.1.0' ],
+441 silly audit   'has-tostringtag': [ '1.0.2' ],
+441 silly audit   hasown: [ '2.0.2' ],
+441 silly audit   'import-fresh': [ '3.3.1' ],
+441 silly audit   imurmurhash: [ '0.1.4' ],
+441 silly audit   inflight: [ '1.0.6' ],
+441 silly audit   inherits: [ '2.0.4' ],
+441 silly audit   'internal-slot': [ '1.1.0' ],
+441 silly audit   'is-array-buffer': [ '3.0.5' ],
+441 silly audit   'is-async-function': [ '2.1.1' ],
+441 silly audit   'is-bigint': [ '1.1.0' ],
+441 silly audit   'is-binary-path': [ '2.1.0' ],
+441 silly audit   'is-boolean-object': [ '1.2.2' ],
+441 silly audit   'is-bun-module': [ '2.0.0' ],
+441 silly audit   'is-callable': [ '1.2.7' ],
+441 silly audit   'is-core-module': [ '2.16.1' ],
+441 silly audit   'is-data-view': [ '1.0.2' ],
+441 silly audit   'is-date-object': [ '1.1.0' ],
+441 silly audit   'is-extglob': [ '2.1.1' ],
+441 silly audit   'is-finalizationregistry': [ '1.1.1' ],
+441 silly audit   'is-fullwidth-code-point': [ '3.0.0' ],
+441 silly audit   'is-generator-function': [ '1.1.2' ],
+441 silly audit   'is-glob': [ '4.0.3' ],
+441 silly audit   'is-map': [ '2.0.3' ],
+441 silly audit   'is-negative-zero': [ '2.0.3' ],
+441 silly audit   'is-number': [ '7.0.0' ],
+441 silly audit   'is-number-object': [ '1.1.1' ],
+441 silly audit   'is-path-inside': [ '3.0.3' ],
+441 silly audit   'is-regex': [ '1.2.1' ],
+441 silly audit   'is-set': [ '2.0.3' ],
+441 silly audit   'is-shared-array-buffer': [ '1.0.4' ],
+441 silly audit   'is-string': [ '1.1.1' ],
+441 silly audit   'is-symbol': [ '1.1.1' ],
+441 silly audit   'is-typed-array': [ '1.1.15' ],
+441 silly audit   'is-weakmap': [ '2.0.2' ],
+441 silly audit   'is-weakref': [ '1.1.1' ],
+441 silly audit   'is-weakset': [ '2.0.4' ],
+441 silly audit   isarray: [ '2.0.5' ],
+441 silly audit   isexe: [ '2.0.0' ],
+441 silly audit   'iterator.prototype': [ '1.1.5' ],
+441 silly audit   jackspeak: [ '2.3.6' ],
+441 silly audit   jiti: [ '1.21.7' ],
+441 silly audit   'js-tokens': [ '4.0.0' ],
+441 silly audit   'js-yaml': [ '4.1.0' ],
+441 silly audit   'json-buffer': [ '3.0.1' ],
+441 silly audit   'json-schema-traverse': [ '0.4.1' ],
+441 silly audit   'json-stable-stringify-without-jsonify': [ '1.0.1' ],
+441 silly audit   json5: [ '1.0.2' ],
+441 silly audit   'jsx-ast-utils': [ '3.3.5' ],
+441 silly audit   keyv: [ '4.5.4' ],
+441 silly audit   'language-subtag-registry': [ '0.3.23' ],
+441 silly audit   'language-tags': [ '1.0.9' ],
+441 silly audit   levn: [ '0.4.1' ],
+441 silly audit   lilconfig: [ '3.1.3' ],
+441 silly audit   'lines-and-columns': [ '1.2.4' ],
+441 silly audit   'locate-path': [ '6.0.0' ],
+441 silly audit   'lodash.merge': [ '4.6.2' ],
+441 silly audit   'loose-envify': [ '1.4.0' ],
+441 silly audit   'lru-cache': [ '10.4.3' ],
+441 silly audit   'lucide-react': [ '0.292.0' ],
+441 silly audit   'math-intrinsics': [ '1.1.0' ],
+441 silly audit   merge2: [ '1.4.1' ],
+441 silly audit   micromatch: [ '4.0.8' ],
+441 silly audit   'mime-db': [ '1.52.0' ],
+441 silly audit   'mime-types': [ '2.1.35' ],
+441 silly audit   minimist: [ '1.2.8' ],
+441 silly audit   minipass: [ '7.1.2' ],
+441 silly audit   ms: [ '2.1.3' ],
+441 silly audit   mz: [ '2.7.0' ],
+441 silly audit   nanoid: [ '3.3.11' ],
+441 silly audit   'napi-postinstall': [ '0.3.4' ],
+441 silly audit   'natural-compare': [ '1.4.0' ],
+441 silly audit   next: [ '14.2.33' ],
+441 silly audit   postcss: [ '8.4.31', '8.5.6' ],
+441 silly audit   'node-releases': [ '2.0.27' ],
+441 silly audit   'normalize-path': [ '3.0.0' ],
+441 silly audit   'normalize-range': [ '0.1.2' ],
+441 silly audit   'object-assign': [ '4.1.1' ],
+441 silly audit   'object-hash': [ '3.0.0' ],
+441 silly audit   'object-inspect': [ '1.13.4' ],
+441 silly audit   'object-keys': [ '1.1.1' ],
+441 silly audit   'object.assign': [ '4.1.7' ],
+441 silly audit   'object.entries': [ '1.1.9' ],
+441 silly audit   'object.fromentries': [ '2.0.8' ],
+441 silly audit   'object.groupby': [ '1.0.3' ],
+441 silly audit   'object.values': [ '1.2.1' ],
+441 silly audit   once: [ '1.4.0' ],
+441 silly audit   openai: [ '6.8.1' ],
+441 silly audit   optionator: [ '0.9.4' ],
+441 silly audit   'own-keys': [ '1.0.1' ],
+441 silly audit   'p-limit': [ '3.1.0' ],
+441 silly audit   'p-locate': [ '5.0.0' ],
+441 silly audit   'parent-module': [ '1.0.1' ],
+441 silly audit   'path-exists': [ '4.0.0' ],
+441 silly audit   'path-is-absolute': [ '1.0.1' ],
+441 silly audit   'path-key': [ '3.1.1' ],
+441 silly audit   'path-parse': [ '1.0.7' ],
+441 silly audit   'path-scurry': [ '1.11.1' ],
+441 silly audit   picocolors: [ '1.1.1' ],
+441 silly audit   picomatch: [ '2.3.1', '4.0.3' ],
+441 silly audit   pify: [ '2.3.0' ],
+441 silly audit   pirates: [ '4.0.7' ],
+441 silly audit   'possible-typed-array-names': [ '1.1.0' ],
+441 silly audit   'postcss-import': [ '15.1.0' ],
+441 silly audit   'postcss-js': [ '4.1.0' ],
+441 silly audit   'postcss-load-config': [ '6.0.1' ],
+441 silly audit   'postcss-nested': [ '6.2.0' ],
+441 silly audit   'postcss-selector-parser': [ '6.1.2' ],
+441 silly audit   'postcss-value-parser': [ '4.2.0' ],
+441 silly audit   'prelude-ls': [ '1.2.1' ],
+441 silly audit   'prop-types': [ '15.8.1' ],
+441 silly audit   'proxy-from-env': [ '1.1.0' ],
+441 silly audit   punycode: [ '2.3.1' ],
+441 silly audit   'queue-microtask': [ '1.2.3' ],
+441 silly audit   react: [ '18.3.1' ],
+441 silly audit   'react-dom': [ '18.3.1' ],
+441 silly audit   'react-hook-form': [ '7.66.0' ],
+441 silly audit   'react-is': [ '16.13.1' ],
+441 silly audit   'read-cache': [ '1.0.0' ],
+441 silly audit   readdirp: [ '3.6.0' ],
+441 silly audit   'reflect.getprototypeof': [ '1.0.10' ],
+441 silly audit   'regexp.prototype.flags': [ '1.5.4' ],
+441 silly audit   'resolve-from': [ '4.0.0' ],
+441 silly audit   'resolve-pkg-maps': [ '1.0.0' ],
+441 silly audit   reusify: [ '1.1.0' ],
+441 silly audit   rimraf: [ '3.0.2' ],
+441 silly audit   'run-parallel': [ '1.2.0' ],
+441 silly audit   'safe-array-concat': [ '1.1.3' ],
+441 silly audit   'safe-push-apply': [ '1.0.0' ],
+441 silly audit   'safe-regex-test': [ '1.1.0' ],
+441 silly audit   scheduler: [ '0.23.2' ],
+441 silly audit   'set-function-length': [ '1.2.2' ],
+441 silly audit   'set-function-name': [ '2.0.2' ],
+441 silly audit   'set-proto': [ '1.0.0' ],
+441 silly audit   'shebang-command': [ '2.0.0' ],
+441 silly audit   'shebang-regex': [ '3.0.0' ],
+441 silly audit   'side-channel': [ '1.1.0' ],
+441 silly audit   'side-channel-list': [ '1.0.0' ],
+441 silly audit   'side-channel-map': [ '1.0.1' ],
+441 silly audit   'side-channel-weakmap': [ '1.0.2' ],
+441 silly audit   'signal-exit': [ '4.1.0' ],
+441 silly audit   'source-map-js': [ '1.2.1' ],
+441 silly audit   'stable-hash': [ '0.0.5' ],
+441 silly audit   'stop-iteration-iterator': [ '1.1.0' ],
+441 silly audit   streamsearch: [ '1.1.0' ],
+441 silly audit   'string-width': [ '5.1.2', '4.2.3' ],
+441 silly audit   'string.prototype.includes': [ '2.0.1' ],
+441 silly audit   'string.prototype.matchall': [ '4.0.12' ],
+441 silly audit   'string.prototype.repeat': [ '1.0.0' ],
+441 silly audit   'string.prototype.trim': [ '1.2.10' ],
+441 silly audit   'string.prototype.trimend': [ '1.0.9' ],
+441 silly audit   'string.prototype.trimstart': [ '1.0.8' ],
+441 silly audit   'strip-bom': [ '3.0.0' ],
+441 silly audit   'strip-json-comments': [ '3.1.1' ],
+441 silly audit   'styled-jsx': [ '5.1.1' ],
+441 silly audit   sucrase: [ '3.35.0' ],
+441 silly audit   'supports-color': [ '7.2.0' ],
+441 silly audit   'supports-preserve-symlinks-flag': [ '1.0.0' ],
+441 silly audit   'tailwind-merge': [ '2.6.0' ],
+441 silly audit   tailwindcss: [ '3.4.18' ],
+441 silly audit   'text-table': [ '0.2.0' ],
+441 silly audit   thenify: [ '3.3.1' ],
+441 silly audit   'thenify-all': [ '1.6.0' ],
+441 silly audit   tinyglobby: [ '0.2.15' ],
+441 silly audit   fdir: [ '6.5.0' ],
+441 silly audit   'to-regex-range': [ '5.0.1' ],
+441 silly audit   'ts-api-utils': [ '2.1.0' ],
+441 silly audit   'ts-interface-checker': [ '0.1.13' ],
+441 silly audit   'tsconfig-paths': [ '3.15.0' ],
+441 silly audit   tslib: [ '2.8.1' ],
+441 silly audit   'type-check': [ '0.4.0' ],
+441 silly audit   'type-fest': [ '0.20.2' ],
+441 silly audit   'typed-array-buffer': [ '1.0.3' ],
+441 silly audit   'typed-array-byte-length': [ '1.0.3' ],
+441 silly audit   'typed-array-byte-offset': [ '1.0.4' ],
+441 silly audit   'typed-array-length': [ '1.0.7' ],
+441 silly audit   typescript: [ '5.9.3' ],
+441 silly audit   'unbox-primitive': [ '1.1.0' ],
+441 silly audit   'undici-types': [ '6.21.0' ],
+441 silly audit   'unrs-resolver': [ '1.11.1' ],
+441 silly audit   'update-browserslist-db': [ '1.1.4' ],
+441 silly audit   'uri-js': [ '4.4.1' ],
+441 silly audit   'util-deprecate': [ '1.0.2' ],
+441 silly audit   which: [ '2.0.2' ],
+441 silly audit   'which-boxed-primitive': [ '1.1.1' ],
+441 silly audit   'which-builtin-type': [ '1.2.1' ],
+441 silly audit   'which-collection': [ '1.0.2' ],
+441 silly audit   'which-typed-array': [ '1.1.19' ],
+441 silly audit   'word-wrap': [ '1.2.5' ],
+441 silly audit   'wrap-ansi': [ '8.1.0', '7.0.0' ],
+441 silly audit   wrappy: [ '1.0.2' ],
+441 silly audit   'yocto-queue': [ '0.1.0' ],
+441 silly audit   zod: [ '3.25.76' ],
+441 silly audit   'react-markdown': [ '10.1.0' ],
+441 silly audit   'remark-gfm': [ '4.0.1' ],
+441 silly audit   '@types/hast': [ '3.0.4' ],
+441 silly audit   '@types/mdast': [ '4.0.4' ],
+441 silly audit   devlop: [ '1.1.0' ],
+441 silly audit   'hast-util-to-jsx-runtime': [ '2.3.6' ],
+441 silly audit   'html-url-attributes': [ '3.0.1' ],
+441 silly audit   'mdast-util-to-hast': [ '13.2.0' ],
+441 silly audit   'remark-parse': [ '11.0.0' ],
+441 silly audit   'remark-rehype': [ '11.1.2' ],
+441 silly audit   unified: [ '11.0.5' ],
+441 silly audit   'unist-util-visit': [ '5.0.0' ],
+441 silly audit   vfile: [ '6.0.3' ],
+441 silly audit   '@types/unist': [ '3.0.3', '2.0.11' ],
+441 silly audit   dequal: [ '2.0.3' ],
+441 silly audit   '@types/estree': [ '1.0.8' ],
+441 silly audit   'comma-separated-tokens': [ '2.0.3' ],
+441 silly audit   'estree-util-is-identifier-name': [ '3.0.0' ],
+441 silly audit   'hast-util-whitespace': [ '3.0.0' ],
+441 silly audit   'mdast-util-mdx-expression': [ '2.0.1' ],
+441 silly audit   'mdast-util-mdx-jsx': [ '3.2.0' ],
+441 silly audit   'mdast-util-mdxjs-esm': [ '2.0.1' ],
+441 silly audit   'property-information': [ '7.1.0' ],
+441 silly audit   'space-separated-tokens': [ '2.0.2' ],
+441 silly audit   'style-to-js': [ '1.1.19' ],
+441 silly audit   'unist-util-position': [ '5.0.0' ],
+441 silly audit   'vfile-message': [ '4.0.3' ],
+441 silly audit   '@types/estree-jsx': [ '1.0.5' ],
+441 silly audit   'mdast-util-from-markdown': [ '2.0.2' ],
+441 silly audit   'mdast-util-to-markdown': [ '2.1.2' ],
+441 silly audit   'decode-named-character-reference': [ '1.2.0' ],
+441 silly audit   'mdast-util-to-string': [ '4.0.0' ],
+441 silly audit   micromark: [ '4.0.2' ],
+441 silly audit   'micromark-util-decode-numeric-character-reference': [ '2.0.2' ],
+441 silly audit   'micromark-util-decode-string': [ '2.0.1' ],
+441 silly audit   'micromark-util-normalize-identifier': [ '2.0.1' ],
+441 silly audit   'micromark-util-symbol': [ '2.0.1' ],
+441 silly audit   'micromark-util-types': [ '2.0.2' ],
+441 silly audit   'unist-util-stringify-position': [ '4.0.0' ],
+441 silly audit   'character-entities': [ '2.0.2' ],
+441 silly audit   ccount: [ '2.0.1' ],
+441 silly audit   'parse-entities': [ '4.0.2' ],
+441 silly audit   'stringify-entities': [ '4.0.4' ],
+441 silly audit   'micromark-util-sanitize-uri': [ '2.0.1' ],
+441 silly audit   'trim-lines': [ '3.0.1' ],
+441 silly audit   'longest-streak': [ '3.1.0' ],
+441 silly audit   'mdast-util-phrasing': [ '4.1.0' ],
+441 silly audit   'micromark-util-classify-character': [ '2.0.1' ],
+441 silly audit   zwitch: [ '2.0.4' ],
+441 silly audit   'unist-util-is': [ '6.0.1' ],
+441 silly audit   '@types/debug': [ '4.1.12' ],
+441 silly audit   'micromark-core-commonmark': [ '2.0.3' ],
+441 silly audit   'micromark-factory-space': [ '2.0.1' ],
+441 silly audit   'micromark-util-character': [ '2.1.1' ],
+441 silly audit   'micromark-util-chunked': [ '2.0.1' ],
+441 silly audit   'micromark-util-combine-extensions': [ '2.0.1' ],
+441 silly audit   'micromark-util-encode': [ '2.0.1' ],
+441 silly audit   'micromark-util-resolve-all': [ '2.0.1' ],
+441 silly audit   'micromark-util-subtokenize': [ '2.1.0' ],
+441 silly audit   '@types/ms': [ '2.1.0' ],
+441 silly audit   'micromark-factory-destination': [ '2.0.1' ],
+441 silly audit   'micromark-factory-label': [ '2.0.1' ],
+441 silly audit   'micromark-factory-title': [ '2.0.1' ],
+441 silly audit   'micromark-factory-whitespace': [ '2.0.1' ],
+441 silly audit   'micromark-util-html-tag-name': [ '2.0.1' ],
+441 silly audit   'character-entities-legacy': [ '3.0.0' ],
+441 silly audit   'character-reference-invalid': [ '2.0.1' ],
+441 silly audit   'is-alphanumerical': [ '2.0.1' ],
+441 silly audit   'is-decimal': [ '2.0.1' ],
+441 silly audit   'is-hexadecimal': [ '2.0.1' ],
+441 silly audit   'is-alphabetical': [ '2.0.1' ],
+441 silly audit   'mdast-util-gfm': [ '3.1.0' ],
+441 silly audit   'micromark-extension-gfm': [ '3.0.0' ],
+441 silly audit   'remark-stringify': [ '11.0.0' ],
+441 silly audit   'mdast-util-gfm-autolink-literal': [ '2.0.1' ],
+441 silly audit   'mdast-util-gfm-footnote': [ '2.1.0' ],
+441 silly audit   'mdast-util-gfm-strikethrough': [ '2.0.0' ],
+441 silly audit   'mdast-util-gfm-table': [ '2.0.0' ],
+441 silly audit   'mdast-util-gfm-task-list-item': [ '2.0.0' ],
+441 silly audit   'mdast-util-find-and-replace': [ '3.0.2' ],
+441 silly audit   'unist-util-visit-parents': [ '6.0.2' ],
+441 silly audit   'markdown-table': [ '3.0.4' ],
+441 silly audit   'micromark-extension-gfm-autolink-literal': [ '2.1.0' ],
+441 silly audit   'micromark-extension-gfm-footnote': [ '2.1.0' ],
+441 silly audit   'micromark-extension-gfm-strikethrough': [ '2.1.0' ],
+441 silly audit   'micromark-extension-gfm-table': [ '2.1.1' ],
+441 silly audit   'micromark-extension-gfm-tagfilter': [ '2.0.0' ],
+441 silly audit   'micromark-extension-gfm-task-list-item': [ '2.1.0' ],
+441 silly audit   'character-entities-html4': [ '2.1.0' ],
+441 silly audit   'style-to-object': [ '1.0.12' ],
+441 silly audit   'inline-style-parser': [ '0.2.6' ],
+441 silly audit   bail: [ '2.0.2' ],
+441 silly audit   extend: [ '3.0.2' ],
+441 silly audit   'is-plain-obj': [ '4.1.0' ],
+441 silly audit   trough: [ '2.2.0' ]
+441 silly audit }
+442 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-x64-msvc
+443 silly reify mark deleted [
+443 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-x64-msvc'
+443 silly reify ]
+444 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-ia32-msvc
+445 silly reify mark deleted [
+445 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-ia32-msvc'
+445 silly reify ]
+446 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-arm64-msvc
+447 silly reify mark deleted [
+447 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-win32-arm64-msvc'
+447 silly reify ]
+448 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-wasm32-wasi
+449 silly reify mark deleted [
+449 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-wasm32-wasi'
+449 silly reify ]
+450 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@napi-rs/wasm-runtime
+451 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@napi-rs/wasm-runtime' ]
+452 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@emnapi/core
+453 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@emnapi/core' ]
+454 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@emnapi/runtime
+455 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@emnapi/runtime' ]
+456 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@tybys/wasm-util
+457 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@tybys/wasm-util' ]
+458 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@emnapi/wasi-threads
+459 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@emnapi/wasi-threads' ]
+460 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-x64-musl
+461 silly reify mark deleted [
+461 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-x64-musl'
+461 silly reify ]
+462 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-x64-gnu
+463 silly reify mark deleted [
+463 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-x64-gnu'
+463 silly reify ]
+464 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-s390x-gnu
+465 silly reify mark deleted [
+465 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-s390x-gnu'
+465 silly reify ]
+466 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-riscv64-musl
+467 silly reify mark deleted [
+467 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-riscv64-musl'
+467 silly reify ]
+468 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-riscv64-gnu
+469 silly reify mark deleted [
+469 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-riscv64-gnu'
+469 silly reify ]
+470 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-ppc64-gnu
+471 silly reify mark deleted [
+471 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-ppc64-gnu'
+471 silly reify ]
+472 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm64-musl
+473 silly reify mark deleted [
+473 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm64-musl'
+473 silly reify ]
+474 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm64-gnu
+475 silly reify mark deleted [
+475 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm64-gnu'
+475 silly reify ]
+476 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm-musleabihf
+477 silly reify mark deleted [
+477 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm-musleabihf'
+477 silly reify ]
+478 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm-gnueabihf
+479 silly reify mark deleted [
+479 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-linux-arm-gnueabihf'
+479 silly reify ]
+480 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-freebsd-x64
+481 silly reify mark deleted [
+481 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-freebsd-x64'
+481 silly reify ]
+482 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-darwin-x64
+483 silly reify mark deleted [
+483 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-darwin-x64'
+483 silly reify ]
+484 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-android-arm64
+485 silly reify mark deleted [
+485 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-android-arm64'
+485 silly reify ]
+486 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-android-arm-eabi
+487 silly reify mark deleted [
+487 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@unrs/resolver-binding-android-arm-eabi'
+487 silly reify ]
+488 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-x64-msvc
+489 silly reify mark deleted [
+489 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-x64-msvc'
+489 silly reify ]
+490 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-ia32-msvc
+491 silly reify mark deleted [
+491 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-ia32-msvc'
+491 silly reify ]
+492 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-arm64-msvc
+493 silly reify mark deleted [
+493 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-win32-arm64-msvc'
+493 silly reify ]
+494 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-x64-musl
+495 silly reify mark deleted [
+495 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-x64-musl'
+495 silly reify ]
+496 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-x64-gnu
+497 silly reify mark deleted [
+497 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-x64-gnu'
+497 silly reify ]
+498 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-arm64-musl
+499 silly reify mark deleted [
+499 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-arm64-musl'
+499 silly reify ]
+500 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-arm64-gnu
+501 silly reify mark deleted [
+501 silly reify   '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-linux-arm64-gnu'
+501 silly reify ]
+502 verbose reify failed optional dependency /Users/duc/Desktop/faquiz-web/node_modules/@next/swc-darwin-x64
+503 silly reify mark deleted [ '/Users/duc/Desktop/faquiz-web/node_modules/@next/swc-darwin-x64' ]
+504 timing reifyNode:node_modules/@unrs/resolver-binding-win32-x64-msvc Completed in 7ms
+505 timing reifyNode:node_modules/@unrs/resolver-binding-win32-ia32-msvc Completed in 7ms
+506 timing reifyNode:node_modules/@unrs/resolver-binding-win32-arm64-msvc Completed in 7ms
+507 timing reifyNode:node_modules/@unrs/resolver-binding-wasm32-wasi Completed in 7ms
+508 timing reifyNode:node_modules/@unrs/resolver-binding-linux-x64-musl Completed in 7ms
+509 timing reifyNode:node_modules/@unrs/resolver-binding-linux-x64-gnu Completed in 7ms
+510 timing reifyNode:node_modules/@unrs/resolver-binding-linux-s390x-gnu Completed in 7ms
+511 timing reifyNode:node_modules/@unrs/resolver-binding-linux-riscv64-musl Completed in 7ms
+512 timing reifyNode:node_modules/@unrs/resolver-binding-linux-riscv64-gnu Completed in 6ms
+513 timing reifyNode:node_modules/@unrs/resolver-binding-linux-ppc64-gnu Completed in 6ms
+514 timing reifyNode:node_modules/@unrs/resolver-binding-linux-arm64-musl Completed in 6ms
+515 timing reifyNode:node_modules/@unrs/resolver-binding-linux-arm64-gnu Completed in 6ms
+516 timing reifyNode:node_modules/@unrs/resolver-binding-linux-arm-musleabihf Completed in 6ms
+517 timing reifyNode:node_modules/@unrs/resolver-binding-linux-arm-gnueabihf Completed in 6ms
+518 timing reifyNode:node_modules/@unrs/resolver-binding-freebsd-x64 Completed in 6ms
+519 timing reifyNode:node_modules/@unrs/resolver-binding-darwin-x64 Completed in 6ms
+520 timing reifyNode:node_modules/@unrs/resolver-binding-android-arm64 Completed in 6ms
+521 timing reifyNode:node_modules/@unrs/resolver-binding-android-arm-eabi Completed in 6ms
+522 timing reifyNode:node_modules/@next/swc-win32-x64-msvc Completed in 6ms
+523 timing reifyNode:node_modules/@next/swc-win32-ia32-msvc Completed in 6ms
+524 timing reifyNode:node_modules/@next/swc-win32-arm64-msvc Completed in 6ms
+525 timing reifyNode:node_modules/@next/swc-linux-x64-musl Completed in 6ms
+526 timing reifyNode:node_modules/@next/swc-linux-x64-gnu Completed in 6ms
+527 timing reifyNode:node_modules/@next/swc-linux-arm64-musl Completed in 6ms
+528 timing reifyNode:node_modules/@next/swc-linux-arm64-gnu Completed in 6ms
+529 timing reifyNode:node_modules/@next/swc-darwin-x64 Completed in 6ms
+530 silly tarball no local data for trough@https://registry.npmjs.org/trough/-/trough-2.2.0.tgz. Extracting by manifest.
+531 silly tarball no local data for is-plain-obj@https://registry.npmjs.org/is-plain-obj/-/is-plain-obj-4.1.0.tgz. Extracting by manifest.
+532 silly tarball no local data for bail@https://registry.npmjs.org/bail/-/bail-2.0.2.tgz. Extracting by manifest.
+533 silly tarball no local data for style-to-object@https://registry.npmjs.org/style-to-object/-/style-to-object-1.0.12.tgz. Extracting by manifest.
+534 silly tarball no local data for inline-style-parser@https://registry.npmjs.org/inline-style-parser/-/inline-style-parser-0.2.6.tgz. Extracting by manifest.
+535 silly tarball no local data for micromark-extension-gfm-task-list-item@https://registry.npmjs.org/micromark-extension-gfm-task-list-item/-/micromark-extension-gfm-task-list-item-2.1.0.tgz. Extracting by manifest.
+536 silly tarball no local data for micromark-extension-gfm-tagfilter@https://registry.npmjs.org/micromark-extension-gfm-tagfilter/-/micromark-extension-gfm-tagfilter-2.0.0.tgz. Extracting by manifest.
+537 silly tarball no local data for extend@https://registry.npmjs.org/extend/-/extend-3.0.2.tgz. Extracting by manifest.
+538 silly tarball no local data for character-entities-html4@https://registry.npmjs.org/character-entities-html4/-/character-entities-html4-2.1.0.tgz. Extracting by manifest.
+539 silly tarball no local data for micromark-extension-gfm-strikethrough@https://registry.npmjs.org/micromark-extension-gfm-strikethrough/-/micromark-extension-gfm-strikethrough-2.1.0.tgz. Extracting by manifest.
+540 silly tarball no local data for micromark-extension-gfm-footnote@https://registry.npmjs.org/micromark-extension-gfm-footnote/-/micromark-extension-gfm-footnote-2.1.0.tgz. Extracting by manifest.
+541 silly tarball no local data for micromark-extension-gfm-table@https://registry.npmjs.org/micromark-extension-gfm-table/-/micromark-extension-gfm-table-2.1.1.tgz. Extracting by manifest.
+542 silly tarball no local data for micromark-extension-gfm-autolink-literal@https://registry.npmjs.org/micromark-extension-gfm-autolink-literal/-/micromark-extension-gfm-autolink-literal-2.1.0.tgz. Extracting by manifest.
+543 silly tarball no local data for unist-util-visit-parents@https://registry.npmjs.org/unist-util-visit-parents/-/unist-util-visit-parents-6.0.2.tgz. Extracting by manifest.
+544 silly tarball no local data for mdast-util-find-and-replace@https://registry.npmjs.org/mdast-util-find-and-replace/-/mdast-util-find-and-replace-3.0.2.tgz. Extracting by manifest.
+545 silly tarball no local data for markdown-table@https://registry.npmjs.org/markdown-table/-/markdown-table-3.0.4.tgz. Extracting by manifest.
+546 silly tarball no local data for mdast-util-gfm-task-list-item@https://registry.npmjs.org/mdast-util-gfm-task-list-item/-/mdast-util-gfm-task-list-item-2.0.0.tgz. Extracting by manifest.
+547 silly tarball no local data for mdast-util-gfm-table@https://registry.npmjs.org/mdast-util-gfm-table/-/mdast-util-gfm-table-2.0.0.tgz. Extracting by manifest.
+548 silly tarball no local data for mdast-util-gfm-strikethrough@https://registry.npmjs.org/mdast-util-gfm-strikethrough/-/mdast-util-gfm-strikethrough-2.0.0.tgz. Extracting by manifest.
+549 silly tarball no local data for mdast-util-gfm-autolink-literal@https://registry.npmjs.org/mdast-util-gfm-autolink-literal/-/mdast-util-gfm-autolink-literal-2.0.1.tgz. Extracting by manifest.
+550 silly tarball no local data for mdast-util-gfm-footnote@https://registry.npmjs.org/mdast-util-gfm-footnote/-/mdast-util-gfm-footnote-2.1.0.tgz. Extracting by manifest.
+551 silly tarball no local data for remark-stringify@https://registry.npmjs.org/remark-stringify/-/remark-stringify-11.0.0.tgz. Extracting by manifest.
+552 silly tarball no local data for micromark-extension-gfm@https://registry.npmjs.org/micromark-extension-gfm/-/micromark-extension-gfm-3.0.0.tgz. Extracting by manifest.
+553 silly tarball no local data for mdast-util-gfm@https://registry.npmjs.org/mdast-util-gfm/-/mdast-util-gfm-3.1.0.tgz. Extracting by manifest.
+554 silly tarball no local data for is-decimal@https://registry.npmjs.org/is-decimal/-/is-decimal-2.0.1.tgz. Extracting by manifest.
+555 silly tarball no local data for is-alphanumerical@https://registry.npmjs.org/is-alphanumerical/-/is-alphanumerical-2.0.1.tgz. Extracting by manifest.
+556 silly tarball no local data for is-hexadecimal@https://registry.npmjs.org/is-hexadecimal/-/is-hexadecimal-2.0.1.tgz. Extracting by manifest.
+557 silly tarball no local data for is-alphabetical@https://registry.npmjs.org/is-alphabetical/-/is-alphabetical-2.0.1.tgz. Extracting by manifest.
+558 silly tarball no local data for character-entities-legacy@https://registry.npmjs.org/character-entities-legacy/-/character-entities-legacy-3.0.0.tgz. Extracting by manifest.
+559 silly tarball no local data for character-reference-invalid@https://registry.npmjs.org/character-reference-invalid/-/character-reference-invalid-2.0.1.tgz. Extracting by manifest.
+560 silly tarball no local data for micromark-factory-title@https://registry.npmjs.org/micromark-factory-title/-/micromark-factory-title-2.0.1.tgz. Extracting by manifest.
+561 silly tarball no local data for micromark-factory-destination@https://registry.npmjs.org/micromark-factory-destination/-/micromark-factory-destination-2.0.1.tgz. Extracting by manifest.
+562 silly tarball no local data for micromark-factory-whitespace@https://registry.npmjs.org/micromark-factory-whitespace/-/micromark-factory-whitespace-2.0.1.tgz. Extracting by manifest.
+563 silly tarball no local data for micromark-util-html-tag-name@https://registry.npmjs.org/micromark-util-html-tag-name/-/micromark-util-html-tag-name-2.0.1.tgz. Extracting by manifest.
+564 silly tarball no local data for micromark-util-subtokenize@https://registry.npmjs.org/micromark-util-subtokenize/-/micromark-util-subtokenize-2.1.0.tgz. Extracting by manifest.
+565 silly tarball no local data for micromark-util-encode@https://registry.npmjs.org/micromark-util-encode/-/micromark-util-encode-2.0.1.tgz. Extracting by manifest.
+566 silly tarball no local data for micromark-factory-label@https://registry.npmjs.org/micromark-factory-label/-/micromark-factory-label-2.0.1.tgz. Extracting by manifest.
+567 silly tarball no local data for micromark-util-resolve-all@https://registry.npmjs.org/micromark-util-resolve-all/-/micromark-util-resolve-all-2.0.1.tgz. Extracting by manifest.
+568 silly tarball no local data for micromark-util-combine-extensions@https://registry.npmjs.org/micromark-util-combine-extensions/-/micromark-util-combine-extensions-2.0.1.tgz. Extracting by manifest.
+569 silly tarball no local data for micromark-factory-space@https://registry.npmjs.org/micromark-factory-space/-/micromark-factory-space-2.0.1.tgz. Extracting by manifest.
+570 silly tarball no local data for micromark-util-character@https://registry.npmjs.org/micromark-util-character/-/micromark-util-character-2.1.1.tgz. Extracting by manifest.
+571 silly tarball no local data for @types/debug@https://registry.npmjs.org/@types/debug/-/debug-4.1.12.tgz. Extracting by manifest.
+572 silly tarball no local data for @types/ms@https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz. Extracting by manifest.
+573 silly tarball no local data for micromark-util-chunked@https://registry.npmjs.org/micromark-util-chunked/-/micromark-util-chunked-2.0.1.tgz. Extracting by manifest.
+574 silly tarball no local data for unist-util-is@https://registry.npmjs.org/unist-util-is/-/unist-util-is-6.0.1.tgz. Extracting by manifest.
+575 silly tarball no local data for micromark-core-commonmark@https://registry.npmjs.org/micromark-core-commonmark/-/micromark-core-commonmark-2.0.3.tgz. Extracting by manifest.
+576 silly tarball no local data for micromark-util-classify-character@https://registry.npmjs.org/micromark-util-classify-character/-/micromark-util-classify-character-2.0.1.tgz. Extracting by manifest.
+577 silly tarball no local data for micromark-util-sanitize-uri@https://registry.npmjs.org/micromark-util-sanitize-uri/-/micromark-util-sanitize-uri-2.0.1.tgz. Extracting by manifest.
+578 silly tarball no local data for longest-streak@https://registry.npmjs.org/longest-streak/-/longest-streak-3.1.0.tgz. Extracting by manifest.
+579 silly tarball no local data for trim-lines@https://registry.npmjs.org/trim-lines/-/trim-lines-3.0.1.tgz. Extracting by manifest.
+580 silly tarball no local data for stringify-entities@https://registry.npmjs.org/stringify-entities/-/stringify-entities-4.0.4.tgz. Extracting by manifest.
+581 silly tarball no local data for ccount@https://registry.npmjs.org/ccount/-/ccount-2.0.1.tgz. Extracting by manifest.
+582 silly tarball no local data for character-entities@https://registry.npmjs.org/character-entities/-/character-entities-2.0.2.tgz. Extracting by manifest.
+583 silly tarball no local data for parse-entities@https://registry.npmjs.org/parse-entities/-/parse-entities-4.0.2.tgz. Extracting by manifest.
+584 silly tarball no local data for mdast-util-phrasing@https://registry.npmjs.org/mdast-util-phrasing/-/mdast-util-phrasing-4.1.0.tgz. Extracting by manifest.
+585 silly tarball no local data for zwitch@https://registry.npmjs.org/zwitch/-/zwitch-2.0.4.tgz. Extracting by manifest.
+586 silly tarball no local data for micromark-util-types@https://registry.npmjs.org/micromark-util-types/-/micromark-util-types-2.0.2.tgz. Extracting by manifest.
+587 silly tarball no local data for unist-util-stringify-position@https://registry.npmjs.org/unist-util-stringify-position/-/unist-util-stringify-position-4.0.0.tgz. Extracting by manifest.
+588 silly tarball no local data for micromark-util-normalize-identifier@https://registry.npmjs.org/micromark-util-normalize-identifier/-/micromark-util-normalize-identifier-2.0.1.tgz. Extracting by manifest.
+589 silly tarball no local data for micromark-util-decode-string@https://registry.npmjs.org/micromark-util-decode-string/-/micromark-util-decode-string-2.0.1.tgz. Extracting by manifest.
+590 silly tarball no local data for micromark@https://registry.npmjs.org/micromark/-/micromark-4.0.2.tgz. Extracting by manifest.
+591 silly tarball no local data for decode-named-character-reference@https://registry.npmjs.org/decode-named-character-reference/-/decode-named-character-reference-1.2.0.tgz. Extracting by manifest.
+592 silly tarball no local data for micromark-util-decode-numeric-character-reference@https://registry.npmjs.org/micromark-util-decode-numeric-character-reference/-/micromark-util-decode-numeric-character-reference-2.0.2.tgz. Extracting by manifest.
+593 silly tarball no local data for mdast-util-to-string@https://registry.npmjs.org/mdast-util-to-string/-/mdast-util-to-string-4.0.0.tgz. Extracting by manifest.
+594 silly tarball no local data for mdast-util-to-markdown@https://registry.npmjs.org/mdast-util-to-markdown/-/mdast-util-to-markdown-2.1.2.tgz. Extracting by manifest.
+595 silly tarball no local data for mdast-util-from-markdown@https://registry.npmjs.org/mdast-util-from-markdown/-/mdast-util-from-markdown-2.0.2.tgz. Extracting by manifest.
+596 silly tarball no local data for vfile-message@https://registry.npmjs.org/vfile-message/-/vfile-message-4.0.3.tgz. Extracting by manifest.
+597 silly tarball no local data for @types/estree-jsx@https://registry.npmjs.org/@types/estree-jsx/-/estree-jsx-1.0.5.tgz. Extracting by manifest.
+598 silly tarball no local data for micromark-util-symbol@https://registry.npmjs.org/micromark-util-symbol/-/micromark-util-symbol-2.0.1.tgz. Extracting by manifest.
+599 silly tarball no local data for style-to-js@https://registry.npmjs.org/style-to-js/-/style-to-js-1.1.19.tgz. Extracting by manifest.
+600 silly tarball no local data for space-separated-tokens@https://registry.npmjs.org/space-separated-tokens/-/space-separated-tokens-2.0.2.tgz. Extracting by manifest.
+601 silly tarball no local data for unist-util-position@https://registry.npmjs.org/unist-util-position/-/unist-util-position-5.0.0.tgz. Extracting by manifest.
+602 silly tarball no local data for mdast-util-mdx-jsx@https://registry.npmjs.org/mdast-util-mdx-jsx/-/mdast-util-mdx-jsx-3.2.0.tgz. Extracting by manifest.
+603 silly tarball no local data for property-information@https://registry.npmjs.org/property-information/-/property-information-7.1.0.tgz. Extracting by manifest.
+604 silly tarball no local data for mdast-util-mdxjs-esm@https://registry.npmjs.org/mdast-util-mdxjs-esm/-/mdast-util-mdxjs-esm-2.0.1.tgz. Extracting by manifest.
+605 silly tarball no local data for hast-util-whitespace@https://registry.npmjs.org/hast-util-whitespace/-/hast-util-whitespace-3.0.0.tgz. Extracting by manifest.
+606 silly tarball no local data for mdast-util-mdx-expression@https://registry.npmjs.org/mdast-util-mdx-expression/-/mdast-util-mdx-expression-2.0.1.tgz. Extracting by manifest.
+607 silly tarball no local data for estree-util-is-identifier-name@https://registry.npmjs.org/estree-util-is-identifier-name/-/estree-util-is-identifier-name-3.0.0.tgz. Extracting by manifest.
+608 silly tarball no local data for dequal@https://registry.npmjs.org/dequal/-/dequal-2.0.3.tgz. Extracting by manifest.
+609 silly tarball no local data for @types/estree@https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz. Extracting by manifest.
+610 silly tarball no local data for comma-separated-tokens@https://registry.npmjs.org/comma-separated-tokens/-/comma-separated-tokens-2.0.3.tgz. Extracting by manifest.
+611 silly tarball no local data for unist-util-visit@https://registry.npmjs.org/unist-util-visit/-/unist-util-visit-5.0.0.tgz. Extracting by manifest.
+612 silly tarball no local data for unified@https://registry.npmjs.org/unified/-/unified-11.0.5.tgz. Extracting by manifest.
+613 silly tarball no local data for @types/unist@https://registry.npmjs.org/@types/unist/-/unist-3.0.3.tgz. Extracting by manifest.
+614 silly tarball no local data for remark-rehype@https://registry.npmjs.org/remark-rehype/-/remark-rehype-11.1.2.tgz. Extracting by manifest.
+615 silly tarball no local data for vfile@https://registry.npmjs.org/vfile/-/vfile-6.0.3.tgz. Extracting by manifest.
+616 silly tarball no local data for mdast-util-to-hast@https://registry.npmjs.org/mdast-util-to-hast/-/mdast-util-to-hast-13.2.0.tgz. Extracting by manifest.
+617 silly tarball no local data for hast-util-to-jsx-runtime@https://registry.npmjs.org/hast-util-to-jsx-runtime/-/hast-util-to-jsx-runtime-2.3.6.tgz. Extracting by manifest.
+618 silly tarball no local data for remark-parse@https://registry.npmjs.org/remark-parse/-/remark-parse-11.0.0.tgz. Extracting by manifest.
+619 silly tarball no local data for @types/mdast@https://registry.npmjs.org/@types/mdast/-/mdast-4.0.4.tgz. Extracting by manifest.
+620 silly tarball no local data for devlop@https://registry.npmjs.org/devlop/-/devlop-1.1.0.tgz. Extracting by manifest.
+621 silly tarball no local data for @types/hast@https://registry.npmjs.org/@types/hast/-/hast-3.0.4.tgz. Extracting by manifest.
+622 silly tarball no local data for remark-gfm@https://registry.npmjs.org/remark-gfm/-/remark-gfm-4.0.1.tgz. Extracting by manifest.
+623 silly tarball no local data for html-url-attributes@https://registry.npmjs.org/html-url-attributes/-/html-url-attributes-3.0.1.tgz. Extracting by manifest.
+624 silly tarball no local data for react-markdown@https://registry.npmjs.org/react-markdown/-/react-markdown-10.1.0.tgz. Extracting by manifest.
+625 silly tarball no local data for @emnapi/wasi-threads@https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz. Extracting by manifest.
+626 silly tarball no local data for @tybys/wasm-util@https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz. Extracting by manifest.
+627 silly tarball no local data for @napi-rs/wasm-runtime@https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz. Extracting by manifest.
+628 silly tarball no local data for @emnapi/runtime@https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.7.0.tgz. Extracting by manifest.
+629 silly tarball no local data for @emnapi/core@https://registry.npmjs.org/@emnapi/core/-/core-1.7.0.tgz. Extracting by manifest.
+630 silly tarball no local data for escape-string-regexp@https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-5.0.0.tgz. Extracting by manifest.
+631 silly tarball no local data for @types/unist@https://registry.npmjs.org/@types/unist/-/unist-2.0.11.tgz. Extracting by manifest.
+632 http fetch GET 200 https://registry.npmjs.org/is-plain-obj/-/is-plain-obj-4.1.0.tgz 202ms (cache miss)
+633 timing reifyNode:node_modules/is-plain-obj Completed in 217ms
+634 http fetch GET 200 https://registry.npmjs.org/bail/-/bail-2.0.2.tgz 232ms (cache miss)
+635 timing reifyNode:node_modules/bail Completed in 247ms
+636 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-task-list-item/-/micromark-extension-gfm-task-list-item-2.1.0.tgz 247ms (cache miss)
+637 timing reifyNode:node_modules/micromark-extension-gfm-task-list-item Completed in 263ms
+638 http fetch GET 200 https://registry.npmjs.org/inline-style-parser/-/inline-style-parser-0.2.6.tgz 249ms (cache miss)
+639 timing reifyNode:node_modules/inline-style-parser Completed in 264ms
+640 http fetch GET 200 https://registry.npmjs.org/trough/-/trough-2.2.0.tgz 256ms (cache miss)
+641 timing reifyNode:node_modules/trough Completed in 271ms
+642 http fetch GET 200 https://registry.npmjs.org/extend/-/extend-3.0.2.tgz 255ms (cache miss)
+643 timing reifyNode:node_modules/extend Completed in 271ms
+644 http fetch GET 200 https://registry.npmjs.org/character-entities-html4/-/character-entities-html4-2.1.0.tgz 273ms (cache miss)
+645 timing reifyNode:node_modules/character-entities-html4 Completed in 289ms
+646 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-tagfilter/-/micromark-extension-gfm-tagfilter-2.0.0.tgz 274ms (cache miss)
+647 timing reifyNode:node_modules/micromark-extension-gfm-tagfilter Completed in 290ms
+648 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-strikethrough/-/micromark-extension-gfm-strikethrough-2.1.0.tgz 275ms (cache miss)
+649 timing reifyNode:node_modules/micromark-extension-gfm-strikethrough Completed in 291ms
+650 http fetch GET 200 https://registry.npmjs.org/style-to-object/-/style-to-object-1.0.12.tgz 276ms (cache miss)
+651 timing reifyNode:node_modules/style-to-object Completed in 291ms
+652 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 403ms
+653 timing auditReport:getReport Completed in 406ms
+654 silly audit report {}
+655 timing auditReport:init Completed in 0ms
+656 timing reify:audit Completed in 406ms
+657 http fetch GET 200 https://registry.npmjs.org/character-entities-legacy/-/character-entities-legacy-3.0.0.tgz 493ms (cache miss)
+658 timing reifyNode:node_modules/character-entities-legacy Completed in 512ms
+659 http fetch GET 200 https://registry.npmjs.org/markdown-table/-/markdown-table-3.0.4.tgz 556ms (cache miss)
+660 timing reifyNode:node_modules/markdown-table Completed in 572ms
+661 http fetch GET 200 https://registry.npmjs.org/micromark-factory-whitespace/-/micromark-factory-whitespace-2.0.1.tgz 594ms (cache miss)
+662 timing reifyNode:node_modules/micromark-factory-whitespace Completed in 615ms
+663 http fetch GET 200 https://registry.npmjs.org/is-decimal/-/is-decimal-2.0.1.tgz 597ms (cache miss)
+664 timing reifyNode:node_modules/is-decimal Completed in 615ms
+665 http fetch GET 200 https://registry.npmjs.org/is-alphanumerical/-/is-alphanumerical-2.0.1.tgz 600ms (cache miss)
+666 timing reifyNode:node_modules/is-alphanumerical Completed in 618ms
+667 http fetch GET 200 https://registry.npmjs.org/micromark-util-encode/-/micromark-util-encode-2.0.1.tgz 611ms (cache miss)
+668 timing reifyNode:node_modules/micromark-util-encode Completed in 633ms
+669 http fetch GET 200 https://registry.npmjs.org/mdast-util-find-and-replace/-/mdast-util-find-and-replace-3.0.2.tgz 617ms (cache miss)
+670 timing reifyNode:node_modules/mdast-util-find-and-replace Completed in 633ms
+671 http fetch GET 200 https://registry.npmjs.org/micromark-factory-label/-/micromark-factory-label-2.0.1.tgz 613ms (cache miss)
+672 timing reifyNode:node_modules/micromark-factory-label Completed in 634ms
+673 http fetch GET 200 https://registry.npmjs.org/mdast-util-phrasing/-/mdast-util-phrasing-4.1.0.tgz 612ms (cache miss)
+674 timing reifyNode:node_modules/mdast-util-phrasing Completed in 636ms
+675 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm/-/mdast-util-gfm-3.1.0.tgz 619ms (cache miss)
+676 timing reifyNode:node_modules/mdast-util-gfm Completed in 637ms
+677 http fetch GET 200 https://registry.npmjs.org/stringify-entities/-/stringify-entities-4.0.4.tgz 616ms (cache miss)
+678 timing reifyNode:node_modules/stringify-entities Completed in 639ms
+679 http fetch GET 200 https://registry.npmjs.org/is-alphabetical/-/is-alphabetical-2.0.1.tgz 644ms (cache miss)
+680 timing reifyNode:node_modules/is-alphabetical Completed in 664ms
+681 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-autolink-literal/-/mdast-util-gfm-autolink-literal-2.0.1.tgz 647ms (cache miss)
+682 timing reifyNode:node_modules/mdast-util-gfm-autolink-literal Completed in 664ms
+683 http fetch GET 200 https://registry.npmjs.org/micromark-util-resolve-all/-/micromark-util-resolve-all-2.0.1.tgz 644ms (cache miss)
+684 timing reifyNode:node_modules/micromark-util-resolve-all Completed in 665ms
+685 http fetch GET 200 https://registry.npmjs.org/micromark-factory-space/-/micromark-factory-space-2.0.1.tgz 645ms (cache miss)
+686 timing reifyNode:node_modules/micromark-factory-space Completed in 666ms
+687 http fetch GET 200 https://registry.npmjs.org/unist-util-visit-parents/-/unist-util-visit-parents-6.0.2.tgz 670ms (cache miss)
+688 timing reifyNode:node_modules/unist-util-visit-parents Completed in 686ms
+689 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-task-list-item/-/mdast-util-gfm-task-list-item-2.0.0.tgz 669ms (cache miss)
+690 timing reifyNode:node_modules/mdast-util-gfm-task-list-item Completed in 686ms
+691 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-autolink-literal/-/micromark-extension-gfm-autolink-literal-2.1.0.tgz 671ms (cache miss)
+692 timing reifyNode:node_modules/micromark-extension-gfm-autolink-literal Completed in 687ms
+693 http fetch GET 200 https://registry.npmjs.org/trim-lines/-/trim-lines-3.0.1.tgz 664ms (cache miss)
+694 timing reifyNode:node_modules/trim-lines Completed in 686ms
+695 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-strikethrough/-/mdast-util-gfm-strikethrough-2.0.0.tgz 671ms (cache miss)
+696 timing reifyNode:node_modules/mdast-util-gfm-strikethrough Completed in 688ms
+697 http fetch GET 200 https://registry.npmjs.org/micromark-util-html-tag-name/-/micromark-util-html-tag-name-2.0.1.tgz 667ms (cache miss)
+698 timing reifyNode:node_modules/micromark-util-html-tag-name Completed in 688ms
+699 http fetch GET 200 https://registry.npmjs.org/ccount/-/ccount-2.0.1.tgz 666ms (cache miss)
+700 timing reifyNode:node_modules/ccount Completed in 688ms
+701 http fetch GET 200 https://registry.npmjs.org/micromark-util-sanitize-uri/-/micromark-util-sanitize-uri-2.0.1.tgz 666ms (cache miss)
+702 timing reifyNode:node_modules/micromark-util-sanitize-uri Completed in 688ms
+703 http fetch GET 200 https://registry.npmjs.org/micromark-util-subtokenize/-/micromark-util-subtokenize-2.1.0.tgz 692ms (cache miss)
+704 timing reifyNode:node_modules/micromark-util-subtokenize Completed in 713ms
+705 http fetch GET 200 https://registry.npmjs.org/micromark-util-combine-extensions/-/micromark-util-combine-extensions-2.0.1.tgz 692ms (cache miss)
+706 timing reifyNode:node_modules/micromark-util-combine-extensions Completed in 713ms
+707 http fetch GET 200 https://registry.npmjs.org/micromark-util-classify-character/-/micromark-util-classify-character-2.0.1.tgz 691ms (cache miss)
+708 timing reifyNode:node_modules/micromark-util-classify-character Completed in 714ms
+709 http fetch GET 200 https://registry.npmjs.org/micromark-factory-title/-/micromark-factory-title-2.0.1.tgz 693ms (cache miss)
+710 timing reifyNode:node_modules/micromark-factory-title Completed in 714ms
+711 http fetch GET 200 https://registry.npmjs.org/remark-stringify/-/remark-stringify-11.0.0.tgz 696ms (cache miss)
+712 timing reifyNode:node_modules/remark-stringify Completed in 714ms
+713 http fetch GET 200 https://registry.npmjs.org/space-separated-tokens/-/space-separated-tokens-2.0.2.tgz 694ms (cache miss)
+714 timing reifyNode:node_modules/space-separated-tokens Completed in 718ms
+715 http fetch GET 200 https://registry.npmjs.org/micromark-util-character/-/micromark-util-character-2.1.1.tgz 721ms (cache miss)
+716 timing reifyNode:node_modules/micromark-util-character Completed in 743ms
+717 http fetch GET 200 https://registry.npmjs.org/unist-util-stringify-position/-/unist-util-stringify-position-4.0.0.tgz 725ms (cache miss)
+718 timing reifyNode:node_modules/unist-util-stringify-position Completed in 748ms
+719 http fetch GET 200 https://registry.npmjs.org/longest-streak/-/longest-streak-3.1.0.tgz 732ms (cache miss)
+720 timing reifyNode:node_modules/longest-streak Completed in 756ms
+721 http fetch GET 200 https://registry.npmjs.org/parse-entities/-/parse-entities-4.0.2.tgz 738ms (cache miss)
+722 timing reifyNode:node_modules/parse-entities Completed in 761ms
+723 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-table/-/micromark-extension-gfm-table-2.1.1.tgz 759ms (cache miss)
+724 timing reifyNode:node_modules/micromark-extension-gfm-table Completed in 775ms
+725 http fetch GET 200 https://registry.npmjs.org/character-reference-invalid/-/character-reference-invalid-2.0.1.tgz 785ms (cache miss)
+726 timing reifyNode:node_modules/character-reference-invalid Completed in 804ms
+727 http fetch GET 200 https://registry.npmjs.org/micromark-util-types/-/micromark-util-types-2.0.2.tgz 780ms (cache miss)
+728 timing reifyNode:node_modules/micromark-util-types Completed in 803ms
+729 http fetch GET 200 https://registry.npmjs.org/html-url-attributes/-/html-url-attributes-3.0.1.tgz 772ms (cache miss)
+730 timing reifyNode:node_modules/html-url-attributes Completed in 803ms
+731 http fetch GET 200 https://registry.npmjs.org/unist-util-is/-/unist-util-is-6.0.1.tgz 782ms (cache miss)
+732 timing reifyNode:node_modules/unist-util-is Completed in 804ms
+733 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-string/-/mdast-util-to-string-4.0.0.tgz 779ms (cache miss)
+734 timing reifyNode:node_modules/mdast-util-to-string Completed in 804ms
+735 http fetch GET 200 https://registry.npmjs.org/character-entities/-/character-entities-2.0.2.tgz 782ms (cache miss)
+736 timing reifyNode:node_modules/character-entities Completed in 805ms
+737 http fetch GET 200 https://registry.npmjs.org/unist-util-position/-/unist-util-position-5.0.0.tgz 817ms (cache miss)
+738 timing reifyNode:node_modules/unist-util-position Completed in 841ms
+739 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-table/-/mdast-util-gfm-table-2.0.0.tgz 833ms (cache miss)
+740 timing reifyNode:node_modules/mdast-util-gfm-table Completed in 850ms
+741 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm-footnote/-/micromark-extension-gfm-footnote-2.1.0.tgz 835ms (cache miss)
+742 timing reifyNode:node_modules/micromark-extension-gfm-footnote Completed in 851ms
+743 http fetch GET 200 https://registry.npmjs.org/is-hexadecimal/-/is-hexadecimal-2.0.1.tgz 834ms (cache miss)
+744 timing reifyNode:node_modules/is-hexadecimal Completed in 852ms
+745 http fetch GET 200 https://registry.npmjs.org/mdast-util-gfm-footnote/-/mdast-util-gfm-footnote-2.1.0.tgz 843ms (cache miss)
+746 timing reifyNode:node_modules/mdast-util-gfm-footnote Completed in 860ms
+747 http fetch GET 200 https://registry.npmjs.org/unified/-/unified-11.0.5.tgz 839ms (cache miss)
+748 timing reifyNode:node_modules/unified Completed in 865ms
+749 http fetch GET 200 https://registry.npmjs.org/zwitch/-/zwitch-2.0.4.tgz 842ms (cache miss)
+750 timing reifyNode:node_modules/zwitch Completed in 866ms
+751 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdx-jsx/-/mdast-util-mdx-jsx-3.2.0.tgz 841ms (cache miss)
+752 timing reifyNode:node_modules/mdast-util-mdx-jsx Completed in 865ms
+753 http fetch GET 200 https://registry.npmjs.org/vfile-message/-/vfile-message-4.0.3.tgz 847ms (cache miss)
+754 timing reifyNode:node_modules/vfile-message Completed in 871ms
+755 http fetch GET 200 https://registry.npmjs.org/micromark-extension-gfm/-/micromark-extension-gfm-3.0.0.tgz 886ms (cache miss)
+756 timing reifyNode:node_modules/micromark-extension-gfm Completed in 904ms
+757 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdxjs-esm/-/mdast-util-mdxjs-esm-2.0.1.tgz 888ms (cache miss)
+758 timing reifyNode:node_modules/mdast-util-mdxjs-esm Completed in 913ms
+759 http fetch GET 200 https://registry.npmjs.org/estree-util-is-identifier-name/-/estree-util-is-identifier-name-3.0.0.tgz 923ms (cache miss)
+760 timing reifyNode:node_modules/estree-util-is-identifier-name Completed in 948ms
+761 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-markdown/-/mdast-util-to-markdown-2.1.2.tgz 926ms (cache miss)
+762 timing reifyNode:node_modules/mdast-util-to-markdown Completed in 950ms
+763 http fetch GET 200 https://registry.npmjs.org/devlop/-/devlop-1.1.0.tgz 921ms (cache miss)
+764 timing reifyNode:node_modules/devlop Completed in 952ms
+765 http fetch GET 200 https://registry.npmjs.org/hast-util-to-jsx-runtime/-/hast-util-to-jsx-runtime-2.3.6.tgz 929ms (cache miss)
+766 timing reifyNode:node_modules/hast-util-to-jsx-runtime Completed in 955ms
+767 http fetch GET 200 https://registry.npmjs.org/decode-named-character-reference/-/decode-named-character-reference-1.2.0.tgz 932ms (cache miss)
+768 timing reifyNode:node_modules/decode-named-character-reference Completed in 955ms
+769 http fetch GET 200 https://registry.npmjs.org/dequal/-/dequal-2.0.3.tgz 933ms (cache miss)
+770 timing reifyNode:node_modules/dequal Completed in 958ms
+771 http fetch GET 200 https://registry.npmjs.org/@types/debug/-/debug-4.1.12.tgz 942ms (cache miss)
+772 timing reifyNode:node_modules/@types/debug Completed in 964ms
+773 http fetch GET 200 https://registry.npmjs.org/comma-separated-tokens/-/comma-separated-tokens-2.0.3.tgz 938ms (cache miss)
+774 timing reifyNode:node_modules/comma-separated-tokens Completed in 963ms
+775 http fetch GET 200 https://registry.npmjs.org/mdast-util-to-hast/-/mdast-util-to-hast-13.2.0.tgz 937ms (cache miss)
+776 timing reifyNode:node_modules/mdast-util-to-hast Completed in 963ms
+777 http fetch GET 200 https://registry.npmjs.org/unist-util-visit/-/unist-util-visit-5.0.0.tgz 937ms (cache miss)
+778 timing reifyNode:node_modules/unist-util-visit Completed in 963ms
+779 http fetch GET 200 https://registry.npmjs.org/micromark-core-commonmark/-/micromark-core-commonmark-2.0.3.tgz 943ms (cache miss)
+780 timing reifyNode:node_modules/micromark-core-commonmark Completed in 965ms
+781 http fetch GET 200 https://registry.npmjs.org/micromark-util-symbol/-/micromark-util-symbol-2.0.1.tgz 951ms (cache miss)
+782 timing reifyNode:node_modules/micromark-util-symbol Completed in 975ms
+783 http fetch GET 200 https://registry.npmjs.org/remark-gfm/-/remark-gfm-4.0.1.tgz 955ms (cache miss)
+784 timing reifyNode:node_modules/remark-gfm Completed in 986ms
+785 http fetch GET 200 https://registry.npmjs.org/micromark-util-decode-string/-/micromark-util-decode-string-2.0.1.tgz 964ms (cache miss)
+786 timing reifyNode:node_modules/micromark-util-decode-string Completed in 987ms
+787 http fetch GET 200 https://registry.npmjs.org/micromark/-/micromark-4.0.2.tgz 964ms (cache miss)
+788 timing reifyNode:node_modules/micromark Completed in 987ms
+789 http fetch GET 200 https://registry.npmjs.org/escape-string-regexp/-/escape-string-regexp-5.0.0.tgz 984ms (cache miss)
+790 timing reifyNode:node_modules/mdast-util-find-and-replace/node_modules/escape-string-regexp Completed in 1017ms
+791 http fetch GET 200 https://registry.npmjs.org/style-to-js/-/style-to-js-1.1.19.tgz 1000ms (cache miss)
+792 timing reifyNode:node_modules/style-to-js Completed in 1024ms
+793 http fetch GET 200 https://registry.npmjs.org/property-information/-/property-information-7.1.0.tgz 999ms (cache miss)
+794 timing reifyNode:node_modules/property-information Completed in 1024ms
+795 http fetch GET 200 https://registry.npmjs.org/micromark-factory-destination/-/micromark-factory-destination-2.0.1.tgz 1013ms (cache miss)
+796 timing reifyNode:node_modules/micromark-factory-destination Completed in 1034ms
+797 http fetch GET 200 https://registry.npmjs.org/mdast-util-mdx-expression/-/mdast-util-mdx-expression-2.0.1.tgz 1009ms (cache miss)
+798 timing reifyNode:node_modules/mdast-util-mdx-expression Completed in 1034ms
+799 http fetch GET 200 https://registry.npmjs.org/@types/ms/-/ms-2.1.0.tgz 1044ms (cache miss)
+800 timing reifyNode:node_modules/@types/ms Completed in 1067ms
+801 http fetch GET 200 https://registry.npmjs.org/hast-util-whitespace/-/hast-util-whitespace-3.0.0.tgz 1057ms (cache miss)
+802 timing reifyNode:node_modules/hast-util-whitespace Completed in 1082ms
+803 http fetch GET 200 https://registry.npmjs.org/react-markdown/-/react-markdown-10.1.0.tgz 1061ms (cache miss)
+804 timing reifyNode:node_modules/react-markdown Completed in 1093ms
+805 http fetch GET 200 https://registry.npmjs.org/micromark-util-decode-numeric-character-reference/-/micromark-util-decode-numeric-character-reference-2.0.2.tgz 1069ms (cache miss)
+806 timing reifyNode:node_modules/micromark-util-decode-numeric-character-reference Completed in 1093ms
+807 http fetch GET 200 https://registry.npmjs.org/remark-rehype/-/remark-rehype-11.1.2.tgz 1097ms (cache miss)
+808 timing reifyNode:node_modules/remark-rehype Completed in 1123ms
+809 http fetch GET 200 https://registry.npmjs.org/@types/estree-jsx/-/estree-jsx-1.0.5.tgz 1099ms (cache miss)
+810 timing reifyNode:node_modules/@types/estree-jsx Completed in 1123ms
+811 http fetch GET 200 https://registry.npmjs.org/@types/unist/-/unist-2.0.11.tgz 1092ms (cache miss)
+812 timing reifyNode:node_modules/parse-entities/node_modules/@types/unist Completed in 1124ms
+813 http fetch GET 200 https://registry.npmjs.org/mdast-util-from-markdown/-/mdast-util-from-markdown-2.0.2.tgz 1100ms (cache miss)
+814 timing reifyNode:node_modules/mdast-util-from-markdown Completed in 1124ms
+815 http fetch GET 200 https://registry.npmjs.org/micromark-util-chunked/-/micromark-util-chunked-2.0.1.tgz 1113ms (cache miss)
+816 timing reifyNode:node_modules/micromark-util-chunked Completed in 1135ms
+817 http fetch GET 200 https://registry.npmjs.org/@types/hast/-/hast-3.0.4.tgz 1123ms (cache miss)
+818 timing reifyNode:node_modules/@types/hast Completed in 1154ms
+819 http fetch GET 200 https://registry.npmjs.org/vfile/-/vfile-6.0.3.tgz 1137ms (cache miss)
+820 timing reifyNode:node_modules/vfile Completed in 1163ms
+821 http fetch GET 200 https://registry.npmjs.org/@types/unist/-/unist-3.0.3.tgz 1137ms (cache miss)
+822 timing reifyNode:node_modules/@types/unist Completed in 1164ms
+823 http fetch GET 200 https://registry.npmjs.org/micromark-util-normalize-identifier/-/micromark-util-normalize-identifier-2.0.1.tgz 1144ms (cache miss)
+824 timing reifyNode:node_modules/micromark-util-normalize-identifier Completed in 1167ms
+825 http fetch GET 200 https://registry.npmjs.org/remark-parse/-/remark-parse-11.0.0.tgz 1137ms (cache miss)
+826 timing reifyNode:node_modules/remark-parse Completed in 1167ms
+827 http fetch GET 200 https://registry.npmjs.org/@types/mdast/-/mdast-4.0.4.tgz 1179ms (cache miss)
+828 timing reifyNode:node_modules/@types/mdast Completed in 1209ms
+829 http fetch GET 200 https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz 1185ms (cache miss)
+830 timing reifyNode:node_modules/@types/estree Completed in 1210ms
+831 http fetch GET 200 https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz 1409ms (cache miss)
+832 timing reifyNode:node_modules/@emnapi/wasi-threads Completed in 1439ms
+833 http fetch GET 200 https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.7.0.tgz 1517ms (cache miss)
+834 timing reifyNode:node_modules/@emnapi/runtime Completed in 1548ms
+835 http fetch GET 200 https://registry.npmjs.org/@tybys/wasm-util/-/wasm-util-0.10.1.tgz 1688ms (cache miss)
+836 timing reifyNode:node_modules/@tybys/wasm-util Completed in 1718ms
+837 http fetch GET 200 https://registry.npmjs.org/@emnapi/core/-/core-1.7.0.tgz 1771ms (cache miss)
+838 timing reifyNode:node_modules/@emnapi/core Completed in 1803ms
+839 http fetch GET 200 https://registry.npmjs.org/@napi-rs/wasm-runtime/-/wasm-runtime-0.2.12.tgz 2189ms (cache miss)
+840 timing reifyNode:node_modules/@napi-rs/wasm-runtime Completed in 2219ms
+841 timing reify:unpack Completed in 2222ms
+842 timing reify:unretire Completed in 1ms
+843 timing build:queue Completed in 4ms
+844 timing build:deps Completed in 4ms
+845 timing build Completed in 4ms
+846 timing reify:build Completed in 4ms
+847 timing reify:trash Completed in 7ms
+848 timing reify:save Completed in 80ms
+849 timing reify Completed in 6936ms
+850 silly ADD node_modules/trough
+851 silly ADD node_modules/is-plain-obj
+852 silly ADD node_modules/extend
+853 silly ADD node_modules/bail
+854 silly ADD node_modules/inline-style-parser
+855 silly ADD node_modules/style-to-object
+856 silly ADD node_modules/character-entities-html4
+857 silly ADD node_modules/micromark-extension-gfm-task-list-item
+858 silly ADD node_modules/micromark-extension-gfm-tagfilter
+859 silly ADD node_modules/micromark-extension-gfm-table
+860 silly ADD node_modules/micromark-extension-gfm-strikethrough
+861 silly ADD node_modules/micromark-extension-gfm-footnote
+862 silly ADD node_modules/micromark-extension-gfm-autolink-literal
+863 silly ADD node_modules/markdown-table
+864 silly ADD node_modules/unist-util-visit-parents
+865 silly ADD node_modules/mdast-util-find-and-replace
+866 silly ADD node_modules/mdast-util-find-and-replace/node_modules/escape-string-regexp
+867 silly ADD node_modules/mdast-util-gfm-task-list-item
+868 silly ADD node_modules/mdast-util-gfm-table
+869 silly ADD node_modules/mdast-util-gfm-strikethrough
+870 silly ADD node_modules/mdast-util-gfm-footnote
+871 silly ADD node_modules/mdast-util-gfm-autolink-literal
+872 silly ADD node_modules/remark-stringify
+873 silly ADD node_modules/micromark-extension-gfm
+874 silly ADD node_modules/mdast-util-gfm
+875 silly ADD node_modules/is-alphabetical
+876 silly ADD node_modules/is-hexadecimal
+877 silly ADD node_modules/is-decimal
+878 silly ADD node_modules/is-alphanumerical
+879 silly ADD node_modules/character-reference-invalid
+880 silly ADD node_modules/character-entities-legacy
+881 silly ADD node_modules/micromark-util-html-tag-name
+882 silly ADD node_modules/micromark-factory-whitespace
+883 silly ADD node_modules/micromark-factory-title
+884 silly ADD node_modules/micromark-factory-label
+885 silly ADD node_modules/micromark-factory-destination
+886 silly ADD node_modules/@types/ms
+887 silly ADD node_modules/micromark-util-subtokenize
+888 silly ADD node_modules/micromark-util-resolve-all
+889 silly ADD node_modules/micromark-util-encode
+890 silly ADD node_modules/micromark-util-combine-extensions
+891 silly ADD node_modules/micromark-util-chunked
+892 silly ADD node_modules/micromark-util-character
+893 silly ADD node_modules/micromark-factory-space
+894 silly ADD node_modules/micromark-core-commonmark
+895 silly ADD node_modules/@types/debug
+896 silly ADD node_modules/unist-util-is
+897 silly ADD node_modules/zwitch
+898 silly ADD node_modules/micromark-util-classify-character
+899 silly ADD node_modules/mdast-util-phrasing
+900 silly ADD node_modules/longest-streak
+901 silly ADD node_modules/trim-lines
+902 silly ADD node_modules/micromark-util-sanitize-uri
+903 silly ADD node_modules/stringify-entities
+904 silly ADD node_modules/parse-entities
+905 silly ADD node_modules/parse-entities/node_modules/@types/unist
+906 silly ADD node_modules/ccount
+907 silly ADD node_modules/character-entities
+908 silly ADD node_modules/unist-util-stringify-position
+909 silly ADD node_modules/micromark-util-types
+910 silly ADD node_modules/micromark-util-symbol
+911 silly ADD node_modules/micromark-util-normalize-identifier
+912 silly ADD node_modules/micromark-util-decode-string
+913 silly ADD node_modules/micromark-util-decode-numeric-character-reference
+914 silly ADD node_modules/micromark
+915 silly ADD node_modules/mdast-util-to-string
+916 silly ADD node_modules/decode-named-character-reference
+917 silly ADD node_modules/mdast-util-to-markdown
+918 silly ADD node_modules/mdast-util-from-markdown
+919 silly ADD node_modules/@types/estree-jsx
+920 silly ADD node_modules/vfile-message
+921 silly ADD node_modules/unist-util-position
+922 silly ADD node_modules/style-to-js
+923 silly ADD node_modules/space-separated-tokens
+924 silly ADD node_modules/property-information
+925 silly ADD node_modules/mdast-util-mdxjs-esm
+926 silly ADD node_modules/mdast-util-mdx-jsx
+927 silly ADD node_modules/mdast-util-mdx-expression
+928 silly ADD node_modules/hast-util-whitespace
+929 silly ADD node_modules/estree-util-is-identifier-name
+930 silly ADD node_modules/comma-separated-tokens
+931 silly ADD node_modules/@types/estree
+932 silly ADD node_modules/dequal
+933 silly ADD node_modules/@types/unist
+934 silly ADD node_modules/vfile
+935 silly ADD node_modules/unist-util-visit
+936 silly ADD node_modules/unified
+937 silly ADD node_modules/remark-rehype
+938 silly ADD node_modules/remark-parse
+939 silly ADD node_modules/mdast-util-to-hast
+940 silly ADD node_modules/html-url-attributes
+941 silly ADD node_modules/hast-util-to-jsx-runtime
+942 silly ADD node_modules/devlop
+943 silly ADD node_modules/@types/mdast
+944 silly ADD node_modules/@types/hast
+945 silly ADD node_modules/remark-gfm
+946 silly ADD node_modules/react-markdown
+947 silly ADD
+948 silly ADD
+949 silly ADD
+950 silly ADD
+951 silly ADD
+952 silly ADD
+953 silly ADD
+954 silly ADD
+955 silly ADD
+956 silly ADD
+957 silly ADD
+958 silly ADD
+959 silly ADD
+960 silly ADD
+961 silly ADD
+962 silly ADD
+963 silly ADD
+964 silly ADD
+965 silly ADD
+966 silly ADD
+967 silly ADD
+968 silly ADD
+969 silly ADD
+970 silly ADD
+971 silly ADD
+972 silly ADD
+973 silly ADD
+974 silly ADD
+975 silly ADD
+976 silly ADD
+977 silly ADD
+978 timing command:install Completed in 6941ms
+979 notice
+979 notice New major version of npm available! 10.5.0 -> 11.6.2
+979 notice Changelog: <https://github.com/npm/cli/releases/tag/v11.6.2>
+979 notice Run `npm install -g npm@11.6.2` to update!
+979 notice
+980 verbose exit 0
+981 timing npm Completed in 7021ms
+982 info ok
