@@ -284,6 +284,9 @@ const SubCategoryQuizPage: React.FC = () => {
   const [isGradingEssay, setIsGradingEssay] = useState<Record<number, boolean>>({}); // Lưu trạng thái đang chấm điểm tự luận
   const [showSubmitButton, setShowSubmitButton] = useState(true); // Hiển thị nút nộp bài
   const lastScrollY = useRef(0); // Lưu vị trí scroll trước đó
+  const [focusedEssayId, setFocusedEssayId] = useState<number | null>(null); // Lưu id của textarea đang focus
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
+  const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -378,6 +381,35 @@ const SubCategoryQuizPage: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Xử lý phím Escape để đóng modal zoom ảnh
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && zoomedImage) {
+        handleCloseZoom();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [zoomedImage]);
+
+  // Hàm mở ảnh zoom và reset góc xoay
+  const handleOpenZoom = (imageUrl: string) => {
+    setZoomedImage(imageUrl);
+    setImageRotation(0);
+  };
+
+  // Hàm xoay ảnh 90 độ
+  const handleRotateImage = () => {
+    setImageRotation((prev) => (prev + 90) % 360);
+  };
+
+  // Hàm đóng modal và reset góc xoay
+  const handleCloseZoom = () => {
+    setZoomedImage(null);
+    setImageRotation(0);
+  };
 
   // Đếm số lượng đáp án đúng trong một câu hỏi
   const getCorrectAnswerCount = (question: Question) => {
@@ -886,12 +918,12 @@ const SubCategoryQuizPage: React.FC = () => {
                     </div>
                     {/* Cột phải: ảnh detail của đáp án đúng */}
                     <div className="flex items-start">
-                      <div className="relative w-full aspect-video">
+                      <div className="relative w-full aspect-video cursor-pointer" onClick={() => handleOpenZoom(correctDetailImg)}>
                         <Image
                           src={correctDetailImg}
                           alt="Giải thích minh hoạ"
                           fill
-                          className="object-contain rounded-lg shadow-sm"
+                          className="object-contain rounded-2xl"
                           onError={(e) => {
                             console.error('Failed to load detail image:', correctDetailImg);
                             e.currentTarget.style.display = 'none';
@@ -966,17 +998,19 @@ const SubCategoryQuizPage: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="relative">
                     <textarea
-                      className={`w-full border-2 border-gray-200 rounded-2xl px-4 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden`}
+                      className={`w-full border-2 border-gray-200 rounded-2xl bg-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
                       placeholder="Viết đáp án..."
                       value={textAnswers[question.questionId] || ''}
                       onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
                       onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
+                      onFocus={() => setFocusedEssayId(question.questionId)}
+                      onBlur={() => setFocusedEssayId(null)}
                       disabled={verified || isGrading}
                       rows={1}
                       style={{
                         borderColor: verified 
                           ? (isCorrect ? '#00C800' : '#EC5300')
-                          : 'rgba(0, 0, 0, 0.05)',
+                          : (focusedEssayId === question.questionId ? '#8D7EF7' : 'rgba(0, 0, 0, 0.05)'),
                         minHeight: '5rem',
                         maxHeight: '7rem',
                         lineHeight: '1.5rem',
@@ -1008,7 +1042,7 @@ const SubCategoryQuizPage: React.FC = () => {
                     )}
                     {/* Hiển thị icon kết quả cho câu tự luận */}
                     {verified && (
-                      <div className="absolute top-1/2 -translate-y-1/2 right-1.5">
+                      <div className="absolute top-1/2 -translate-y-1/2 right-6">
                         {isCorrect ? (
                           <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
@@ -1029,12 +1063,12 @@ const SubCategoryQuizPage: React.FC = () => {
               </div>
               {/* Cột phải: Ảnh */}
               <div className="flex items-start">
-                <div className="relative w-full aspect-video">
+                <div className="relative w-full aspect-video cursor-pointer" onClick={() => question.extraData?.image && handleOpenZoom(question.extraData.image)}>
                   <Image
                     src={question.extraData.image}
                     alt="Câu hỏi"
                     fill
-                    className="object-contain rounded-lg shadow-sm"
+                    className="object-contain rounded-2xl"
                     onError={(e) => {
                       console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
@@ -1050,16 +1084,18 @@ const SubCategoryQuizPage: React.FC = () => {
             // Layout thường khi không có ảnh
             <div className="relative">
               <textarea
-                className={`w-full border rounded-lg p-3 min-h-[140px] pr-12}`}
+                className={`w-full border-2 rounded-lg px-6 py-3 bg-white min-h-[140px] pr-12 focus:outline-none transition-colors`}
                 placeholder="Viết đáp án..."
                 value={textAnswers[question.questionId] || ''}
                 onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
                 onKeyDown={(e) => handleEssayKeyDown(e, question.questionId, question)}
+                onFocus={() => setFocusedEssayId(question.questionId)}
+                onBlur={() => setFocusedEssayId(null)}
                 disabled={verified || isGrading}
                 style={{
                   borderColor: verified 
                     ? (isCorrect ? '#00C800' : '#EC5300')
-                    : 'rgba(0, 0, 0, 0.05)'
+                    : (focusedEssayId === question.questionId ? '#8D7EF7' : 'rgba(0, 0, 0, 0.05)')
                 }}
               />
               {/* Icon gửi */}
@@ -1077,7 +1113,7 @@ const SubCategoryQuizPage: React.FC = () => {
               )}
               {/* Hiển thị icon kết quả cho câu tự luận */}
               {verified && (
-                <div className="absolute top-3 right-3">
+                <div className="absolute top-3 right-12">
                   {isCorrect ? (
                     <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200" style={{backgroundColor: '#41C911'}}>
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
@@ -1100,12 +1136,12 @@ const SubCategoryQuizPage: React.FC = () => {
             {/* Hiển thị ảnh nếu có (cho câu hỏi không phải essay) */}
             {question.extraData?.image && (
               <div className="mb-6 flex justify-center">
-                <div className="relative w-full max-w-2xl aspect-video">
+                <div className="relative w-full max-w-2xl aspect-video cursor-pointer" onClick={() => question.extraData?.image && handleOpenZoom(question.extraData.image)}>
                   <Image
                     src={question.extraData.image}
                     alt="Câu hỏi"
                     fill
-                    className="object-contain rounded-lg shadow-sm"
+                    className="object-contain rounded-2xl"
                     onError={(e) => {
                       console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
@@ -1285,6 +1321,84 @@ const SubCategoryQuizPage: React.FC = () => {
         >
           <span className="text-lg font-semibold">Nộp Bài</span>
         </button>
+
+        {/* Modal zoom ảnh */}
+        {zoomedImage && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center p-4"
+            onClick={handleCloseZoom}
+          >
+            <div
+              className="relative w-full h-full max-w-7xl max-h-[90vh] flex flex-col items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  transform: `rotate(${imageRotation}deg)`,
+                  transition: 'transform 0.3s ease-in-out',
+                }}
+                className="relative w-full h-full flex items-center justify-center"
+              >
+                <Image
+                  src={zoomedImage}
+                  alt="Ảnh phóng to"
+                  fill
+                  className="object-contain"
+                  quality={100}
+                  sizes="100vw"
+                />
+              </div>
+              {/* Container các nút điều khiển ở phía dưới */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 z-[101]">
+                {/* Nút xoay ảnh */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRotateImage();
+                  }}
+                  className="text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full p-3"
+                  aria-label="Xoay ảnh"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                </button>
+                {/* Nút đóng */}
+                <button
+                  onClick={handleCloseZoom}
+                  className="text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full p-3"
+                  aria-label="Đóng"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

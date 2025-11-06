@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
-import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 
 const UpgradePage: React.FC = () => {
@@ -80,6 +79,19 @@ const UpgradePage: React.FC = () => {
     'Không giới hạn hỏi đáp',
   ];
 
+  // Kiểm tra xem numTimePackage có phải là vô cực không
+  const isInfinity = (value: string): boolean => {
+    const lowerValue = value.toLowerCase().trim();
+    return (
+      lowerValue === '∞' ||
+      lowerValue === 'infinity' ||
+      lowerValue === 'vô cực' ||
+      lowerValue === 'vo cuc' ||
+      lowerValue === 'unlimited' ||
+      lowerValue === 'không giới hạn'
+    );
+  };
+
   const plans = useMemo(() => {
     if (!config?.optionPackageEntities) return [] as Array<{
       id: string;
@@ -87,38 +99,40 @@ const UpgradePage: React.FC = () => {
       price: string;
       period: string;
       note?: string;
-      popular?: boolean;
     }>;
-    return config.optionPackageEntities.map((p, idx) => ({
-      id: `${p.namePackage}-${idx}`,
-      name: p.namePackage,
-      price: p.numPricePackage,
-      period: `${p.numTimePackage} ${p.textTimePackage}`,
-      note: p.notePackage,
-      popular: idx === 1, // giữ "Phổ biến" cho gói thứ 2 như UI cũ
-    }));
+    return config.optionPackageEntities.map((p, idx) => {
+      const showNumTime = !isInfinity(p.numTimePackage);
+      return {
+        id: `${p.namePackage}-${idx}`,
+        name: showNumTime ? `${p.numTimePackage} ${p.textTimePackage}` : p.textTimePackage,
+        price: p.numPricePackage,
+        period: showNumTime ? `${p.numTimePackage} ${p.textTimePackage}` : p.textTimePackage,
+        note: p.notePackage,
+      };
+    });
   }, [config]);
 
-  const handleUpgrade = (planId: string) => {
-    console.log('Upgrading to:', planId);
+  const handleUpgrade = () => {
+    window.open('https://m.me/appfaquiz', '_blank');
+  };
+
+  const handleSupport = () => {
+    window.open('https://m.me/appfaquiz', '_blank');
   };
 
   return (
     <div className="min-h-screen bg-white">
       <QuizHeader />
-      <main className="pt-20 px-8 pb-8 max-w-5xl mx-auto">
+      <main className="pt-28 px-4 md:px-8 pb-8 max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: '#FFBB00' }}>
+          <h1 className="text-3xl md:text-4xl font-bold mb-8 tracking-wider" style={{ color: '#FFBB00' }}>
             {config?.privileged || 'Nâng cấp Pro để làm tiếp'}
           </h1>
-          {config?.note && (
-            <p className="text-gray-600 mb-4">{config.note}</p>
-          )}
-          <div className="flex justify-center gap-8 mb-8">
+          <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-12">
             {features.map((feature, index) => (
               <div key={index} className="flex items-center gap-2">
                 <svg
-                  className="w-5 h-5"
+                  className="w-5 h-5 flex-shrink-0"
                   style={{ color: '#FFBB00' }}
                   fill="currentColor"
                   viewBox="0 0 20 20"
@@ -129,7 +143,7 @@ const UpgradePage: React.FC = () => {
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-gray-700">{feature}</span>
+                <span className="text-gray-700 text-sm md:text-base">{feature}</span>
               </div>
             ))}
           </div>
@@ -144,61 +158,59 @@ const UpgradePage: React.FC = () => {
             {errorMessage}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                className={`bg-white rounded-lg border-2 p-6 ${
-                  plan.popular
-                    ? 'border-blue-500 shadow-lg'
-                    : 'border-gray-200'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="text-center mb-4">
-                    <span className="inline-block px-3 py-1 text-xs font-semibold text-blue-600 bg-blue-50 rounded-full">
-                      Phổ biến
-                    </span>
-                  </div>
-                )}
-                <h3 className="text-xl font-bold text-gray-900 mb-2 text-center">
-                  {plan.name}
-                </h3>
-                <div className="text-center mb-1">
-                  <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
-                  <span className="text-gray-600 ml-2">/{plan.period}</span>
-                </div>
-                {plan.note && (
-                  <div className="text-center text-sm text-gray-600 mb-4">{plan.note}</div>
-                )}
-                <button
-                  onClick={() => handleUpgrade(plan.id)}
-                  className="w-full py-3 rounded-lg font-medium text-white transition-colors mb-3"
-                  style={{
-                    backgroundColor: '#FFBB00',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#FFA500';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#FFBB00';
-                  }}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {plans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="bg-white rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-gray-100 hover:scale-110 transition-all hover:cursor-pointer"
                 >
-                  NÂNG CẤP
-                </button>
-                <div className="text-center">
-                  <Link
-                    href="/support"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Hỗ trợ
-                  </Link>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-4 text-center">
+                    {plan.name}
+                  </h3>
+                  <div className="flex justify-center items-center mb-6 flex-grow">
+                    <span className="text-6xl tracking-wide font-bold text-black">{plan.price}</span>
+                  </div>
+                  <div className="flex justify-center mb-3">
+                    <button
+                      onClick={handleUpgrade}
+                      className="px-8 py-4 rounded-full font-bold text-white transition-colors uppercase tracking-wider"
+                      style={{
+                        backgroundColor: '#FFBB00',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFA500';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#FFBB00';
+                      }}
+                    >
+                      NÂNG CẤP
+                    </button>
+                  </div>
+                  <div className="text-center">
+                    <button
+                      onClick={handleSupport}
+                      className="text-sm text-[#8D7EF7] hover:underline cursor-pointer"
+                    >
+                      Hỗ trợ
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
 
+            <div className="text-center mt-8">
+              <p className="text-gray-400 my-12">Hoặc</p>
+              <button
+                onClick={() => window.open('https://m.me/appfaquiz', '_blank')}
+                className="text-[#8D7EF7] text-2xl font-semibold"
+              >
+                Đăng nhập tài khoản Pro →
+              </button>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
