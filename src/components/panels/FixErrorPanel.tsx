@@ -69,7 +69,7 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
     setEditedQuestion(value);
   };
 
-  const handleOptionChange = (answerId: string, value: string) => {
+  const handleOptionChange = (answerId: number, value: string) => {
     setEditedOptions(prev => ({
       ...prev,
       [answerId]: value
