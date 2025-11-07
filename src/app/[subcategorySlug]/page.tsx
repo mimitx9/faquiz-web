@@ -1477,6 +1477,11 @@ const SubCategoryQuizPage: React.FC = () => {
                   ))}
                 </div>
               </div>
+              {/* Print footer - hiển thị ở cuối content khi in, nằm ngoài questions-scroll-container để column-span hoạt động */}
+              <div className="print-footer">
+                <span>FA Quiz - Trắc nghiệm Y khoa cục súc</span>
+                <span>www.facourse.com</span>
+              </div>
             </div>
           </div>
 
@@ -1705,12 +1710,6 @@ const SubCategoryQuizPage: React.FC = () => {
         </div>
         )}
       </main>
-        
-        {/* Print footer - chỉ hiển thị khi in */}
-        <div className="print-footer">
-          <span>FA Quiz - Trắc nghiệm Y khoa cục súc</span>
-          <span>www.facourse.com</span>
-        </div>
     </div>
   );
 };
