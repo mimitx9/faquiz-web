@@ -7,6 +7,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import { categorySubcategoriesApiService } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { removeVietnameseDiacritics } from '@/lib/utils';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 interface SubCategoryItem {
     code: string;
@@ -144,10 +145,8 @@ const CategoryPage: React.FC = () => {
     if (loading) {
         return (
             <div className="min-h-screen bg-white dark:bg-black">
+                <ProgressBar isVisible={loading} />
                 <QuizHeader />
-                <div className="flex justify-center items-center py-20 pt-32">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"></div>
-                </div>
             </div>
         );
     }

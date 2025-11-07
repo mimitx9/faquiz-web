@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, hexToRgba } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
@@ -434,12 +435,8 @@ const HomePage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-black">
+        <ProgressBar isVisible={loading} />
         <QuizHeader />
-        <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-gray-500 dark:text-white/20">Đang tải...</div>
-          </div>
-        </main>
       </div>
     );
   }

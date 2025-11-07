@@ -446,4 +446,64 @@ export const categorySubcategoriesApiService = {
     },
 };
 
+// Fix Quiz API
+export interface FixQuizRequestPayload {
+    question_name: string;
+    question_code: string;
+    chapter_name: string;
+    chapter_code: string;
+    is_note_correct: boolean;
+    options: Array<{
+        option_name: string;
+        option_code: string;
+        option_alpha: string;
+        is_choose: boolean;
+    }>;
+    contributor_name: string;
+    contributor_id: string;
+    keyword: string;
+    explanation: string;
+}
+
+// Fix Quiz API instance - sử dụng base URL trực tiếp
+const fixQuizApiInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
+
+// Add auth token to fix quiz requests
+fixQuizApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+export const fixQuizApiService = {
+    requestFixQuiz: async (payload: FixQuizRequestPayload, imageFile?: File): Promise<void> => {
+        try {
+            const formData = new FormData();
+            
+            // Thêm payload vào formData
+            formData.append('payload', JSON.stringify(payload));
+            
+            // Thêm ảnh nếu có
+            if (imageFile) {
+                formData.append('option_img', imageFile);
+            }
+            
+            await fixQuizApiInstance.post('/faquiz/request-fix-quiz', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        } catch (error: any) {
+            throw error;
+        }
+    },
+};
+
 export default api;

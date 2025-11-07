@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import QuizHeader from '@/components/layout/QuizHeader';
 import { biodigitalApiService, BiodigitalCategory } from '@/lib/api';
 import { createTitleSlug } from '@/lib/utils';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const BiodigitalViewerPage: React.FC = () => {
   const params = useParams();
@@ -102,13 +103,8 @@ const BiodigitalViewerPage: React.FC = () => {
   if (loading) {
     return (
         <div className="min-h-screen bg-black">
+          <ProgressBar isVisible={loading} />
           <QuizHeader />
-          <main className="pt-20 h-[calc(100vh-80px)] flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-[#8D7EF7] border-t-transparent rounded-full animate-spin"></div>
-              <div className="text-gray-400">Đang tải...</div>
-            </div>
-          </main>
         </div>
     );
   }

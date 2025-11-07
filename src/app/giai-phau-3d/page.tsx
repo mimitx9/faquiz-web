@@ -7,6 +7,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import BiodigitalCard from '@/components/ui/BiodigitalCard';
 import { biodigitalApiService, BiodigitalCategory } from '@/lib/api';
 import { normalizeSearchKeyword, matchesCategoryTitle, createTitleSlug } from '@/lib/utils';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const BiodigitalPage: React.FC = () => {
   const router = useRouter();
@@ -107,12 +108,8 @@ const BiodigitalPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black">
+        <ProgressBar isVisible={loading} />
         <QuizHeader />
-        <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-gray-400">Đang tải...</div>
-          </div>
-        </main>
       </div>
     );
   }

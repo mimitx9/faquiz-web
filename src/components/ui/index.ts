@@ -10,6 +10,7 @@ export { default as Alert } from './Alert';
 export { default as LoadingCenter } from './LoadingCenter';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as FullScreenLoading } from './FullScreenLoading';
+export { default as ProgressBar } from './ProgressBar';
 export { default as QuizCard } from './QuizCard';
 export { default as CategoryCard } from './CategoryCard';
 export { default as SubCategoryCard } from './SubCategoryCard';

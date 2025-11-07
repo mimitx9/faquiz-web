@@ -18,6 +18,42 @@
   
 }
 
+/* Progress Bar Animation */
+@keyframes progress {
+  0% {
+    left: -25%;
+    width: 25%;
+  }
+  50% {
+    left: 100%;
+    width: 25%;
+  }
+  100% {
+    left: 100%;
+    width: 25%;
+  }
+}
+
+.animate-progress {
+  animation: progress 2.5s ease-in-out infinite;
+}
+
+/* Fade in animation for success badge */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
 /* Print styles */
 @page {
   /* Margin cho trang in - tăng margin-bottom để có chỗ cho footer */
@@ -710,5 +746,10 @@
 /* Ẩn footer khi không in */
 .print-footer {
   display: none;
+}
+
+/* Fix Error Panel styles */
+.fix-error-textarea::placeholder {
+  color: #00000040;
 }
 

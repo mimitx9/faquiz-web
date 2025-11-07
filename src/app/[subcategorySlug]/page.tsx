@@ -17,6 +17,7 @@ import KiemPanel from '@/components/panels/KiemPanel';
 import FixErrorPanel from '@/components/panels/FixErrorPanel';
 import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
 import { createTitleSlug } from '@/lib/utils';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -307,6 +308,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const resizeStartWidth = useRef<number>(33.33); // Width khi bắt đầu resize
   const contentContainerRef = useRef<HTMLDivElement>(null); // Ref cho container content
   const [showUpgradeOverlay, setShowUpgradeOverlay] = useState(false); // Hiển thị overlay upgrade khi gặp câu hỏi rỗng
+  const [showSuccessBadge, setShowSuccessBadge] = useState(false); // Hiển thị badge thành công
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -952,10 +954,8 @@ const SubCategoryQuizPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-black">
+        <ProgressBar isVisible={loading} />
         <QuizHeader />
-        <div className="flex justify-center items-center py-20 pt-32">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-white"></div>
-        </div>
       </div>
     );
   }
@@ -1631,7 +1631,19 @@ const SubCategoryQuizPage: React.FC = () => {
               {activePanel === 'print' && <PrintPanel onClose={() => toggleSplitPanel()} />}
               {activePanel === '3d' && <ThreeDPanel onClose={() => toggleSplitPanel()} />}
               {activePanel === 'kiem' && <KiemPanel onClose={() => toggleSplitPanel()} />}
-              {activePanel === 'fix-error' && <FixErrorPanel onClose={() => toggleSplitPanel()} question={fixErrorQuestion} />}
+              {activePanel === 'fix-error' && (
+                <FixErrorPanel 
+                  onClose={() => toggleSplitPanel()} 
+                  question={fixErrorQuestion} 
+                  subCategory={subCategory}
+                  onSuccess={() => {
+                    setShowSuccessBadge(true);
+                    setTimeout(() => {
+                      setShowSuccessBadge(false);
+                    }, 2000);
+                  }}
+                />
+              )}
             </div>
           )}
         </div>
@@ -1836,10 +1848,32 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {/* Upgrade Overlay - hiển thị khi gặp câu hỏi rỗng */}
-        <UpgradeOverlay 
+        <UpgradeOverlay
           isOpen={showUpgradeOverlay}
           onClose={() => setShowUpgradeOverlay(false)}
         />
+        
+        {/* Success Badge */}
+        {showSuccessBadge && (
+          <div className="fixed top-4 right-4 z-50 animate-fade-in">
+            <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="font-semibold">Gửi yêu cầu thành công!</span>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

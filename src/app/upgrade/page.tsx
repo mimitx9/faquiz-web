@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import QuizHeader from '@/components/layout/QuizHeader';
 import { useAuth } from '@/hooks/useAuth';
+import ProgressBar from '@/components/ui/ProgressBar';
 
 const UpgradePage: React.FC = () => {
   const router = useRouter();
@@ -123,6 +124,7 @@ const UpgradePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black">
+      <ProgressBar isVisible={isLoading} />
       <QuizHeader />
       <main className="pt-28 px-4 md:px-8 pb-8 max-w-6xl mx-auto">
         <div className="text-center mb-12">
