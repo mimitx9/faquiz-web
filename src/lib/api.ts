@@ -408,4 +408,42 @@ export const biodigitalApiService = {
     },
 };
 
+// Category Subcategories API
+export interface CategorySubcategoriesResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        code: string;
+        id: number;
+        title: string;
+        subtitle: string;
+        icon: string;
+        backgroundColor: string;
+        subCategoriesSlide: Array<{
+            code: string;
+            id: number;
+            title: string;
+            slug: string;
+            labelText: string;
+            labelColor: string;
+            categoryId: number;
+            categoryTitle: string;
+            isPayment: boolean;
+        }>;
+    };
+}
+
+export const categorySubcategoriesApiService = {
+    getSubcategoriesByCategorySlug: async (slug: string): Promise<CategorySubcategoriesResponse> => {
+        try {
+            const response = await faquizApiInstance.get<CategorySubcategoriesResponse>(`/categories/${slug}/subcategories`);
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+};
+
 export default api;
