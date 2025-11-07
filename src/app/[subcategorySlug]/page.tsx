@@ -1718,7 +1718,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
         {/* Sidebar nhỏ ở góc dưới bên phải */}
         {!activePanel && user && (
-          <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
+          <div className="fixed bottom-8 right-8 sm:right-4 flex flex-col gap-4 z-40 items-end">
           {/* Icon Star 2.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
             {hoveredIcon === 'star' && (
@@ -1727,7 +1727,7 @@ const SubCategoryQuizPage: React.FC = () => {
               </span>
             )}
             <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
+              className="p-3 transition-all duration-300"
               aria-label="Hỏi đáp Hack"
               onMouseEnter={() => setHoveredIcon('star')}
               onMouseLeave={() => setHoveredIcon(null)}
@@ -1751,7 +1751,7 @@ const SubCategoryQuizPage: React.FC = () => {
               </span>
             )}
             <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
+              className="p-3 transition-all duration-300"
               aria-label="Giải phẫu 3D"
               onMouseEnter={() => setHoveredIcon('3d')}
               onMouseLeave={() => setHoveredIcon(null)}
@@ -1775,7 +1775,7 @@ const SubCategoryQuizPage: React.FC = () => {
               </span>
             )}
             <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
+              className="p-3 transition-all duration-300"
               aria-label="In đề"
               onMouseEnter={() => setHoveredIcon('print')}
               onMouseLeave={() => setHoveredIcon(null)}
@@ -1799,7 +1799,7 @@ const SubCategoryQuizPage: React.FC = () => {
               </span>
             )}
             <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
+              className="p-3 transition-all duration-300"
               aria-label="Đấu battle"
               onMouseEnter={() => setHoveredIcon('kiem')}
               onMouseLeave={() => setHoveredIcon(null)}

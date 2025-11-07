@@ -12,10 +12,12 @@ import { CategoriesSlide, SubCategoriesSlide } from '@/types';
 import { useRouter } from 'next/navigation';
 import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, hexToRgba } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const { theme } = useTheme();
   const [top10Categories, setTop10Categories] = useState<CategoriesSlide[]>([]);
   const [universityCategories, setUniversityCategories] = useState<CategoriesSlide[]>([]);
   const [top10SubCategories, setTop10SubCategories] = useState<SubCategoriesSlide[]>([]);
@@ -558,7 +560,7 @@ const HomePage: React.FC = () => {
               {canScrollLeft && (
                 <button
                   onClick={() => scrollSubtitleSuggestions('left')}
-                  className="absolute left-0 top-0 bottom-0 z-10 h-full pr-4 flex items-center justify-center bg-gradient-to-r from-white dark:from-gray-900 to-transparent transition-all duration-200 hover:scale-110"
+                  className="absolute left-0 top-0 bottom-0 z-10 h-full pr-4 flex items-center justify-center bg-gradient-to-r from-white dark:from-black to-transparent transition-all duration-200 hover:scale-110"
                   aria-label="Scroll left"
                 >
                   <svg
@@ -581,7 +583,7 @@ const HomePage: React.FC = () => {
               {canScrollRight && (
                 <button
                   onClick={() => scrollSubtitleSuggestions('right')}
-                  className="absolute right-0 top-0 bottom-0 z-10 h-full pl-4 flex items-center justify-center bg-gradient-to-l from-white dark:from-gray-900 to-transparent transition-all duration-200 hover:scale-110"
+                  className="absolute right-0 top-0 bottom-0 z-10 h-full pl-4 flex items-center justify-center bg-gradient-to-l from-white dark:from-black to-transparent transition-all duration-200 hover:scale-110"
                   aria-label="Scroll right"
                 >
                   <svg
@@ -611,7 +613,7 @@ const HomePage: React.FC = () => {
                     key={index}
                     className="px-8 py-4 rounded-full text-lg font-medium transition-all duration-200 hover:scale-105 flex-shrink-0"
                     style={{
-                      backgroundColor: hexToRgba(item.backgroundColor, 0.05),
+                      backgroundColor: hexToRgba(item.backgroundColor, theme === 'dark' ? 0.2 : 0.05),
                       color: item.backgroundColor,
                       border: 'none',
                     }}
@@ -629,7 +631,7 @@ const HomePage: React.FC = () => {
         {selectedCategory ? (
           <div className="flex h-[calc(100vh-120px)]">
             {/* Left panel - Categories */}
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
               {/* Hiển thị kết quả tìm kiếm từ fullData khi có searchQuery */}
               {searchQuery.trim() ? (
                 <>

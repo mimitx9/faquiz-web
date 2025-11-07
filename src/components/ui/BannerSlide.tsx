@@ -138,26 +138,26 @@ const BannerSlide: React.FC<BannerSlideProps> = ({
               {currentBanner.buttonText}
             </button>
           )}
+
+          {/* Navigation Dots - Inside banner, centered at bottom */}
+          {banners.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex justify-center gap-2">
+              {banners.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentIndex
+                      ? 'bg-white w-4'
+                      : 'bg-white/30 hover:bg-white/50'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Navigation Dots */}
-      {banners.length > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentIndex
-                  ? 'bg-white w-8'
-                  : 'bg-white/30 hover:bg-white/50'
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };

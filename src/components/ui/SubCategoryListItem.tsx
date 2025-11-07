@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SubCategoriesSlide } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { hexToRgba } from '@/lib/utils';
 
 interface SubCategoryListItemProps {
@@ -19,6 +20,7 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
 }) => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const { theme } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   
   // Parse thông tin từ title hoặc label
@@ -50,15 +52,15 @@ const SubCategoryListItem: React.FC<SubCategoryListItemProps> = ({
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`rounded-3xl px-6 py-8 cursor-pointer transition-all mb-4 border-2 duration-200 bg-white dark:bg-gray-800 dark:border-gray-700 hover:dark:bg-gray-700 ${
+      className={`rounded-3xl px-6 py-8 cursor-pointer transition-all mb-4 border-2 duration-200 bg-white dark:bg-black ${
         isHovered ? 'border-transparent' : ''
       }`}
       style={{
         borderColor: isHovered 
           ? 'transparent' 
-          : (backgroundColor ? hexToRgba(backgroundColor, 0.05) : undefined),
+          : (backgroundColor ? hexToRgba(backgroundColor, theme === 'dark' ? 0.2 : 0.05) : undefined),
         backgroundColor: isHovered 
-          ? (backgroundColor ? hexToRgba(backgroundColor, 0.05) : undefined)
+          ? (backgroundColor ? hexToRgba(backgroundColor, theme === 'dark' ? 0.2 : 0.05) : undefined)
           : undefined,
         transform: isHovered ? 'scale(1.02)' : 'scale(1)'
       }}

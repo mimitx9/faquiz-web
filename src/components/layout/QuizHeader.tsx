@@ -23,7 +23,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
   const [isTimerEnabled, setIsTimerEnabled] = useState(false);
   const [isPracticeEnabled, setIsPracticeEnabled] = useState(false); // Ôn thi on/off
   const [remainingTime, setRemainingTime] = useState<number>(0); // Thời gian còn lại (giây)
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const dropdownRefDesktop = useRef<HTMLDivElement>(null);
+  const dropdownRefMobile = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimerExpiredRef = useRef(onTimerExpired); // Lưu callback mới nhất
@@ -101,10 +102,23 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // Kiểm tra xem click có nằm trong avatar dropdown không (bao gồm cả button avatar và dropdown menu)
+      // Kiểm tra cả desktop và mobile dropdown
+      const isClickInAvatarDropdown = 
+        (dropdownRefDesktop.current?.contains(target) ?? false) ||
+        (dropdownRefMobile.current?.contains(target) ?? false);
+      // Kiểm tra xem click có nằm trong menu icon/dropdown không
+      const isClickInMenu = menuRef.current?.contains(target) ?? false;
+      
+      // Đóng avatar dropdown nếu click bên ngoài và không phải là menu icon/dropdown
+      if (isDropdownOpen && !isClickInAvatarDropdown && !isClickInMenu) {
         setIsDropdownOpen(false);
       }
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      
+      // Đóng menu dropdown nếu click bên ngoài và không phải là avatar dropdown
+      if (isMenuOpen && !isClickInMenu && !isClickInAvatarDropdown) {
         setIsMenuOpen(false);
       }
     };
@@ -175,9 +189,10 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
   };
 
   const remainingDays = calculateRemainingDays();
+  const isQuizScreen = totalQuestions !== undefined && totalQuestions !== null;
 
   return (
-    <header className={`flex items-center px-4 md:px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black transition-all duration-300 ${isPanelOpen ? 'h-0 overflow-hidden' : 'h-20'}`}>
+    <header className={`flex items-center px-4 md:px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black ${isPanelOpen ? 'h-0 overflow-hidden' : 'h-20'}`}>
       {/* Desktop Layout */}
       {/* Cột 1: Logo - Desktop */}
       <div className="hidden lg:flex items-center w-1/3">
@@ -200,48 +215,54 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
         </button>
       </div>
 
-      {/* Cột 2: Đồng hồ đếm ngược (hiển thị khi timer enabled và đã có câu hỏi) - Desktop */}
-      <div className="hidden lg:flex w-1/3 items-center justify-center">
-        {isTimerEnabled && totalQuestions && totalQuestions > 0 && remainingTime > 0 && (
-          <div className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5"
-              style={{ color: '#FFBB00' }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span
-              className="text-xl font-semibold"
-              style={{ color: '#FFBB00' }}
-            >
-              {formatTime(remainingTime)}
-            </span>
-          </div>
-        )}
-      </div>
+      {/* Cột 2: Đồng hồ đếm ngược (chỉ hiển thị ở màn quiz) - Desktop */}
+      {isQuizScreen && (
+        <div className="hidden lg:flex w-1/3 items-center justify-center">
+          {isTimerEnabled && totalQuestions && totalQuestions > 0 && remainingTime > 0 && (
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                style={{ color: '#FFBB00' }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span
+                className="text-xl font-semibold"
+                style={{ color: '#FFBB00' }}
+              >
+                {formatTime(remainingTime)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cột 3: Nút Nâng Cấp/PRO và Avatar - Desktop */}
-      <div className="hidden lg:flex items-center justify-end space-x-8 w-1/3">
-        <Link
-          href="/giai-phau-3d"
-          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
-        >
-          GIẢI PHẪU 3D
-        </Link>
-        <Link
-          href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
-          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
-        >
-          TẢI APP
-        </Link>
+      <div className={`hidden lg:flex items-center justify-end space-x-8 ${isQuizScreen ? 'w-1/3' : 'flex-1'}`}>
+        {!isQuizScreen && (
+          <>
+            <Link
+              href="/giai-phau-3d"
+              className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
+            >
+              GIẢI PHẪU 3D
+            </Link>
+            <Link
+              href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
+              className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
+            >
+              TẢI APP
+            </Link>
+          </>
+        )}
         <button
           onClick={handleUpgradeClick}
           className={`rounded-full text-sm font-semibold tracking-wide px-5 py-2 transition-all duration-300 hover:scale-110 ${
@@ -257,7 +278,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
         </button>
         
         {/* Avatar with dropdown menu */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={dropdownRefDesktop}>
           <button
             onClick={handleAvatarClick}
             className="cursor-pointer transition-opacity bg-white dark:bg-gray-800 rounded-full flex items-center border-2 border-gray-100 dark:border-gray-700"
@@ -290,6 +311,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
           {isDropdownOpen && (
             <div
               className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-black shadow-lg"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="py-2">
                 {/* Thông tin Pro/Upgrade */}
@@ -453,7 +476,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
         </div>
 
         {/* Avatar - Right */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative" ref={dropdownRefMobile}>
           <button
             onClick={handleAvatarClick}
             className="cursor-pointer transition-opacity bg-white dark:bg-gray-800 rounded-full flex items-center border-2 border-gray-100 dark:border-gray-700"
@@ -486,6 +509,8 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
           {isDropdownOpen && (
             <div
               className="absolute right-0 top-full mt-2 p-2 w-56 z-50 border-2 border-gray-100 dark:border-gray-800 rounded-2xl bg-white dark:bg-black shadow-lg"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
             >
               <div className="py-2">
                 {/* Thông tin Pro/Upgrade */}
