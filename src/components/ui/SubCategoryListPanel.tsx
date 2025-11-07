@@ -18,7 +18,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
   const subCategories = category.subCategoriesSlide || [];
 
   return (
-    <div className="flex-1 bg-white dark:bg-black border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col relative">
+    <div className="flex-1 bg-white dark:bg-black overflow-hidden flex flex-col relative">
       {/* Close button - absolute ở góc phải trên */}
       <button
         onClick={onClose}
@@ -42,7 +42,7 @@ const SubCategoryListPanel: React.FC<SubCategoryListPanelProps> = ({
       </button>
 
       {/* List content */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-6 py-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
         {subCategories.length > 0 ? (
           <div>
             {subCategories.map((subCategory) => (
