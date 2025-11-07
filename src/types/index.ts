@@ -279,6 +279,7 @@ export interface CategoriesSlideStruct {
 
 // Format mới từ backend - một object duy nhất
 export interface SlideFastResponse {
+    universityCategories: CategoriesSlide[];
     top10Categories: CategoriesSlide[];
     top10SubCategories: SubCategoriesSlide[];
     top10RecentSubCategories: SubCategoriesSlide[];

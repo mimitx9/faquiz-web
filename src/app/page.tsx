@@ -16,6 +16,7 @@ const HomePage: React.FC = () => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
   const [top10Categories, setTop10Categories] = useState<CategoriesSlide[]>([]);
+  const [universityCategories, setUniversityCategories] = useState<CategoriesSlide[]>([]);
   const [top10SubCategories, setTop10SubCategories] = useState<SubCategoriesSlide[]>([]);
   const [top10RecentSubCategories, setTop10RecentSubCategories] = useState<SubCategoriesSlide[]>([]);
   const [fullData, setFullData] = useState<CategoriesSlide[]>([]);
@@ -87,6 +88,7 @@ const HomePage: React.FC = () => {
         const response = await categoryApiService.getSlideFast();
         if (response.data) {
           setTop10Categories(response.data.top10Categories || []);
+          setUniversityCategories(response.data.universityCategories || []);
           setTop10SubCategories(response.data.top10SubCategories || []);
           setTop10RecentSubCategories(response.data.top10RecentSubCategories || []);
           setFullData(response.data.fullData?.categoriesSlide || []);
@@ -125,13 +127,15 @@ const HomePage: React.FC = () => {
         }
       });
     } else if (!searchQuery.trim()) {
-      return top10Categories;
+      // Nếu user đã login, trả về universityCategories, ngược lại trả về top10Categories
+      return user ? universityCategories : top10Categories;
     } else {
       // Chuẩn hóa keyword: convert tiếng Việt về không dấu, loại bỏ space
       const normalizedKeyword = normalizeSearchKeyword(searchQuery);
       
       if (!normalizedKeyword) {
-        return top10Categories;
+        // Nếu user đã login, trả về universityCategories, ngược lại trả về top10Categories
+        return user ? universityCategories : top10Categories;
       }
 
       fullData.forEach((category) => {
@@ -184,7 +188,7 @@ const HomePage: React.FC = () => {
     }
 
     return baseCategories;
-  }, [searchQuery, searchByCodeOnly, top10Categories, fullData, appliedSubtitleFilter]);
+  }, [searchQuery, searchByCodeOnly, top10Categories, universityCategories, fullData, appliedSubtitleFilter, user]);
 
   // Tạo suggestions cho auto complete dựa trên title của categories
   const autoCompleteSuggestions = useMemo(() => {
@@ -602,10 +606,10 @@ const HomePage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view (card nhỏ hơn trong split-screen) */}
+                  {/* MÔN MỚI Section - Hiển thị top10Categories hoặc universityCategories khi không có search - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
                     <div className="mb-6">
-                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-4">MÔN MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-4">{user ? 'MÔN HỌC GỢI Ý' : 'MÔN MỚI HÔM NAY'}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                         {filteredCategories.map((category) => (
                           <CategoryCard
@@ -701,10 +705,10 @@ const HomePage: React.FC = () => {
               </div>
             )}
 
-            {/* MÔN MỚI Section - Hiển thị top10Categories khi không có search - Grid view */}
+            {/* MÔN MỚI Section - Hiển thị top10Categories hoặc universityCategories khi không có search - Grid view */}
             {filteredCategories.length > 0 && (
               <div className="my-24">
-                <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
+                <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">{user ? 'MÔN HỌC GỢI Ý' : 'MÔN MỚI HÔM NAY'}</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredCategories.slice(0, 8).map((category, index) => {
                     // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
@@ -722,8 +726,8 @@ const HomePage: React.FC = () => {
               </div>
             )}
 
-            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search */}
-            {filteredSubCategories.length > 0 && (
+            {/* ĐỀ MỚI Section - Hiển thị top10SubCategories khi không có search - Chỉ hiển thị khi user chưa login */}
+            {!user && filteredSubCategories.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
