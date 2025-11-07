@@ -131,11 +131,11 @@ const QuizResults: React.FC<QuizResultsProps> = ({
               </div>
 
               {/* Text ở giữa */}
-              <div className="flex flex-col justify-center flex-grow">
+              <div className="flex flex-col justify-center flex-grow ml-4">
                 <h3
-                  className="text-3xl font-semibold mb-2"
+                  className="text-4xl font-bold mb-4"
                   style={{
-                    background: 'linear-gradient(90deg, #F53AFF 0%, #FFAA00 100%)',
+                    background: 'linear-gradient(90deg,rgb(221, 0, 255) 0%,rgb(255, 170, 0) 30%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
@@ -143,7 +143,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
                 >
                   Đấu trường FA Battle
                 </h3>
-                <p className="text-lg text-white font-normal">
+                <p className="text-lg text-white font-medium">
                   Ai giỏi hơn ai, vô đấu là biết ngay
                 </p>
               </div>
@@ -151,10 +151,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
               {/* Button bên phải */}
               <button
                 onClick={() => window.open('https://fabattle.com/', '_blank')}
-                className="flex-shrink-0 px-8 py-4 rounded-full text-white font-bold text-lg transition-opacity hover:opacity-90"
-                style={{
-                  background: 'linear-gradient(to right, #FFD406, #FF8C00)',
-                }}
+                className="py-6 px-10 rounded-full text-white text-xl font-bold tracking-wide transition bg-gradient-to-b from-[#FFD700] to-[#FF8C00] shadow-xl shadow-[#FFBA08]/20 hover:shadow-[#FFBA08]/30"
               >
                 ĐẤU NGAY
               </button>
