@@ -14,6 +14,7 @@ import StarPanel from '@/components/panels/StarPanel';
 import PrintPanel from '@/components/panels/PrintPanel';
 import ThreeDPanel from '@/components/panels/ThreeDPanel';
 import KiemPanel from '@/components/panels/KiemPanel';
+import FixErrorPanel from '@/components/panels/FixErrorPanel';
 import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
 import { createTitleSlug } from '@/lib/utils';
 
@@ -298,7 +299,8 @@ const SubCategoryQuizPage: React.FC = () => {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null); // Icon đang được hover
-  const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | null>(null); // Panel đang được mở
+  const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | 'fix-error' | null>(null); // Panel đang được mở
+  const [fixErrorQuestion, setFixErrorQuestion] = useState<Question | null>(null); // Câu hỏi đang được sửa lỗi
   const [splitPanelWidth, setSplitPanelWidth] = useState<number>(33.33); // Width của split panel (% màn hình), mặc định 1/3 (33.33%)
   const [isResizing, setIsResizing] = useState(false); // Trạng thái đang resize
   const resizeStartX = useRef<number>(0); // Vị trí X khi bắt đầu resize
@@ -658,7 +660,7 @@ const SubCategoryQuizPage: React.FC = () => {
   };
 
   // Handler mở/đóng split panel
-  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem') => {
+  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error') => {
     if (panelType) {
       // Nếu click vào icon, toggle panel đó
       const newPanel = activePanel === panelType ? null : panelType;
@@ -668,7 +670,15 @@ const SubCategoryQuizPage: React.FC = () => {
     } else {
       // Nếu không có panelType (đóng từ nút X), đóng panel
       setActivePanel(null);
+      setFixErrorQuestion(null);
     }
+  };
+
+  // Handler mở panel sửa lỗi
+  const handleOpenFixError = (question: Question) => {
+    setFixErrorQuestion(question);
+    setActivePanel('fix-error');
+    setIsSidebarCollapsed(true);
   };
 
   // Handler bắt đầu resize split panel
@@ -1183,6 +1193,7 @@ const SubCategoryQuizPage: React.FC = () => {
           <div className="mb-6 flex items-center justify-between gap-4">
             {/* Button "Sửa lỗi" căn trái */}
             <button
+              onClick={() => handleOpenFixError(question)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-90"
               style={{ backgroundColor: '#00C800' }}
             >
@@ -1205,36 +1216,38 @@ const SubCategoryQuizPage: React.FC = () => {
               Sửa lỗi
             </button>
 
-            {/* 3 button căn phải */}
-            <div className="flex items-center gap-3">
-              <button
-                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                style={{
-                  borderColor: '#0000000D',
-                  color: '#00000080'
-                }}
-              >
-                Giải thích từng ý
-              </button>
-              <button
-                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                style={{
-                  borderColor: '#0000000D',
-                  color: '#00000080'
-                }}
-              >
-                Vì sao đúng
-              </button>
-              <button
-                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                style={{
-                  borderColor: '#0000000D',
-                  color: '#00000080'
-                }}
-              >
-                Đáp án sai
-              </button>
-            </div>
+            {/* 3 button căn phải - chỉ hiển thị khi user đã thanh toán */}
+            {user?.faQuizInfo?.isPaid === true && (
+              <div className="flex items-center gap-3">
+                <button
+                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                  style={{
+                    borderColor: '#0000000D',
+                    color: '#00000080'
+                  }}
+                >
+                  Giải thích từng ý
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                  style={{
+                    borderColor: '#0000000D',
+                    color: '#00000080'
+                  }}
+                >
+                  Vì sao đúng
+                </button>
+                <button
+                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                  style={{
+                    borderColor: '#0000000D',
+                    color: '#00000080'
+                  }}
+                >
+                  Đáp án sai
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -1614,10 +1627,11 @@ const SubCategoryQuizPage: React.FC = () => {
                 maxWidth: '50%',
               }}
             >
-              {activePanel === 'star' && <StarPanel onClose={() => setActivePanel(null)} />}
-              {activePanel === 'print' && <PrintPanel onClose={() => setActivePanel(null)} />}
-              {activePanel === '3d' && <ThreeDPanel onClose={() => setActivePanel(null)} />}
-              {activePanel === 'kiem' && <KiemPanel onClose={() => setActivePanel(null)} />}
+              {activePanel === 'star' && <StarPanel onClose={() => toggleSplitPanel()} />}
+              {activePanel === 'print' && <PrintPanel onClose={() => toggleSplitPanel()} />}
+              {activePanel === '3d' && <ThreeDPanel onClose={() => toggleSplitPanel()} />}
+              {activePanel === 'kiem' && <KiemPanel onClose={() => toggleSplitPanel()} />}
+              {activePanel === 'fix-error' && <FixErrorPanel onClose={() => toggleSplitPanel()} question={fixErrorQuestion} />}
             </div>
           )}
         </div>
@@ -1719,29 +1733,31 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Sidebar nhỏ ở góc dưới bên phải */}
         {!activePanel && user && (
           <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
-          {/* Icon Star 2.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'star' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-w  hite dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Hỏi đáp Hack
-              </span>
-            )}
-            <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
-              aria-label="Hỏi đáp Hack"
-              onMouseEnter={() => setHoveredIcon('star')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => toggleSplitPanel('star')}
-            >
-              <Image
-                src="/quiz/Star 2.svg"
-                alt="Hỏi đáp Hack"
-                width={30}
-                height={30}
-                className="w-[30px] h-[30px]"
-              />
-            </button>
-          </div>
+          {/* Icon Star 2.svg - chỉ hiển thị khi user đã thanh toán */}
+          {user?.faQuizInfo?.isPaid === true && (
+            <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
+              {hoveredIcon === 'star' && (
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                  Hỏi đáp Hack
+                </span>
+              )}
+              <button
+                className="p-3 rounded-lg bg-white transition-all duration-300"
+                aria-label="Hỏi đáp Hack"
+                onMouseEnter={() => setHoveredIcon('star')}
+                onMouseLeave={() => setHoveredIcon(null)}
+                onClick={() => toggleSplitPanel('star')}
+              >
+                <Image
+                  src="/quiz/Star 2.svg"
+                  alt="Hỏi đáp Hack"
+                  width={30}
+                  height={30}
+                  className="w-[30px] h-[30px]"
+                />
+              </button>
+            </div>
+          )}
 
           {/* Icon 3d.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
@@ -1767,29 +1783,31 @@ const SubCategoryQuizPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Icon print.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'print' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                In đề
-              </span>
-            )}
-            <button
-              className="p-3 rounded-lg bg-white transition-all duration-300"
-              aria-label="In đề"
-              onMouseEnter={() => setHoveredIcon('print')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => window.print()}
-            >
-              <Image
-                src="/quiz/print.svg"
-                alt="In đề"
-                width={28}
-                height={26}
-                className="w-[28px] h-[26px]"
-              />
-            </button>
-          </div>
+          {/* Icon print.svg - chỉ hiển thị khi user đã thanh toán */}
+          {user?.faQuizInfo?.isPaid === true && (
+            <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
+              {hoveredIcon === 'print' && (
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                  In đề
+                </span>
+              )}
+              <button
+                className="p-3 rounded-lg bg-white transition-all duration-300"
+                aria-label="In đề"
+                onMouseEnter={() => setHoveredIcon('print')}
+                onMouseLeave={() => setHoveredIcon(null)}
+                onClick={() => window.print()}
+              >
+                <Image
+                  src="/quiz/print.svg"
+                  alt="In đề"
+                  width={28}
+                  height={26}
+                  className="w-[28px] h-[26px]"
+                />
+              </button>
+            </div>
+          )}
 
           {/* Icon kiem.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
