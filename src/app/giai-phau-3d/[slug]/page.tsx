@@ -82,6 +82,11 @@ const BiodigitalViewerPage: React.FC = () => {
         setCategory(foundCategory);
       } catch (err: any) {
         console.error('Error fetching biodigital category:', err);
+        // Tự động chuyển đến trang đăng nhập khi gặp lỗi 401
+        if (err.response?.status === 401) {
+          router.replace('/login');
+          return;
+        }
         setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
       } finally {
         setLoading(false);
@@ -89,7 +94,7 @@ const BiodigitalViewerPage: React.FC = () => {
     };
 
     fetchCategory();
-  }, [slugParam]);
+  }, [slugParam, router]);
 
   if (loading) {
     return (
@@ -111,10 +116,10 @@ const BiodigitalViewerPage: React.FC = () => {
           <QuizHeader />
           <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="text-red-400">{error || 'Không tìm thấy mô hình'}</div>
+              <div className="text-red-400 text-center">{error || 'Không tìm thấy mô hình'}</div>
               <button
                   onClick={() => router.push('/giai-phau-3d')}
-                  className="px-6 py-3 rounded-full bg-[#8D7EF7] text-white hover:opacity-90 transition-opacity"
+                  className="px-6 py-3 rounded-full bg-gray-700 text-white hover:opacity-90 transition-opacity"
               >
                 Quay lại
               </button>

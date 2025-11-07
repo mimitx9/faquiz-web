@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import QuizHeader from '@/components/layout/QuizHeader';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -76,7 +77,7 @@ const UpgradePage: React.FC = () => {
   const features = [
     'Không giới hạn đề',
     'Không giới hạn tính năng',
-    'Không giới hạn hỏi đáp',
+    'Hỗ trợ trả góp vĩnh viễn',
   ];
 
   // Kiểm tra xem numTimePackage có phải là vô cực không
@@ -163,18 +164,21 @@ const UpgradePage: React.FC = () => {
               {plans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="bg-white dark:bg-gray-800 rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-gray-100 dark:border-gray-700 hover:scale-110 transition-all hover:cursor-pointer"
+                  onClick={handleUpgrade}
+                  className="bg-white dark:bg-black rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-[#8D7EF7]/10 dark:border-gray-700 hover:scale-110 transition-all hover:cursor-pointer"
                 >
-                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4 text-center">
-                    {plan.name}
+                  <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-3 text-center">
+                    Quiz {plan.name}
                   </h3>
                   <div className="flex justify-center items-center mb-6 flex-grow">
                     <span className="text-6xl tracking-wide font-bold text-black dark:text-white">{plan.price}</span>
                   </div>
-                  <div className="flex justify-center mb-3">
+                  <div className="flex justify-center mb-6">
                     <button
-                      onClick={handleUpgrade}
-                      className="px-8 py-4 rounded-full font-bold text-white transition-colors uppercase tracking-wider"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="px-12 py-4 rounded-full font-bold text-white text-lg transition-colors uppercase tracking-wider"
                       style={{
                         backgroundColor: '#FFBB00',
                       }}
@@ -190,8 +194,10 @@ const UpgradePage: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <button
-                      onClick={handleSupport}
-                      className="text-sm text-[#8D7EF7] hover:underline cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="text-md text-[#8D7EF7] hover:underline cursor-pointer"
                     >
                       Hỗ trợ
                     </button>

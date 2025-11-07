@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SubCategoriesSlide } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/hooks/useTheme';
 
 interface SubCategoryCardProps {
   subCategory: SubCategoriesSlide & { backgroundColor?: string };
@@ -13,6 +14,7 @@ interface SubCategoryCardProps {
 const SubCategoryCard: React.FC<SubCategoryCardProps> = ({ subCategory, onClick }) => {
   const router = useRouter();
   const { user, isInitialized } = useAuth();
+  const { theme } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   
   // Lấy màu từ backgroundColor của category, nếu không có thì dùng màu mặc định
@@ -28,7 +30,9 @@ const SubCategoryCard: React.FC<SubCategoryCardProps> = ({ subCategory, onClick 
     return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   };
   
-  const borderColor = hexToRgba(bulletColor, 0.05);
+  // Opacity thay đổi theo theme: 0.2 cho dark mode, 0.05 cho light mode
+  const borderOpacity = theme === 'dark' ? 0.2 : 0.05;
+  const borderColor = hexToRgba(bulletColor, borderOpacity);
   
   // Kiểm tra isPayment - chỉ hiển thị PRO khi isPayment là true
   const isPayment = subCategory.isPayment === true;
@@ -109,7 +113,7 @@ const SubCategoryCard: React.FC<SubCategoryCardProps> = ({ subCategory, onClick 
       )}
       
       {/* categoryTitle ở đáy - màu đen bold */}
-      <p className="text-2xl text-gray-800 font-semibold mt-auto line-clamp-4">
+      <p className="text-2xl text-gray-800 dark:text-white font-semibold mt-auto line-clamp-4">
         {subCategory.title}
       </p>
     </div>

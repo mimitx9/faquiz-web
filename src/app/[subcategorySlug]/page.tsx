@@ -1205,7 +1205,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {isSidebarCollapsed && (
           <button
             onClick={toggleSidebar}
-            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-sm dark:shadow-black/50"
+            className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300"
             aria-label="Mở rộng sidebar"
           >
             <Image
@@ -1220,23 +1220,15 @@ const SubCategoryQuizPage: React.FC = () => {
 
         {/* Sidebar cố định bên trái */}
         {!isSidebarCollapsed && (
-          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 z-30">
+          <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col z-30">
             {/* Header với category title và nút collapse */}
             <div className="flex items-center justify-between pl-8 pr-0 py-5">
-              <div className="flex items-center gap-2">
-                <h2 
-                  className="text-sm font-semibold"
+              <h2 
+                  className="text-sm font-semibold pr-2"
                   style={{ color: categoryBackgroundColor }}
                 >
                   {categoryTitle}
-                </h2>
-                <p 
-                className="text-sm opacity-30"
-                style={{ color: categoryBackgroundColor }}
-              >
-               &nbsp; › &nbsp;{subcategoryTitle}
-              </p>
-              </div>
+              </h2>
               <button
                 onClick={toggleSidebar}
                 aria-label="Thu gọn sidebar"

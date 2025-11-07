@@ -310,10 +310,10 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                   <button
                     onClick={handleTimerToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isTimerEnabled ? '' : 'bg-gray-300'
+                      isTimerEnabled ? '' : 'bg-gray-200 dark:bg-white/20'
                     }`}
                     style={{
-                      backgroundColor: isTimerEnabled ? '#9333EA' : undefined,
+                      backgroundColor: isTimerEnabled ? '#8D7EF7' : undefined,
                     }}
                   >
                     <span
@@ -330,10 +330,10 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
                   <button
                     onClick={handlePracticeToggle}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      isPracticeEnabled ? '' : 'bg-gray-300'
+                      isPracticeEnabled ? '' : 'bg-gray-200 dark:bg-white/20'
                     }`}
                     style={{
-                      backgroundColor: isPracticeEnabled ? '#10B981' : undefined,
+                      backgroundColor: isPracticeEnabled ? '#8D7EF7' : undefined,
                     }}
                   >
                     <span
@@ -346,7 +346,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
 
                 {/* Dark/Light mode toggle */}
                 <div className="flex items-center justify-between px-4 py-2 text-black dark:text-white transition-colors">
-                  <span className="text-sm">{theme === 'dark' ? 'Cú đêm' : 'Ban ngày'}</span>
+                  <span className="text-sm">Cú đêm</span>
                   <ThemeToggle />
                 </div>
 

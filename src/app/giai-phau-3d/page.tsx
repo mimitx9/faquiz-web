@@ -52,12 +52,18 @@ const BiodigitalPage: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const response = await biodigitalApiService.getAllCategories();
         if (response.data) {
           setCategories(response.data || []);
         }
       } catch (err: any) {
         console.error('Error fetching biodigital categories:', err);
+        // Tự động chuyển đến trang đăng nhập khi gặp lỗi 401
+        if (err.response?.status === 401) {
+          router.replace('/login');
+          return;
+        }
         setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
       } finally {
         setLoading(false);
@@ -65,7 +71,7 @@ const BiodigitalPage: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [router]);
 
   // Filter categories theo search query và chỉ hiển thị những category có description chứa human.biodigital.com
   const filteredCategories = useMemo(() => {
