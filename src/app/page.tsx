@@ -641,7 +641,7 @@ const HomePage: React.FC = () => {
           <>
             {/* Hiển thị subcategories từ kết quả tìm kiếm */}
             {filteredSubCategories.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                 {filteredSubCategories.map((subCategory) => {
                   const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                   const enrichedSub = {
@@ -664,7 +664,7 @@ const HomePage: React.FC = () => {
 
             {/* Hiển thị categories từ kết quả tìm kiếm - Grid view */}
             {filteredCategories.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                 {filteredCategories.map((category) => {
                   return (
                     <CategoryCard
@@ -683,7 +683,7 @@ const HomePage: React.FC = () => {
             {top10RecentSubCategories.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {top10RecentSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {
@@ -709,7 +709,7 @@ const HomePage: React.FC = () => {
             {filteredCategories.length > 0 && (
               <div className="my-24">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">{user ? 'MÔN HỌC GỢI Ý' : 'MÔN MỚI HÔM NAY'}</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredCategories.slice(0, 8).map((category, index) => {
                     // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
                     const isPriority = index < 5;
@@ -730,7 +730,7 @@ const HomePage: React.FC = () => {
             {!user && filteredSubCategories.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredSubCategories.slice(0, 8).map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {

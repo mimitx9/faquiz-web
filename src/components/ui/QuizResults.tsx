@@ -162,7 +162,7 @@ const QuizResults: React.FC<QuizResultsProps> = ({
           {filteredRelatedSubCategories.length > 0 && (
             <div className="mt-12">
               <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">ĐỀ TƯƠNG TỰ</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredRelatedSubCategories.map((subCategory) => {
                   // Convert SubCategoryInfo sang format SubCategoriesSlide để dùng với SubCategoryCard
                   const subCategoryCardData = {
