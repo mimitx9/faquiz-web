@@ -309,6 +309,20 @@ const SubCategoryQuizPage: React.FC = () => {
   useEffect(() => {
     const loadQuestions = async () => {
       if (!slugParam) return;
+      
+      // Exclude system files and routes
+      const systemRoutes = ['robot.txt', 'robots.txt', 'sitemap.xml', 'favicon.ico'];
+      if (systemRoutes.includes(slugParam.toLowerCase())) {
+        // Redirect robot.txt to robots.txt
+        if (slugParam.toLowerCase() === 'robot.txt') {
+          router.replace('/robots.txt');
+          return;
+        }
+        // For other system files, redirect to home
+        router.replace('/');
+        return;
+      }
+      
       try {
         setLoading(true);
         setError(null);
