@@ -150,7 +150,7 @@ const UpgradePage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-12 text-gray-600 dark:text-gray-400">
+          <div className="flex justify-center items-center py-12 text-gray-600 dark:text-white/20">
             Đang tải gói nâng cấp...
           </div>
         ) : errorMessage ? (

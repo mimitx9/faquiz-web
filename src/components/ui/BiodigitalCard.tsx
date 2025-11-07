@@ -64,10 +64,14 @@ const BiodigitalCard: React.FC<BiodigitalCardProps> = ({ category, onClick }) =>
 
       {/* Gradient background với title khi không có image hoặc image lỗi */}
       {(!hasImage || imageError) && (
-        <div className="w-full h-full flex items-center justify-center p-6">
-          <h3 className="text-white text-xl font-semibold text-center leading-tight">
+        <div className="w-full h-full flex items-end justify-center p-10">
+          <h2 className="text-white text-4xl font-semibold text-left"
+          style={{
+            color: gradientColor,
+          }}
+          >
             {category.title}
-          </h3>
+          </h2>
         </div>
       )}
 

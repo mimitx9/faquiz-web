@@ -217,17 +217,16 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
       </div>
 
       {/* Cột 3: Nút Nâng Cấp/PRO và Avatar */}
-      <div className="flex items-center justify-end space-x-4 w-1/3">
+      <div className="flex items-center justify-end space-x-8 w-1/3">
         <Link
           href="/giai-phau-3d"
-          className="text-sm font-medium duration-300 transition-all tracking-wide hover:scale-110"
-          style={{ color: '#8D7EF7' }}
+          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
         >
           GIẢI PHẪU 3D
         </Link>
         <Link
           href="/fa-quiz-ung-dung-trac-nghiem-y-khoa-hang-dau-2025"
-          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-gray-500 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#8D7EF7]"
+          className="text-sm font-medium duration-300 transition-all text-gray-400 dark:text-[#FFBB00]/50 tracking-wide hover:scale-110 hover:text-[#8D7EF7] dark:hover:text-[#FFBB00]"
         >
           TẢI APP
         </Link>

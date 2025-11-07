@@ -768,7 +768,7 @@ const SubCategoryQuizPage: React.FC = () => {
       <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
-          <p className="text-gray-500 dark:text-gray-400">Không có câu hỏi</p>
+          <p className="text-gray-500 dark:text-white/20">Không có câu hỏi</p>
         </div>
       </div>
     );
@@ -847,7 +847,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Hiển thị trạng thái đang chấm điểm tự luận */}
         {questionIsEssay && isGrading && (
           <div className="mb-4">
-            <p className="text-lg text-gray-500 dark:text-gray-400 italic">
+            <p className="text-lg text-gray-500 dark:text-white/20 italic">
               Đang chấm...
             </p>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { typography, borderRadius, shadows, colors } from '@/lib/design-tokens';
 
@@ -11,7 +11,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   showPasswordToggle?: boolean;
 }
 
-const Input: React.FC<InputProps> = ({
+const Input = forwardRef<HTMLInputElement, InputProps>(({
   label,
   error,
   helperText,
@@ -22,7 +22,7 @@ const Input: React.FC<InputProps> = ({
   id,
   type,
   ...props
-}) => {
+}, ref) => {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
   const [showPassword, setShowPassword] = useState(false);
   const [inputType, setInputType] = useState(type);
@@ -87,6 +87,7 @@ const Input: React.FC<InputProps> = ({
           </div>
         )}
         <input
+          ref={ref}
           id={inputId}
           type={showPasswordToggle ? inputType : type}
           className={cn(
@@ -127,6 +128,8 @@ const Input: React.FC<InputProps> = ({
       )}
     </div>
   );
-};
+});
+
+Input.displayName = 'Input';
 
 export default Input;

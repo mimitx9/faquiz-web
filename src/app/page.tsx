@@ -431,7 +431,7 @@ const HomePage: React.FC = () => {
         <QuizHeader />
         <main className="pt-20 px-8 pb-8 max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-20">
-            <div className="text-gray-500 dark:text-gray-400">Đang tải...</div>
+            <div className="text-gray-500 dark:text-white/20">Đang tải...</div>
           </div>
         </main>
       </div>
@@ -762,7 +762,7 @@ const HomePage: React.FC = () => {
             {/* No results message */}
             {(searchQuery.trim() || appliedSubtitleFilter) && filteredCategories.length === 0 && filteredSubCategories.length === 0 && (
               <div className="text-center py-20">
-                <p className="text-gray-500 dark:text-gray-400">Không tìm thấy kết quả nào cho "{searchQuery}"</p>
+                <p className="text-gray-500 dark:text-white/20">Không tìm thấy kết quả nào cho "{searchQuery}"</p>
               </div>
             )}
           </>

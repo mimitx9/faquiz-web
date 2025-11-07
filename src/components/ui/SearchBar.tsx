@@ -14,6 +14,7 @@ interface SearchBarProps {
     placeholder?: string;
     suggestions?: Suggestion[];
     onEnterPress?: () => void;
+    autoFocusOnMount?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -22,17 +23,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
                                                  placeholder = 'Tìm môn học...',
                                                  suggestions = [],
                                                  onEnterPress,
+                                                 autoFocusOnMount = false,
                                              }) => {
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const searchBarRef = useRef<HTMLDivElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const SearchIcon = () => (
         <svg
-            className="w-6 h-6"
-            fill="gray"
-            opacity="0.2"
+            className="w-6 h-6 fill-gray-500 opacity-20 dark:fill-white dark:opacity-20"
             viewBox="0 0 12 12"
             width="24"
             height="24"
@@ -114,6 +115,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
         };
     }, []);
 
+    // Auto focus khi component mount (để hoạt động với client-side navigation)
+    useEffect(() => {
+        if (autoFocusOnMount && inputRef.current) {
+            // Delay để đảm bảo DOM đã render xong và trang đã sẵn sàng
+            const timer = setTimeout(() => {
+                inputRef.current?.focus();
+            }, 200);
+            return () => clearTimeout(timer);
+        }
+    }, [autoFocusOnMount]);
+
     // Inject CSS animation styles
     useEffect(() => {
         const styleId = 'searchbar-rainbow-animation';
@@ -141,6 +153,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return (
         <div className="mt-4 mb-12 relative" ref={searchBarRef}>
             <Input
+                ref={inputRef}
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -150,7 +163,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 placeholder={placeholder}
                 leftIcon={<SearchIcon />}
                 autoFocus
-                className={`bg-transparent border-0 border-b-4 border-gray-100 dark:border-gray-700 rounded-none shadow-none focus:ring-0 text-4xl py-4 leading-[1.6] pl-14 placeholder:text-gray-300 dark:placeholder:text-gray-500 text-gray-900 dark:text-white ${
+                className={`bg-transparent border-0 border-b-4 border-gray-100 dark:border-white/10 rounded-none shadow-none focus:ring-0 text-4xl py-4 leading-[1.6] pl-14 placeholder:text-gray-300 dark:placeholder:text-white/20 text-gray-900 dark:text-white ${
                     isFocused ? 'rainbow-border-animation' : ''
                 }`}
             />
