@@ -172,14 +172,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
             {showSuggestions && (
                 <div
                     ref={suggestionsRef}
-                    className="absolute top-full left-0 right-0 bg-white dark:bg-gray-800 z-50 max-h-128 overflow-y-auto shadow-xl shadow-black/10 rounded-b-3xl pb-4 border border-gray-200 dark:border-gray-700"
+                    className="absolute top-full left-0 right-0 bg-white dark:bg-black z-50 max-h-128 overflow-y-auto shadow-xl shadow-black/10 rounded-b-3xl pb-4"
                 >
                     {suggestions.map((suggestion, index) => (
                         <button
                             key={index}
                             type="button"
-                            className={`w-full text-left px-14 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                                index === selectedIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
+                            className={`w-full text-left px-14 py-4 hover:bg-gray-50 dark:hover:bg-white/10 ${
+                                index === selectedIndex ? 'bg-gray-100 dark:bg-white/10' : ''
                             }`}
                             onMouseDown={(e) => {
                                 e.preventDefault(); // Prevent input blur before click
