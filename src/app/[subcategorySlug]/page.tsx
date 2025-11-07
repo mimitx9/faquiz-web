@@ -604,44 +604,61 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Handler resize split panel
   useEffect(() => {
+    let rafId: number | null = null;
+    
     const handleResizeMove = (e: MouseEvent) => {
       if (!isResizing || !contentContainerRef.current) return;
       
-      // Lấy width thực tế của container content (không bao gồm sidebar bên trái)
-      const containerRect = contentContainerRef.current.getBoundingClientRect();
-      const containerWidth = containerRect.width;
+      // Hủy requestAnimationFrame trước đó nếu có
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       
-      // Tính vị trí chuột hiện tại tương đối trong container
-      const currentMouseX = e.clientX - containerRect.left;
-      
-      // Tính phần trăm panel width dựa trên vị trí chuột
-      // Panel bắt đầu từ bên phải, nên width = (containerWidth - mouseX) / containerWidth * 100
-      let newWidth = ((containerWidth - currentMouseX) / containerWidth) * 100;
-      
-      // Giới hạn min 25% (1/4) và max 50% (1/2)
-      newWidth = Math.max(25, Math.min(50, newWidth));
-      
-      setSplitPanelWidth(newWidth);
+      // Sử dụng requestAnimationFrame để cập nhật mượt mà hơn
+      rafId = requestAnimationFrame(() => {
+        // Lấy width thực tế của container content (không bao gồm sidebar bên trái)
+        const containerRect = contentContainerRef.current!.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        
+        // Tính vị trí chuột hiện tại tương đối trong container
+        const currentMouseX = e.clientX - containerRect.left;
+        
+        // Tính phần trăm panel width dựa trên vị trí chuột
+        // Panel bắt đầu từ bên phải, nên width = (containerWidth - mouseX) / containerWidth * 100
+        let newWidth = ((containerWidth - currentMouseX) / containerWidth) * 100;
+        
+        // Giới hạn min 25% (1/4) và max 50% (1/2)
+        newWidth = Math.max(25, Math.min(50, newWidth));
+        
+        setSplitPanelWidth(newWidth);
+      });
     };
 
     const handleResizeEnd = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       setIsResizing(false);
     };
 
     if (isResizing) {
-      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mousemove', handleResizeMove, { passive: true });
       document.addEventListener('mouseup', handleResizeEnd);
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
     }
 
     return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
       document.removeEventListener('mousemove', handleResizeMove);
       document.removeEventListener('mouseup', handleResizeEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isResizing, splitPanelWidth]);
+  }, [isResizing]);
 
   // Hàm kiểm tra xem đã chọn đủ số lượng bằng số đáp án đúng chưa
   const isVerified = (question: Question, selectedAnswers: Set<number> | undefined) => {
@@ -1351,8 +1368,9 @@ const SubCategoryQuizPage: React.FC = () => {
       <QuizHeader 
         totalQuestions={questions.length}
         onTimerExpired={handleTimerExpired}
+        isPanelOpen={activePanel !== null}
       />
-      <main className="pt-20 bg-white dark:bg-black relative">
+      <main className={`bg-white dark:bg-black relative transition-all duration-300 ${activePanel !== null ? 'pt-0' : 'pt-20'}`}>
         {/* Nút expand sidebar khi collapsed - cố định ở góc trái */}
         {isSidebarCollapsed && !activePanel && (
           <button
@@ -1457,11 +1475,11 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Content area với margin để tránh bị che bởi sidebar */}
         <div 
           ref={contentContainerRef}
-          className={`transition-all duration-300 flex h-[calc(100vh-5rem)] ${!isSidebarCollapsed && !activePanel ? 'ml-[280px] lg:ml-[320px]' : ''}`}
+          className={`transition-all duration-300 flex ${activePanel !== null ? 'h-screen' : 'h-[calc(100vh-5rem)]'} ${!isSidebarCollapsed && !activePanel ? 'ml-[280px] lg:ml-[320px]' : ''}`}
         >
           {/* Phần quiz chính */}
           <div 
-            className="flex-1 overflow-y-auto transition-all duration-300 h-full"
+            className={`flex-1 overflow-y-auto h-full ${!isResizing ? 'transition-all duration-300' : ''}`}
             style={{
               width: activePanel ? `${100 - splitPanelWidth}%` : '100%',
             }}
@@ -1488,21 +1506,21 @@ const SubCategoryQuizPage: React.FC = () => {
           {/* Divider để resize */}
           {activePanel && (
             <div
-              className="w-1 bg-gray-200 dark:bg-gray-700 cursor-col-resize hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors relative group"
+              className="w-2 h-10 rounded-full bg-gray-200 dark:bg-gray-700 mr-2 cursor-col-resize hover:scale-110 relative group self-center"
               onMouseDown={handleResizeStart}
               style={{
                 cursor: isResizing ? 'col-resize' : 'col-resize',
               }}
             >
               {/* Handle visual indicator */}
-              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-gray-400 dark:bg-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 rounded-full h-10 bg-gray-400 dark:bg-gray-500" />
             </div>
           )}
 
           {/* Split panel bên phải */}
           {activePanel && (
             <div
-              className="transition-all duration-300 h-full"
+              className={`h-full`}
               style={{
                 width: `${splitPanelWidth}%`,
                 minWidth: '25%',
@@ -1518,18 +1536,20 @@ const SubCategoryQuizPage: React.FC = () => {
         </div>
 
         {/* Nút nộp bài floating ở bottom center */}
-        <button
-          onClick={handleSubmit}
-          aria-label="Nộp bài"
-          className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full text-white shadow-2xl transition-all hover:scale-110 duration-300 z-50 tracking-wide ${
-            showSubmitButton 
-              ? 'opacity-100 translate-y-0' 
-              : 'opacity-0 translate-y-4 pointer-events-none'
-          }`}
-          style={{ backgroundColor: '#8D7EF7' }}
-        >
-          <span className="text-lg font-semibold">Nộp Bài</span>
-        </button>
+        {!activePanel && (
+          <button
+            onClick={handleSubmit}
+            aria-label="Nộp bài"
+            className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full text-white shadow-2xl transition-all hover:scale-110 duration-300 z-50 tracking-wide ${
+              showSubmitButton 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-4 pointer-events-none'
+            }`}
+            style={{ backgroundColor: '#8D7EF7' }}
+          >
+            <span className="text-lg font-semibold">Nộp Bài</span>
+          </button>
+        )}
 
         {/* Modal zoom ảnh */}
         {zoomedImage && (
