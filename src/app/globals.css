@@ -20,8 +20,10 @@
 
 /* Print styles */
 @page {
-  /* Margin cho trang in - không cần margin-top lớn vì không có logo */
-  margin: 0.5in;
+  /* Margin cho trang in - tăng margin-bottom để có chỗ cho footer */
+  margin: 0.5in 0.5in 0.7in 0.5in;
+  /* Ngăn trang trống ở cuối */
+  size: auto;
 }
 
 @media print {
@@ -68,9 +70,15 @@
     display: none !important;
   }
   
-  /* Đảm bảo content chính full width */
-  div[class*="flex-1"][class*="overflow-y-auto"] {
+  /* Đảm bảo content chính full width và loại bỏ height cố định */
+  div[class*="flex-1"][class*="overflow-y-auto"],
+  div[class*="overflow-y-auto"],
+  div[class*="h-full"] {
     width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
   
   /* Đảm bảo container không bị ảnh hưởng */
@@ -134,13 +142,46 @@
     margin-left: 0 !important;
   }
 
-  /* Chia trang thành 2 cột để tiết kiệm giấy */
+  /* Chia trang thành 2 cột để tiết kiệm giấy - điều chỉnh để tránh trang trống */
   #questions-scroll-container {
     column-count: 2 !important;
     column-gap: 1.5rem !important;
-    column-fill: auto !important;
+    column-fill: balance !important; /* Thay đổi từ auto sang balance */
     column-rule: none !important;
     width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    /* Điều chỉnh orphans và widows để tránh trang trống */
+    orphans: 2 !important;
+    widows: 2 !important;
+    /* Đảm bảo không có break không cần thiết */
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  
+  /* Đảm bảo mỗi câu hỏi không bị break không đúng */
+  #questions-scroll-container > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    /* Cho phép break sau câu hỏi nhưng không tạo trang trống */
+    break-after: auto !important;
+    page-break-after: auto !important;
+    /* Đảm bảo không có margin/padding thừa tạo không gian */
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Đảm bảo phần tử cuối cùng trong container không tạo trang trống */
+  #questions-scroll-container > div:last-child {
+    margin-bottom: 0 !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  
+  /* Đảm bảo container column không có height thừa */
+  #questions-scroll-container::after {
+    content: "" !important;
+    display: none !important;
   }
 
   /* Câu hỏi - style basic, giảm padding và margin, đảm bảo không bị đè bởi logo */
@@ -336,16 +377,31 @@
     max-width: 100% !important;
   }
 
-  /* Scroll container */
-  .overflow-y-auto {
+  /* Scroll container - loại bỏ hoàn toàn */
+  .overflow-y-auto,
+  [class*="overflow"] {
     overflow: visible !important;
     height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
   }
 
-  /* Flex container */
-  .flex.h-\[calc\(100vh-5rem\)\] {
+  /* Flex container - loại bỏ height cố định */
+  .flex.h-\[calc\(100vh-5rem\)\],
+  div[class*="h-\[calc\(100vh"],
+  div[class*="h-[calc(100vh"] {
     height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
     flex-direction: column !important;
+  }
+  
+  /* Tất cả các container có height viewport */
+  [class*="h-[calc"],
+  [class*="h-\[calc"] {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
   }
 
   /* Page breaks - giảm margin tối đa */
@@ -364,10 +420,9 @@
     margin-bottom: 0.2rem !important;
   }
   
-  /* Container câu hỏi chính */
+  /* Container câu hỏi chính - đã xử lý break ở trên */
   #questions-scroll-container > div {
     margin-bottom: 0.5rem !important;
-    break-inside: avoid !important;
   }
   
   /* Giảm font size tổng thể */
@@ -447,46 +502,208 @@
     height: auto !important;
   }
 
-  /* Print footer - hiển thị trên mọi trang in, nằm sát mép dưới như localhost */
+  /* Hiển thị footer trên mọi trang khi in - dùng position fixed nhưng đảm bảo không tạo trang trống */
   .print-footer {
     display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 0.25rem 0.15in !important;
+    margin: 0 !important;
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    justify-content: space-between !important;
-    align-items: flex-end !important;
     background: transparent !important;
-    z-index: 9999 !important;
     font-size: 0.7rem !important;
+    z-index: 9999 !important;
+    /* Đảm bảo footer không tạo không gian thừa */
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 0.2in !important;
+    /* Đảm bảo footer luôn hiển thị */
+    visibility: visible !important;
+    opacity: 1 !important;
+    /* Không tạo page break */
     page-break-inside: avoid !important;
-    line-height: 1 !important;
+    break-inside: avoid !important;
   }
-
+  
   .print-footer span {
     color: #8D7EF7 !important;
     font-weight: bold !important;
     display: block !important;
   }
-
+  
   .print-footer span:first-child {
     text-align: left !important;
-    margin-right: auto !important;
   }
-
+  
   .print-footer span:last-child {
     text-align: right !important;
-    margin-left: auto !important;
   }
 
-  /* Thêm padding-bottom cho content để không bị che bởi footer */
-  main,
-  #questions-scroll-container,
+  /* Thêm padding-bottom cho content để không bị che bởi footer fixed */
+  main {
+    padding-bottom: 0.3in !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Đảm bảo content không bị che bởi footer */
+  #questions-scroll-container {
+    padding-bottom: 0.3in !important;
+    margin-bottom: 0 !important;
+  }
+  
   .max-w-6xl {
-    padding-bottom: 1.5rem !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Ngăn chặn trang trống ở cuối */
+  body {
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html {
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Đảm bảo không có khoảng trống thừa ở cuối */
+  .min-h-screen {
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  /* Ngăn page break sau phần tử cuối cùng */
+  #questions-scroll-container > div:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Đảm bảo không có khoảng trống sau content cuối */
+  main > div:last-child,
+  .max-w-6xl > div:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Loại bỏ khoảng trống thừa từ flex containers */
+  .flex.h-\[calc\(100vh-5rem\)\] > div:last-child,
+  div[class*="flex"] > div:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  
+  /* Đảm bảo tất cả các phần tử cuối cùng không có margin/padding */
+  main > *:last-child,
+  body > *:last-child,
+  #questions-scroll-container > *:last-child {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  
+  /* Loại bỏ tất cả height cố định từ các container chính */
+  main,
+  body > div,
+  body > div > div {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Đảm bảo column layout không tạo trang trống */
+  #questions-scroll-container {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    /* Đảm bảo column không tạo không gian thừa */
+    display: block !important;
+    position: relative !important;
+  }
+  
+  /* Loại bỏ bất kỳ pseudo-element nào có thể tạo không gian */
+  #questions-scroll-container::before,
+  #questions-scroll-container::after {
+    display: none !important;
+    content: none !important;
+    height: 0 !important;
+    width: 0 !important;
+  }
+  
+  /* Loại bỏ tất cả các phần tử có thể tạo không gian thừa */
+  * {
+    box-sizing: border-box !important;
+  }
+  
+  /* Đảm bảo không có phần tử nào có height lớn hơn nội dung */
+  div[class*="overflow"],
+  div[class*="h-"],
+  div[class*="h-full"],
+  div[class*="h-screen"],
+  section,
+  article,
+  /* Đặc biệt xử lý các class Tailwind có thể tạo height */
+  [class*="h-\["],
+  [class*="h-\[calc"] {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Đảm bảo tất cả div không có height cố định */
+  div {
+    max-height: none !important;
+  }
+  
+  /* Loại bỏ height từ style inline nếu có */
+  [style*="height"],
+  [style*="Height"] {
+    height: auto !important;
+  }
+  
+  /* Loại bỏ margin và padding không cần thiết từ body và html */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+  
+  /* Đảm bảo container chính không có height cố định */
+  div.min-h-screen,
+  div[class*="min-h"] {
+    min-height: auto !important;
+    height: auto !important;
+  }
+  
+  /* QUAN TRỌNG: Đảm bảo tất cả các container chính không có height lớn hơn nội dung */
+  body > div,
+  body > div > main,
+  body > div > main > div,
+  body > div > main > div > div {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Đảm bảo không có phần tử nào có position fixed/absolute tạo không gian - chỉ ẩn các phần tử đã được định nghĩa ở trên */
+  /* Không cần thêm quy tắc ở đây vì đã ẩn ở trên */
+  
+  /* Đảm bảo main và các container chính */
+  main,
+  main > div,
+  main > div > div {
+    position: static !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
   }
 }
 
