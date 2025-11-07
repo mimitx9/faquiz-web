@@ -9,7 +9,10 @@ const ThemeToggle: React.FC = () => {
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleTheme();
+      }}
       className="relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none"
       style={{
         backgroundColor: !isDark ? 'rgba(0, 0, 0, 0.1)' : '#8D7EF7',
