@@ -11,9 +11,10 @@ import ThemeToggle from '@/components/ui/ThemeToggle';
 interface QuizHeaderProps {
   totalQuestions?: number; // Số lượng câu hỏi để tính thời gian
   onTimerExpired?: () => void; // Callback khi hết giờ
+  isPanelOpen?: boolean; // Panel có đang mở không
 }
 
-const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired }) => {
+const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired, isPanelOpen = false }) => {
   const router = useRouter();
   const { user, isInitialized, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -171,7 +172,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
   const remainingDays = calculateRemainingDays();
 
   return (
-    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black">
+    <header className={`flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black transition-all duration-300 ${isPanelOpen ? 'h-0 overflow-hidden pointer-events-none' : 'h-20'}`}>
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
         <button 
