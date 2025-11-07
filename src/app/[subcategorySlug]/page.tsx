@@ -8,6 +8,7 @@ import QuizHeader from '@/components/layout/QuizHeader';
 import QuizResults from '@/components/ui/QuizResults';
 import { quizBattleApiService, faquizApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
+import { useTheme } from '@/hooks/useTheme';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -264,6 +265,7 @@ const COMMENT_MESSAGE_FAILED = [
 const SubCategoryQuizPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
+  const { theme } = useTheme();
   const slugParam = params?.subcategorySlug as string; // dạng: 763003-bo-xuong-he-co-cac-khop-phan-2
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -633,7 +635,7 @@ const SubCategoryQuizPage: React.FC = () => {
     }
     
     // Mặc định khi chưa chọn
-    return 'rgba(0, 0, 0, 0.05)';
+    return theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
   };
 
   // Hàm tính toán text color cho option (giống với border color khi đã verify)
@@ -819,7 +821,7 @@ const SubCategoryQuizPage: React.FC = () => {
 
     return (
       <div className="p-8 mb-6">
-        <span className="text-xl font-bold dark:text-gray-500" style={{ color: '#0000001A' }}>
+        <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
             Câu {index + 1}
         </span>
 
@@ -834,7 +836,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {verified && message && (
           <div className="mb-6">
             <p 
-              className="text-lg font-bold"
+              className="text-lg font-semibold"
               style={{ 
                 color: isCorrect ? '#00C800' : '#EC5300' 
               }}
@@ -876,11 +878,11 @@ const SubCategoryQuizPage: React.FC = () => {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                     {/* Cột trái: giải thích */}
                     <div>
-                      <div className="flex items-start gap-3">
-                        <div className="w-1.5 self-stretch" style={{ backgroundColor: accentColor }} />
+                      <div className="flex items-start gap-5">
+                        <div className="w-2 self-stretch" style={{ backgroundColor: accentColor }} />
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="text-sm mb-2">
+                            <div className="text-md mb-2">
                               <span className="font-semibold" style={{ color: accentColor }}>{quizLabel}</span>
                               <span className="opacity-30 inline-flex items-center gap-1" style={{ color: accentColor }}>
                                 &nbsp; › &nbsp;
@@ -942,16 +944,17 @@ const SubCategoryQuizPage: React.FC = () => {
             if (hasDetailAnswer) {
               return (
                 <div className="mb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="w-1.5 self-stretch" style={{ backgroundColor: accentColor }} />
+                  <div className="flex items-start gap-5">
+                    <div className="w-2 self-stretch" style={{ backgroundColor: accentColor }} />
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="text-sm mb-2">
+                        <div className="text-md mb-2">
                           <span className="font-semibold" style={{ color: accentColor }}>{quizLabel}</span>
                           <span className="opacity-30 inline-flex items-center gap-1" style={{ color: accentColor }}>
                             &nbsp; › &nbsp;
+                            {subtitleLabel}
                             {useVerifiedGreen && (
-                              <span className="inline-flex items-center justify-center w-[14px] h-[14px] rounded-full" style={{ backgroundColor: accentColor }}>
+                              <span className="ml-1 inline-flex items-center justify-center w-[14px] h-[14px] rounded-full" style={{ backgroundColor: accentColor }}>
                                 <svg
                                   width="10"
                                   height="10"
@@ -969,7 +972,6 @@ const SubCategoryQuizPage: React.FC = () => {
                                 </svg>
                               </span>
                             )}
-                            {subtitleLabel}
                           </span>
                         </div>
                       </div>
@@ -998,7 +1000,7 @@ const SubCategoryQuizPage: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="relative">
                     <textarea
-                      className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-gray-800 dark:text-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
+                      className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-black dark:text-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
                       placeholder="Viết đáp án..."
                       value={textAnswers[question.questionId] || ''}
                       onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -1084,7 +1086,7 @@ const SubCategoryQuizPage: React.FC = () => {
             // Layout thường khi không có ảnh
             <div className="relative">
               <textarea
-                className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-lg px-6 py-3 bg-white dark:bg-gray-800 dark:text-white min-h-[140px] pr-12 focus:outline-none transition-colors`}
+                className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-lg px-6 py-3 bg-white dark:bg-black dark:text-white min-h-[140px] pr-12 focus:outline-none transition-colors`}
                 placeholder="Viết đáp án..."
                 value={textAnswers[question.questionId] || ''}
                 onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -1166,10 +1168,10 @@ const SubCategoryQuizPage: React.FC = () => {
                     key={opt.answerId}
                     onClick={() => handleSelectOption(question.questionId, opt.answerId, question)}
                     disabled={isAnswered}
-                    className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white dark:bg-gray-800 border-2 transition-all duration-200 ${
+                    className={`w-full text-left p-6 rounded-2xl flex items-center justify-between bg-white dark:bg-black border-2 transition-all duration-200 ${
                       isAnswered 
                         ? 'cursor-pointer' 
-                        : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02]'
+                        : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-white/10 hover:scale-[1.02]'
                     }`}
                     style={{
                       borderColor: (verified && opt?.isCorrect) 
