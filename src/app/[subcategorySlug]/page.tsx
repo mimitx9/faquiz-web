@@ -289,6 +289,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const [focusedEssayId, setFocusedEssayId] = useState<number | null>(null); // Lưu id của textarea đang focus
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
+  const [hoveredIcon, setHoveredIcon] = useState<string | null>(null); // Icon đang được hover
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -304,7 +305,15 @@ const SubCategoryQuizPage: React.FC = () => {
         const res = await quizBattleApiService.getQuestionsBySubCategory({ slug: slugParam });
         console.log('🔍 API Response:', res);
         console.log('🔍 SubCategories:', res?.data?.subCategories);
-        setQuestions(res?.data?.questions || []);
+        const questionsData = res?.data?.questions || [];
+        
+        // Nếu không có câu hỏi, redirect về home
+        if (questionsData.length === 0) {
+          router.replace('/');
+          return;
+        }
+        
+        setQuestions(questionsData);
         
         // Set category và subcategory từ API response
         let currentCategory: CategoryInfo | null = null;
@@ -340,6 +349,10 @@ const SubCategoryQuizPage: React.FC = () => {
           // Redirect trực tiếp đến trang upgrade
           router.push('/upgrade');
           return;
+        } else if (e.response?.status === 404) {
+          // Redirect về home khi gặp 404
+          router.replace('/');
+          return;
         } else {
           setError('Không thể tải câu hỏi, vui lòng thử lại.');
         }
@@ -348,7 +361,14 @@ const SubCategoryQuizPage: React.FC = () => {
       }
     };
     loadQuestions();
-  }, [slugParam]);
+  }, [slugParam, router]);
+
+  // Redirect về home nếu không có câu hỏi sau khi load xong
+  useEffect(() => {
+    if (!loading && questions.length === 0 && slugParam) {
+      router.replace('/');
+    }
+  }, [loading, questions.length, slugParam, router]);
 
   // Đếm thời gian làm bài
   useEffect(() => {
@@ -765,12 +785,13 @@ const SubCategoryQuizPage: React.FC = () => {
     );
   }
 
-  if (questions.length === 0) {
+  if (questions.length === 0 && !loading) {
+    // Redirect về home khi không có câu hỏi (đã xử lý trong useEffect, nhưng hiển thị loading để đảm bảo)
     return (
       <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader />
         <div className="flex justify-center items-center py-20 pt-32">
-          <p className="text-gray-500 dark:text-white/20">Không có câu hỏi</p>
+          <div className="text-gray-500 dark:text-white/20">Đang chuyển hướng...</div>
         </div>
       </div>
     );
@@ -1251,9 +1272,30 @@ const SubCategoryQuizPage: React.FC = () => {
               <div className="space-y-2">
                 {questions.map((q, index) => {
                   const questionIsEssay = isEssay(q);
-                  const isAnswered = questionIsEssay 
-                    ? (textAnswers[q.questionId] !== undefined && textAnswers[q.questionId] !== '') && essayResults[q.questionId] !== undefined
-                    : multiAnswers[q.questionId] !== undefined && multiAnswers[q.questionId].size > 0;
+                  const selectedAnswers = multiAnswers[q.questionId];
+                  const verified = questionIsEssay 
+                    ? isEssayVerified(q.questionId)
+                    : isVerified(q, selectedAnswers);
+                  
+                  // Kiểm tra xem câu trả lời đúng hay sai (chỉ khi đã verify)
+                  let isCorrect: boolean | null = null;
+                  if (verified) {
+                    if (questionIsEssay) {
+                      isCorrect = essayResults[q.questionId] === true;
+                    } else {
+                      isCorrect = isAnswerCorrect(q, selectedAnswers);
+                    }
+                  }
+
+                  // Xác định màu chấm dựa trên trạng thái
+                  let dotColorClass = 'bg-gray-100 dark:bg-gray-700'; // Mặc định: chưa trả lời (xám)
+                  if (verified) {
+                    if (isCorrect) {
+                      dotColorClass = 'bg-green-500'; // Trả lời đúng (xanh)
+                    } else {
+                      dotColorClass = 'bg-red-500'; // Trả lời sai (đỏ)
+                    }
+                  }
 
                   return (
                     <button
@@ -1270,11 +1312,7 @@ const SubCategoryQuizPage: React.FC = () => {
                       className="w-full flex items-center gap-2 p-4 rounded-xl transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <div
-                        className={`w-2 h-2 rounded-full mr-4 ${
-                          isAnswered
-                            ? 'bg-green-500'
-                            : 'bg-gray-100 dark:bg-gray-700'
-                        }`}
+                        className={`w-2 h-2 rounded-full mr-4 ${dotColorClass}`}
                       />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {index + 1}
@@ -1394,6 +1432,117 @@ const SubCategoryQuizPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Sidebar nhỏ ở góc dưới bên phải */}
+        <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
+          {/* Icon Star 2.svg */}
+          <div className="relative flex items-center gap-2">
+            {hoveredIcon === 'star' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+                Hỏi đáp Hack
+              </span>
+            )}
+            <button
+              className="p-3 rounded-lg bg-white transition-all duration-300"
+              aria-label="Hỏi đáp Hack"
+              onMouseEnter={() => setHoveredIcon('star')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                // TODO: Xử lý click cho icon Star
+                console.log('Star icon clicked');
+              }}
+            >
+              <Image
+                src="/quiz/Star 2.svg"
+                alt="Hỏi đáp Hack"
+                width={30}
+                height={30}
+                className="w-[30px] h-[30px]"
+              />
+            </button>
+          </div>
+
+          {/* Icon 3d.svg */}
+          <div className="relative flex items-center gap-2">
+            {hoveredIcon === '3d' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+                Giải phẫu 3D
+              </span>
+            )}
+            <button
+              className="p-3 rounded-lg bg-white transition-all duration-300"
+              aria-label="Giải phẫu 3D"
+              onMouseEnter={() => setHoveredIcon('3d')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                // TODO: Xử lý click cho icon 3D
+                console.log('3D icon clicked');
+              }}
+            >
+              <Image
+                src="/quiz/3d.svg"
+                alt="Giải phẫu 3D"
+                width={28}
+                height={30}
+                className="w-[28px] h-[30px]"
+              />
+            </button>
+          </div>
+
+          {/* Icon print.svg */}
+          <div className="relative flex items-center gap-2">
+            {hoveredIcon === 'print' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+                In
+              </span>
+            )}
+            <button
+              className="p-3 rounded-lg bg-white transition-all duration-300"
+              aria-label="In"
+              onMouseEnter={() => setHoveredIcon('print')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                // TODO: Xử lý click cho icon Print
+                console.log('Print icon clicked');
+              }}
+            >
+              <Image
+                src="/quiz/print.svg"
+                alt="In"
+                width={28}
+                height={26}
+                className="w-[28px] h-[26px]"
+              />
+            </button>
+          </div>
+
+          {/* Icon kiem.svg */}
+          <div className="relative flex items-center gap-2">
+            {hoveredIcon === 'kiem' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+                Kiểm tra
+              </span>
+            )}
+            <button
+              className="p-3 rounded-lg bg-white transition-all duration-300"
+              aria-label="Kiểm tra"
+              onMouseEnter={() => setHoveredIcon('kiem')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                // TODO: Xử lý click cho icon Kiem
+                console.log('Kiem icon clicked');
+              }}
+            >
+              <Image
+                src="/quiz/kiem.svg"
+                alt="Kiểm tra"
+                width={30}
+                height={30}
+                className="w-[30px] h-[30px]"
+              />
+            </button>
+          </div>
+        </div>
       </main>
     </div>
   );

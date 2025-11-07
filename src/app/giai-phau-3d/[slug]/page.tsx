@@ -74,8 +74,8 @@ const BiodigitalViewerPage: React.FC = () => {
         });
 
         if (!foundCategory) {
-          setError('Không tìm thấy mô hình');
-          setLoading(false);
+          // Redirect về home khi không tìm thấy mô hình
+          router.replace('/');
           return;
         }
 
@@ -85,6 +85,10 @@ const BiodigitalViewerPage: React.FC = () => {
         // Tự động chuyển đến trang đăng nhập khi gặp lỗi 401
         if (err.response?.status === 401) {
           router.replace('/login');
+          return;
+        } else if (err.response?.status === 404) {
+          // Redirect về home khi gặp 404
+          router.replace('/');
           return;
         }
         setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');

@@ -175,13 +175,18 @@ faquizApiInstance.interceptors.request.use((config) => {
     return config;
 });
 
-// Add response interceptors để handle 401 errors
+// Add response interceptors để handle 401 errors và 404 errors
 api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
             console.log('🔍 API: 401 error detected, redirecting to login');
             handle401Error();
+        } else if (error.response?.status === 404) {
+            console.log('🔍 API: 404 error detected, redirecting to home');
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
@@ -193,6 +198,11 @@ userProfileApi.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 UserProfile API: 401 error detected, redirecting to login');
             handle401Error();
+        } else if (error.response?.status === 404) {
+            console.log('🔍 UserProfile API: 404 error detected, redirecting to home');
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
@@ -216,6 +226,11 @@ quizBattleApiInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 Quiz Battle API: 401 error detected, redirecting to login');
             handle401Error();
+        } else if (error.response?.status === 404) {
+            console.log('🔍 Quiz Battle API: 404 error detected, redirecting to home');
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
@@ -239,6 +254,11 @@ categoryApiInstance.interceptors.response.use(
         if (error.response?.status === 401) {
             console.log('🔍 Category API: 401 error detected, redirecting to login');
             handle401Error();
+        } else if (error.response?.status === 404) {
+            console.log('🔍 Category API: 404 error detected, redirecting to home');
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }
@@ -250,6 +270,11 @@ faquizApiInstance.interceptors.response.use(
         // Không redirect 401 cho faquiz API - cho phép submit quiz không cần token
         if (error.response?.status === 401) {
             console.log('🔍 FaQuiz API: 401 error detected, but allowing quiz submission without token');
+        } else if (error.response?.status === 404) {
+            console.log('🔍 FaQuiz API: 404 error detected, redirecting to home');
+            if (typeof window !== 'undefined') {
+                window.location.href = '/';
+            }
         }
         return Promise.reject(error);
     }

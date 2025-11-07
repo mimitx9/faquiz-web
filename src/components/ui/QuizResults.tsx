@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import SubCategoryCard from './SubCategoryCard';
 import { SubCategoryInfo } from '@/types';
 import { createSubCategorySlug } from '@/lib/utils';
@@ -114,6 +115,54 @@ const QuizResults: React.FC<QuizResultsProps> = ({
                 Làm lại
               </span>
             </button>
+          </div>
+
+          {/* FA Battle Advertisement Box */}
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <div
+              className="col-span-4 flex items-center justify-between px-16 py-16 rounded-3xl h-full"
+              style={{ backgroundColor: '#04002A' }}
+            >
+              {/* Logo bên trái */}
+              <div className="flex-shrink-0 mr-8">
+                <Image
+                  src="/logos/battle/battle.png"
+                  alt="FA Battle Logo"
+                  width={160}
+                  height={160}
+                  className="object-contain"
+                />
+              </div>
+
+              {/* Text ở giữa */}
+              <div className="flex flex-col justify-center flex-grow">
+                <h3
+                  className="text-3xl font-semibold mb-2"
+                  style={{
+                    background: 'linear-gradient(90deg, #F53AFF 0%, #FFAA00 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                  }}
+                >
+                  Đấu trường FA Battle
+                </h3>
+                <p className="text-lg text-white font-normal">
+                  Ai giỏi hơn ai, vô đấu là biết ngay
+                </p>
+              </div>
+
+              {/* Button bên phải */}
+              <button
+                onClick={() => window.open('https://fabattle.com/', '_blank')}
+                className="flex-shrink-0 px-8 py-4 rounded-full text-white font-bold text-lg transition-opacity hover:opacity-90"
+                style={{
+                  background: 'linear-gradient(to right, #FFD406, #FF8C00)',
+                }}
+              >
+                ĐẤU NGAY
+              </button>
+            </div>
           </div>
 
           {/* Đề liên quan */}
