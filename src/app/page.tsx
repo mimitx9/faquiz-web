@@ -6,6 +6,7 @@ import CategoryCard from '@/components/ui/CategoryCard';
 import SubCategoryCard from '@/components/ui/SubCategoryCard';
 import SubCategoryListPanel from '@/components/ui/SubCategoryListPanel';
 import SearchBar from '@/components/ui/SearchBar';
+import BannerSlide from '@/components/ui/BannerSlide';
 import { categoryApiService } from '@/lib/api';
 import { CategoriesSlide, SubCategoriesSlide } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -473,6 +474,48 @@ const HomePage: React.FC = () => {
             }}
             suggestions={autoCompleteSuggestions}
           />
+
+          {/* Banner Slide */}
+          {!searchQuery.trim() && !appliedSubtitleFilter && (
+            <div className="mb-12">
+              <BannerSlide
+                banners={[
+                  {
+                    id: 'fa-battle',
+                    logo: '/logos/battle/battle.png',
+                    title: 'Đấu trường FA Battle',
+                    description: 'Ai giỏi hơn ai, vô đấu là biết ngay',
+                    buttonText: 'ĐẤU NGAY',
+                    buttonLink: 'https://fabattle.com/',
+                    backgroundColor: '#04002A',
+                    titleGradient: 'linear-gradient(90deg,rgb(221, 0, 255) 0%,rgb(255, 170, 0) 30%)',
+                  },
+                  {
+                    id: 'fa-quiz-pro',
+                    logo: '/logos/battle/battle.png',
+                    title: 'Nâng cấp FA Quiz Pro',
+                    description: 'Không giới hạn đề, làm bài không quảng cáo',
+                    buttonText: 'NÂNG CẤP NGAY',
+                    buttonLink: '/upgrade',
+                    backgroundColor: '#1a0033',
+                    titleGradient: 'linear-gradient(90deg,rgb(221, 0, 255) 0%,rgb(255, 170, 0) 30%)',
+                  },
+                  {
+                    id: 'fa-course',
+                    logo: '/logos/battle/battle.png',
+                    title: 'FA Course - Học Y dễ dàng',
+                    description: 'Khóa học trực tuyến chất lượng cao cho sinh viên Y khoa',
+                    buttonText: 'XEM KHÓA HỌC',
+                    buttonLink: 'https://facourse.com/',
+                    backgroundColor: '#0d001a',
+                    titleGradient: 'linear-gradient(90deg,rgb(221, 0, 255) 0%,rgb(255, 170, 0) 30%)',
+                  },
+                ]}
+                autoPlay={true}
+                autoPlayInterval={3000}
+              />
+            </div>
+          )}
 
           {/* Applied Subtitle Filter Badge */}
           {appliedSubtitleFilter && (

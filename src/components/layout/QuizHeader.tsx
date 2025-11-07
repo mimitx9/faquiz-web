@@ -177,7 +177,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
   const remainingDays = calculateRemainingDays();
 
   return (
-    <header className={`flex items-center px-4 md:px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black transition-all duration-300 ${isPanelOpen ? 'h-0 overflow-hidden pointer-events-none' : 'h-20'}`}>
+    <header className={`flex items-center px-4 md:px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black transition-all duration-300 ${isPanelOpen ? 'h-0 overflow-hidden' : 'h-20'}`}>
       {/* Desktop Layout */}
       {/* Cột 1: Logo - Desktop */}
       <div className="hidden lg:flex items-center w-1/3">
