@@ -15,6 +15,7 @@ import PrintPanel from '@/components/panels/PrintPanel';
 import ThreeDPanel from '@/components/panels/ThreeDPanel';
 import KiemPanel from '@/components/panels/KiemPanel';
 import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
+import { createTitleSlug } from '@/lib/utils';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -1474,8 +1475,14 @@ const SubCategoryQuizPage: React.FC = () => {
             {/* Header với category title và nút collapse */}
             <div className="flex items-center justify-between pl-8 pr-0 py-5">
               <h2 
-                  className="text-sm font-semibold pr-2"
+                  className="text-sm font-semibold pr-2 cursor-pointer hover:opacity-80 transition-opacity"
                   style={{ color: categoryBackgroundColor }}
+                  onClick={() => {
+                    if (category?.title) {
+                      const categorySlug = createTitleSlug(category.title);
+                      window.open(`/category/${categorySlug}`, '_blank');
+                    }
+                  }}
                 >
                   {categoryTitle}
               </h2>
