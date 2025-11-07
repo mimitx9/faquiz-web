@@ -17,11 +17,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    // Load theme from localStorage hoặc system preference
+    // Load theme from localStorage, mặc định là chế độ sáng khi lần đầu vào web
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme') as Theme | null;
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      const initialTheme = savedTheme || systemTheme;
+      const initialTheme = savedTheme || 'light';
       setTheme(initialTheme);
       applyTheme(initialTheme);
     }
