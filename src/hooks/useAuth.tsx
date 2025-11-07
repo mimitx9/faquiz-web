@@ -122,8 +122,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             localStorage.setItem('auth_token', token);
 
             // Step 2.5: Đợi một chút để đảm bảo token đã được lưu và axios interceptor có thể đọc được
-            // Điều này giải quyết vấn đề race condition khi user lần đầu mở web
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Tăng thời gian delay để server có thời gian xử lý token mới
+            await new Promise(resolve => setTimeout(resolve, 200));
 
             // Verify token đã được lưu trước khi gọi getProfile
             const savedToken = localStorage.getItem('auth_token');
@@ -131,12 +131,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
                 throw new Error('Token verification failed');
             }
 
-            // Step 3: Gọi API getProfile để lấy user data
-            const userData = await authApiService.getProfile();
+            // Step 3: Gọi API getProfile để lấy user data với retry logic cho lỗi 500
+            let userData: User;
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 300; // 300ms delay giữa các lần retry
+
+            while (retryCount < maxRetries) {
+                try {
+                    userData = await authApiService.getProfile();
+                    break; // Thành công, thoát khỏi vòng lặp
+                } catch (profileError: any) {
+                    // Nếu là lỗi 500 và chưa hết số lần retry, thử lại
+                    if (profileError?.response?.status === 500 && retryCount < maxRetries - 1) {
+                        retryCount++;
+                        // Đợi một chút trước khi retry (exponential backoff)
+                        await new Promise(resolve => setTimeout(resolve, retryDelay * retryCount));
+                        continue;
+                    }
+                    // Nếu không phải lỗi 500 hoặc đã hết số lần retry, throw error
+                    throw profileError;
+                }
+            }
 
             // Step 4: Set user data and cache it
-            setUser(userData);
-            saveUserToCache(userData);
+            setUser(userData!);
+            saveUserToCache(userData!);
             setIsInitialized(true); // Đảm bảo isInitialized được set khi login thành công
             hasInitializedRef.current = true; // Đánh dấu đã initialized
 
@@ -175,7 +195,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             localStorage.setItem('auth_token', token);
 
             // Step 2.5: Đợi một chút để đảm bảo token đã được lưu và axios interceptor có thể đọc được
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Tăng thời gian delay để server có thời gian xử lý token mới
+            await new Promise(resolve => setTimeout(resolve, 200));
 
             // Verify token đã được lưu trước khi gọi getProfile
             const savedToken = localStorage.getItem('auth_token');
@@ -183,10 +204,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
                 throw new Error('Token verification failed');
             }
 
-            // Step 3: Lấy profile
-            const userData = await authApiService.getProfile();
-            setUser(userData);
-            saveUserToCache(userData);
+            // Step 3: Lấy profile với retry logic cho lỗi 500
+            let userData: User;
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 300; // 300ms delay giữa các lần retry
+
+            while (retryCount < maxRetries) {
+                try {
+                    userData = await authApiService.getProfile();
+                    break; // Thành công, thoát khỏi vòng lặp
+                } catch (profileError: any) {
+                    // Nếu là lỗi 500 và chưa hết số lần retry, thử lại
+                    if (profileError?.response?.status === 500 && retryCount < maxRetries - 1) {
+                        retryCount++;
+                        // Đợi một chút trước khi retry (exponential backoff)
+                        await new Promise(resolve => setTimeout(resolve, retryDelay * retryCount));
+                        continue;
+                    }
+                    // Nếu không phải lỗi 500 hoặc đã hết số lần retry, throw error
+                    throw profileError;
+                }
+            }
+
+            setUser(userData!);
+            saveUserToCache(userData!);
             setIsInitialized(true); // Đảm bảo isInitialized được set khi register thành công
             hasInitializedRef.current = true; // Đánh dấu đã initialized
         } catch (error: any) {

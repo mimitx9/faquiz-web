@@ -9,10 +9,12 @@ import QuizResults from '@/components/ui/QuizResults';
 import { quizBattleApiService, faquizApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/hooks/useAuth';
 import StarPanel from '@/components/panels/StarPanel';
 import PrintPanel from '@/components/panels/PrintPanel';
 import ThreeDPanel from '@/components/panels/ThreeDPanel';
 import KiemPanel from '@/components/panels/KiemPanel';
+import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -270,6 +272,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const slugParam = params?.subcategorySlug as string; // dạng: 763003-bo-xuong-he-co-cac-khop-phan-2
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -300,6 +303,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const resizeStartX = useRef<number>(0); // Vị trí X khi bắt đầu resize
   const resizeStartWidth = useRef<number>(33.33); // Width khi bắt đầu resize
   const contentContainerRef = useRef<HTMLDivElement>(null); // Ref cho container content
+  const [showUpgradeOverlay, setShowUpgradeOverlay] = useState(false); // Hiển thị overlay upgrade khi gặp câu hỏi rỗng
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -432,18 +436,6 @@ const SubCategoryQuizPage: React.FC = () => {
     }
   }, [activePanel]);
 
-  // Xử lý phím Escape để đóng modal zoom ảnh
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && zoomedImage) {
-        handleCloseZoom();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [zoomedImage]);
-
   // Hàm mở ảnh zoom và reset góc xoay
   const handleOpenZoom = (imageUrl: string) => {
     setZoomedImage(imageUrl);
@@ -460,6 +452,80 @@ const SubCategoryQuizPage: React.FC = () => {
     setZoomedImage(null);
     setImageRotation(0);
   };
+
+  // Xử lý phím Escape để đóng modal zoom ảnh
+  useEffect(() => {
+    if (!zoomedImage) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomedImage(null);
+        setImageRotation(0);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [zoomedImage]);
+
+  // Kiểm tra và hiển thị overlay upgrade khi gặp câu hỏi rỗng
+  useEffect(() => {
+    if (questions.length === 0 || showUpgradeOverlay) return;
+
+    // Tìm câu hỏi rỗng đầu tiên
+    const emptyQuestion = questions.find(q => !q.question || q.question.trim() === '');
+    
+    if (emptyQuestion) {
+      // Kiểm tra xem câu hỏi đã hiển thị trên màn hình chưa
+      const checkIfVisible = () => {
+        const questionElement = document.getElementById(`question-${emptyQuestion.questionId}`);
+        if (questionElement) {
+          const rect = questionElement.getBoundingClientRect();
+          const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+          if (isVisible) {
+            setShowUpgradeOverlay(true);
+            return true;
+          }
+        }
+        return false;
+      };
+
+      // Sử dụng Intersection Observer để phát hiện khi user scroll đến câu hỏi rỗng
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setShowUpgradeOverlay(true);
+            }
+          });
+        },
+        {
+          threshold: 0.1, // Khi 10% câu hỏi hiển thị trên màn hình
+          rootMargin: '-100px 0px', // Offset từ top
+        }
+      );
+
+      // Đợi một chút để đảm bảo DOM đã render, sau đó kiểm tra và setup observer
+      const timeoutId = setTimeout(() => {
+        // Kiểm tra xem câu hỏi đã hiển thị chưa
+        if (!checkIfVisible()) {
+          // Nếu chưa hiển thị, setup observer để theo dõi
+          const questionElement = document.getElementById(`question-${emptyQuestion.questionId}`);
+          if (questionElement) {
+            observer.observe(questionElement);
+          }
+        }
+      }, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        const questionElement = document.getElementById(`question-${emptyQuestion.questionId}`);
+        if (questionElement) {
+          observer.unobserve(questionElement);
+        }
+      };
+    }
+  }, [questions, showUpgradeOverlay]);
 
   // Đếm số lượng đáp án đúng trong một câu hỏi
   const getCorrectAnswerCount = (question: Question) => {
@@ -1644,7 +1710,7 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {/* Sidebar nhỏ ở góc dưới bên phải */}
-        {!activePanel && (
+        {!activePanel && user && (
           <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
           {/* Icon Star 2.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
@@ -1743,6 +1809,12 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
         </div>
         )}
+
+        {/* Upgrade Overlay - hiển thị khi gặp câu hỏi rỗng */}
+        <UpgradeOverlay 
+          isOpen={showUpgradeOverlay}
+          onClose={() => setShowUpgradeOverlay(false)}
+        />
       </main>
     </div>
   );
