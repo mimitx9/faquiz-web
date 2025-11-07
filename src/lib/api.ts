@@ -127,12 +127,8 @@ userProfileApi.interceptors.request.use((config) => {
 
 quizApiInstance.interceptors.request.use((config) => {
     const token = localStorage.getItem('auth_token');
-    console.log('🔍 Quiz API Token:', token ? 'Present' : 'Missing');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.log('🔍 Authorization header set');
-    } else {
-        console.warn('⚠️ No auth token found for quiz API');
     }
     // Ensure site header is always set
     config.headers.site = 'BATTLE';
@@ -180,10 +176,8 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            console.log('🔍 API: 401 error detected, redirecting to login');
             handle401Error();
         } else if (error.response?.status === 404) {
-            console.log('🔍 API: 404 error detected, redirecting to home');
             if (typeof window !== 'undefined') {
                 window.location.href = '/';
             }
@@ -196,10 +190,8 @@ userProfileApi.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            console.log('🔍 UserProfile API: 401 error detected, redirecting to login');
             handle401Error();
         } else if (error.response?.status === 404) {
-            console.log('🔍 UserProfile API: 404 error detected, redirecting to home');
             if (typeof window !== 'undefined') {
                 window.location.href = '/';
             }
@@ -213,7 +205,6 @@ quizApiInstance.interceptors.response.use(
     (error) => {
         // Không redirect 401 cho quiz API - cho phép làm quiz không cần token
         if (error.response?.status === 401) {
-            console.log('🔍 Quiz API: 401 error detected, but allowing quiz without token');
             // Không gọi handle401Error() để không redirect
         }
         return Promise.reject(error);
@@ -224,10 +215,8 @@ quizBattleApiInstance.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            console.log('🔍 Quiz Battle API: 401 error detected, redirecting to login');
             handle401Error();
         } else if (error.response?.status === 404) {
-            console.log('🔍 Quiz Battle API: 404 error detected, redirecting to home');
             if (typeof window !== 'undefined') {
                 window.location.href = '/';
             }
@@ -241,7 +230,6 @@ quizWebApiInstance.interceptors.response.use(
     (error) => {
         // Không redirect 401 cho quiz web API - cho phép làm quiz không cần token
         if (error.response?.status === 401) {
-            console.log('🔍 Quiz Web API: 401 error detected, but allowing quiz without token');
             // Không gọi handle401Error() để không redirect
         }
         return Promise.reject(error);
@@ -252,10 +240,8 @@ categoryApiInstance.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            console.log('🔍 Category API: 401 error detected, redirecting to login');
             handle401Error();
         } else if (error.response?.status === 404) {
-            console.log('🔍 Category API: 404 error detected, redirecting to home');
             if (typeof window !== 'undefined') {
                 window.location.href = '/';
             }
@@ -269,9 +255,8 @@ faquizApiInstance.interceptors.response.use(
     (error) => {
         // Không redirect 401 cho faquiz API - cho phép submit quiz không cần token
         if (error.response?.status === 401) {
-            console.log('🔍 FaQuiz API: 401 error detected, but allowing quiz submission without token');
+            // Không làm gì cả
         } else if (error.response?.status === 404) {
-            console.log('🔍 FaQuiz API: 404 error detected, redirecting to home');
             if (typeof window !== 'undefined') {
                 window.location.href = '/';
             }
@@ -283,36 +268,23 @@ faquizApiInstance.interceptors.response.use(
 // Auth API
 export const authApiService = {
     login: async (data: LoginRequest): Promise<{ token: string; login: boolean }> => {
-        console.log('🔍 API: Login request data:', data);
-
         const response = await authApi.post<ApiResponse<AuthResponse>>('/auth-mini', data);
-
-        console.log('🔍 API: Raw response:', response);
-        console.log('🔍 API: Response data:', response.data);
-        console.log('🔍 API: Response status:', response.status);
 
         // Check response structure matches expected format
         if (response.data && response.data.data && response.data.data.token) {
-            console.log('🔍 API: Login successful, token received');
             return {
                 token: response.data.data.token,
                 login: response.data.data.login ?? true
             };
         } else {
-            console.error('❌ API: Unexpected login response structure:', response.data);
             throw new Error('Invalid login response structure');
         }
     },
 
     register: async (data: RegisterRequest): Promise<User> => {
-        console.log('🔍 API: Register request data:', data);
-
         const response = await authApi.post<ApiResponse<RegisterUserResponse>>('/register-mini', data);
 
-        console.log('🔍 API: Register response:', response.data);
-
         if (response.data && response.data.data) {
-            console.log('🔍 API: Register successful, user created');
             // Convert RegisterUserResponse to User format
             const userData: User = {
                 userId: response.data.data.id,
@@ -329,20 +301,14 @@ export const authApiService = {
 
     getProfile: async (): Promise<User> => {
         try {
-            console.log('🔍 API: Calling getProfile...');
             const response = await userProfileApi.get('/profile-quiz');
-
-            console.log('🔍 API: getProfile response:', response);
-            console.log('🔍 API: getProfile data:', response.data);
 
             // Xử lý response linh hoạt - có thể là ApiResponse hoặc trực tiếp User
             let userData: any;
             if (response.data.data) {
                 userData = response.data.data;
-                console.log('🔍 API: Using nested data structure');
             } else {
                 userData = response.data;
-                console.log('🔍 API: Using direct data structure');
             }
 
             if (userData && userData.rank && !userData.globalRank) {
@@ -350,12 +316,8 @@ export const authApiService = {
                 delete userData.rank;
             }
 
-            console.log('🔍 API: Final user data:', userData);
             return userData as User;
         } catch (error: any) {
-            console.error('❌ API: getProfile failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
             throw error;
         }
     },
@@ -365,7 +327,6 @@ export const authApiService = {
             await api.post('/auth/logout');
         } catch {
             // Logout có thể fail nhưng vẫn clear local state
-            console.log('Logout API failed, but continuing with local cleanup');
         }
     },
 };
@@ -375,14 +336,9 @@ export const quizBattleApiService = {
     
     getQuestionsBySubCategory: async (payload: QuestionsBySubCategoryRequest): Promise<QuestionsBySubCategoryResponse> => {
         try {
-            console.log('🔍 API: Calling getQuestionsBySubCategory with slug:', payload.slug);
             const response = await quizBattleApiInstance.post<QuestionsBySubCategoryResponse>('/questions/by-sub-category', payload);
-            console.log('🔍 API: getQuestionsBySubCategory response:', response);
             return response.data;
         } catch (error: any) {
-            console.error('❌ API: getQuestionsBySubCategory failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
             throw error;
         }
     },
@@ -392,14 +348,9 @@ export const quizBattleApiService = {
 export const categoryApiService = {
     getSlideFast: async (): Promise<ApiResponse<SlideFastResponse>> => {
         try {
-            console.log('🔍 API: Calling getSlideFast...');
             const response = await categoryApiInstance.get<ApiResponse<SlideFastResponse>>('/slide-fast');
-            console.log('🔍 API: getSlideFast response:', response);
             return response.data;
         } catch (error: any) {
-            console.error('❌ API: getSlideFast failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
             throw error;
         }
     },
@@ -418,17 +369,12 @@ export interface SubmitQuizRequest {
 export const faquizApiService = {
     submitQuiz: async (payload: SubmitQuizRequest): Promise<void> => {
         try {
-            console.log('🔍 API: Calling submitQuiz with payload:', payload);
             // Gọi async, không cần quan tâm response
-            faquizApiInstance.post('/user-quiz', payload).catch((error) => {
-                // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
-                console.error('❌ API: submitQuiz failed (non-blocking):', error);
-                console.error('❌ API: Error response:', error.response?.data);
-                console.error('❌ API: Error status:', error.response?.status);
+            faquizApiInstance.post('/user-quiz', payload).catch(() => {
+                // Silent fail để không ảnh hưởng đến flow chính
             });
         } catch (error: any) {
-            // Log lỗi nhưng không throw để không ảnh hưởng đến flow chính
-            console.error('❌ API: submitQuiz failed (non-blocking):', error);
+            // Silent fail để không ảnh hưởng đến flow chính
         }
     },
 };
@@ -454,14 +400,9 @@ export interface BiodigitalCategoriesResponse {
 export const biodigitalApiService = {
     getAllCategories: async (): Promise<BiodigitalCategoriesResponse> => {
         try {
-            console.log('🔍 API: Calling getAllCategories...');
             const response = await faquizApiInstance.get<BiodigitalCategoriesResponse>('/biodigital/categories/all');
-            console.log('🔍 API: getAllCategories response:', response);
             return response.data;
         } catch (error: any) {
-            console.error('❌ API: getAllCategories failed:', error);
-            console.error('❌ API: Error response:', error.response?.data);
-            console.error('❌ API: Error status:', error.response?.status);
             throw error;
         }
     },

@@ -114,6 +114,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             // Step 2: Lưu token vào localStorage
             localStorage.setItem('auth_token', token);
 
+            // Step 2.5: Đợi một chút để đảm bảo token đã được lưu và axios interceptor có thể đọc được
+            // Điều này giải quyết vấn đề race condition khi user lần đầu mở web
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Verify token đã được lưu trước khi gọi getProfile
+            const savedToken = localStorage.getItem('auth_token');
+            if (!savedToken || savedToken !== token) {
+                throw new Error('Token verification failed');
+            }
+
             // Step 3: Gọi API getProfile để lấy user data
             const userData = await authApiService.getProfile();
 
@@ -152,6 +162,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             }
 
             localStorage.setItem('auth_token', token);
+
+            // Step 2.5: Đợi một chút để đảm bảo token đã được lưu và axios interceptor có thể đọc được
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            // Verify token đã được lưu trước khi gọi getProfile
+            const savedToken = localStorage.getItem('auth_token');
+            if (!savedToken || savedToken !== token) {
+                throw new Error('Token verification failed');
+            }
 
             // Step 3: Lấy profile
             const userData = await authApiService.getProfile();

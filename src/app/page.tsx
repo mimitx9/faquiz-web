@@ -92,7 +92,6 @@ const HomePage: React.FC = () => {
           setFullData(response.data.fullData?.categoriesSlide || []);
         }
       } catch (err: any) {
-        console.error('Error fetching slide fast data:', err);
         setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
       } finally {
         setLoading(false);
@@ -663,10 +662,6 @@ const HomePage: React.FC = () => {
             {filteredCategories.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
                 {filteredCategories.map((category) => {
-                  // Đảm bảo backgroundColor được truyền đúng
-                  if (!category.backgroundColor) {
-                    console.warn(`Category ${category.id} missing backgroundColor`);
-                  }
                   return (
                     <CategoryCard
                       key={category.id}
@@ -712,10 +707,6 @@ const HomePage: React.FC = () => {
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">MÔN MỚI HÔM NAY</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {filteredCategories.slice(0, 8).map((category, index) => {
-                    // Đảm bảo backgroundColor được truyền đúng
-                    if (!category.backgroundColor) {
-                      console.warn(`Category ${category.id} missing backgroundColor`);
-                    }
                     // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
                     const isPriority = index < 5;
                     return (

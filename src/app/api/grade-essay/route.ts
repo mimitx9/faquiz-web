@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
       rawResult: result,
     });
   } catch (error: any) {
-    console.error('Error grading essay:', error);
     return NextResponse.json(
       { 
         error: 'Lỗi khi chấm điểm tự luận',

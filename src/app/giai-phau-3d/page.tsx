@@ -58,7 +58,6 @@ const BiodigitalPage: React.FC = () => {
           setCategories(response.data || []);
         }
       } catch (err: any) {
-        console.error('Error fetching biodigital categories:', err);
         // Tự động chuyển đến trang đăng nhập khi gặp lỗi 401
         if (err.response?.status === 401) {
           router.replace('/login');

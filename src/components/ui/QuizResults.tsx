@@ -45,10 +45,6 @@ const QuizResults: React.FC<QuizResultsProps> = ({
     sub => sub.id !== currentSubCategoryId
   );
 
-  console.log('🔍 QuizResults - relatedSubCategories:', relatedSubCategories);
-  console.log('🔍 QuizResults - filteredRelatedSubCategories:', filteredRelatedSubCategories);
-  console.log('🔍 QuizResults - currentSubCategoryId:', currentSubCategoryId);
-
   // Handler khi click vào subcategory card
   const handleSubCategoryClick = (subCategory: SubCategoryInfo) => {
     const slug = subCategory.slug;

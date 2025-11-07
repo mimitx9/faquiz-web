@@ -18,7 +18,6 @@ const BiodigitalCard: React.FC<BiodigitalCardProps> = ({ category, onClick }) =>
   const gradientColor = getRandomGradientColor(category.title);
 
   const handleImageError = () => {
-    console.error('Failed to load image:', category.image);
     setImageError(true);
     setImageLoading(false);
   };

@@ -32,7 +32,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
                 setValue(JSON.parse(item));
             }
         } catch (error) {
-            console.error(`Error reading localStorage key "${key}":`, error);
+            // Silent fail
         }
     }, [key, isClient]);
 
@@ -43,7 +43,7 @@ export function useLocalStorage<T>(key: string, defaultValue: T) {
                 localStorage.setItem(key, JSON.stringify(newValue));
             }
         } catch (error) {
-            console.error(`Error setting localStorage key "${key}":`, error);
+            // Silent fail
         }
     };
 

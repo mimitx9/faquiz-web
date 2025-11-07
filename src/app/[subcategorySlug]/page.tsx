@@ -303,8 +303,6 @@ const SubCategoryQuizPage: React.FC = () => {
         setLoading(true);
         setError(null);
         const res = await quizBattleApiService.getQuestionsBySubCategory({ slug: slugParam });
-        console.log('🔍 API Response:', res);
-        console.log('🔍 SubCategories:', res?.data?.subCategories);
         const questionsData = res?.data?.questions || [];
         
         // Nếu không có câu hỏi, redirect về home
@@ -343,7 +341,6 @@ const SubCategoryQuizPage: React.FC = () => {
         setStartTime(Date.now());
         
       } catch (e: any) {
-        console.error(e);
         // Kiểm tra HTTP status code 403 và mã lỗi 40300401 - yêu cầu thanh toán
         if (e.response?.status === 403 && e.response?.data?.meta?.code === 40300401) {
           // Redirect trực tiếp đến trang upgrade
@@ -479,7 +476,6 @@ const SubCategoryQuizPage: React.FC = () => {
     }
 
     if (!question.detailAnswer || question.detailAnswer.trim().length === 0) {
-      console.warn('Không có đáp án mẫu để chấm điểm');
       return;
     }
 
@@ -518,7 +514,7 @@ const SubCategoryQuizPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Error grading essay:', error);
+      // Silent fail
     } finally {
       setIsGradingEssay(prev => ({ ...prev, [questionId]: false }));
     }
@@ -734,8 +730,6 @@ const SubCategoryQuizPage: React.FC = () => {
         endDuration: finalTimeSpent,
         categoryCode: category.code,
       });
-    } else {
-      console.warn('⚠️ Cannot submit quiz: missing category or subCategory code');
     }
   };
 
@@ -800,12 +794,6 @@ const SubCategoryQuizPage: React.FC = () => {
   // Hiển thị màn hình kết quả khi đã nộp bài
   if (isSubmitted) {
     const correctAnswers = calculateCorrectAnswers();
-    console.log('🔍 Rendering QuizResults with:', {
-      subCategories: subCategories,
-      subCategoriesLength: subCategories.length,
-      categoryBackgroundColor: category?.backgroundColor,
-      currentSubCategoryId: subCategory?.id,
-    });
     return (
       <div className="min-h-screen bg-white dark:bg-black">
         <QuizHeader 
@@ -948,7 +936,6 @@ const SubCategoryQuizPage: React.FC = () => {
                           fill
                           className="object-contain rounded-2xl"
                           onError={(e) => {
-                            console.error('Failed to load detail image:', correctDetailImg);
                             e.currentTarget.style.display = 'none';
                           }}
                           loading="lazy"
@@ -1093,7 +1080,6 @@ const SubCategoryQuizPage: React.FC = () => {
                     fill
                     className="object-contain rounded-2xl"
                     onError={(e) => {
-                      console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
                     }}
                     loading="lazy"
@@ -1166,7 +1152,6 @@ const SubCategoryQuizPage: React.FC = () => {
                     fill
                     className="object-contain rounded-2xl"
                     onError={(e) => {
-                      console.error('Failed to load image:', question.extraData?.image);
                       e.currentTarget.style.display = 'none';
                     }}
                     loading="lazy"
@@ -1449,7 +1434,6 @@ const SubCategoryQuizPage: React.FC = () => {
               onMouseLeave={() => setHoveredIcon(null)}
               onClick={() => {
                 // TODO: Xử lý click cho icon Star
-                console.log('Star icon clicked');
               }}
             >
               <Image
@@ -1476,7 +1460,6 @@ const SubCategoryQuizPage: React.FC = () => {
               onMouseLeave={() => setHoveredIcon(null)}
               onClick={() => {
                 // TODO: Xử lý click cho icon 3D
-                console.log('3D icon clicked');
               }}
             >
               <Image
@@ -1503,7 +1486,6 @@ const SubCategoryQuizPage: React.FC = () => {
               onMouseLeave={() => setHoveredIcon(null)}
               onClick={() => {
                 // TODO: Xử lý click cho icon Print
-                console.log('Print icon clicked');
               }}
             >
               <Image
@@ -1530,7 +1512,6 @@ const SubCategoryQuizPage: React.FC = () => {
               onMouseLeave={() => setHoveredIcon(null)}
               onClick={() => {
                 // TODO: Xử lý click cho icon Kiem
-                console.log('Kiem icon clicked');
               }}
             >
               <Image

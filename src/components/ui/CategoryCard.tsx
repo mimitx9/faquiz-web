@@ -18,7 +18,6 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick, isSelect
   const imageUrl = category.iconUrl || category.icon;
 
   const handleImageError = () => {
-    console.error('Failed to load image:', imageUrl);
     setImageError(true);
     setImageLoading(false);
   };
