@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://facourse.com');
+// Site URL - ưu tiên NEXT_PUBLIC_SITE_URL, sau đó dùng giá trị mặc định
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://facourse.com';
 
 export default function robots(): MetadataRoute.Robots {
   return {

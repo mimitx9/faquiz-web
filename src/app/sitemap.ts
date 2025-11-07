@@ -10,10 +10,9 @@ const BASE_URL = process.env.NODE_ENV === 'production'
 const CATEGORY_API_BASE_URL = `${BASE_URL}/v1/category`;
 const FAQUIZ_API_BASE_URL = `${BASE_URL}/faquiz/v1`;
 
-// Site URL - có thể cấu hình qua environment variable
-// Nếu không có, sẽ sử dụng giá trị mặc định
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://facourse.com');
+// Site URL - ưu tiên NEXT_PUBLIC_SITE_URL, sau đó dùng giá trị mặc định
+// Chỉ dùng VERCEL_URL khi đang ở preview/deployment và không có NEXT_PUBLIC_SITE_URL
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://facourse.com';
 
 interface SubCategoriesSlide {
   code: string;
