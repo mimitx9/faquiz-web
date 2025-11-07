@@ -174,7 +174,12 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
     <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black">
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
-        <Link href="/" className="flex items-center relative h-8 w-auto">
+        <button 
+          onClick={() => {
+            window.location.href = '/';
+          }}
+          className="flex items-center relative h-8 w-auto cursor-pointer"
+        >
           <Image 
             src="/logos/logos.png" 
             alt="FA Quiz" 
@@ -185,7 +190,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
             quality={95}
             sizes="120px"
           />
-        </Link>
+        </button>
       </div>
 
       {/* Cột 2: Đồng hồ đếm ngược (hiển thị khi timer enabled và đã có câu hỏi) */}
