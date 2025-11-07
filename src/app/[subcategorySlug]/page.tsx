@@ -9,6 +9,10 @@ import QuizResults from '@/components/ui/QuizResults';
 import { quizBattleApiService, faquizApiService } from '@/lib/api';
 import { Question, CategoryInfo, SubCategoryInfo, QuestionOption } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
+import StarPanel from '@/components/panels/StarPanel';
+import PrintPanel from '@/components/panels/PrintPanel';
+import ThreeDPanel from '@/components/panels/ThreeDPanel';
+import KiemPanel from '@/components/panels/KiemPanel';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -290,6 +294,12 @@ const SubCategoryQuizPage: React.FC = () => {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null); // Icon đang được hover
+  const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | null>(null); // Panel đang được mở
+  const [splitPanelWidth, setSplitPanelWidth] = useState<number>(33.33); // Width của split panel (% màn hình), mặc định 1/3 (33.33%)
+  const [isResizing, setIsResizing] = useState(false); // Trạng thái đang resize
+  const resizeStartX = useRef<number>(0); // Vị trí X khi bắt đầu resize
+  const resizeStartWidth = useRef<number>(33.33); // Width khi bắt đầu resize
+  const contentContainerRef = useRef<HTMLDivElement>(null); // Ref cho container content
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -400,6 +410,13 @@ const SubCategoryQuizPage: React.FC = () => {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Tự động collapse sidebar khi panel được mở
+  useEffect(() => {
+    if (activePanel !== null) {
+      setIsSidebarCollapsed(true);
+    }
+  }, [activePanel]);
 
   // Xử lý phím Escape để đóng modal zoom ảnh
   useEffect(() => {
@@ -558,6 +575,73 @@ const SubCategoryQuizPage: React.FC = () => {
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
+
+  // Handler mở/đóng split panel
+  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem') => {
+    if (panelType) {
+      // Nếu click vào icon, toggle panel đó
+      const newPanel = activePanel === panelType ? null : panelType;
+      setActivePanel(newPanel);
+      // Tự động collapse sidebar khi mở panel (set ngay lập tức)
+      setIsSidebarCollapsed(true);
+    } else {
+      // Nếu không có panelType (đóng từ nút X), đóng panel
+      setActivePanel(null);
+    }
+  };
+
+  // Handler bắt đầu resize split panel
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    if (contentContainerRef.current) {
+      const containerRect = contentContainerRef.current.getBoundingClientRect();
+      // Lưu vị trí chuột tương đối trong container khi bắt đầu
+      resizeStartX.current = e.clientX - containerRect.left;
+      resizeStartWidth.current = splitPanelWidth;
+    }
+  };
+
+  // Handler resize split panel
+  useEffect(() => {
+    const handleResizeMove = (e: MouseEvent) => {
+      if (!isResizing || !contentContainerRef.current) return;
+      
+      // Lấy width thực tế của container content (không bao gồm sidebar bên trái)
+      const containerRect = contentContainerRef.current.getBoundingClientRect();
+      const containerWidth = containerRect.width;
+      
+      // Tính vị trí chuột hiện tại tương đối trong container
+      const currentMouseX = e.clientX - containerRect.left;
+      
+      // Tính phần trăm panel width dựa trên vị trí chuột
+      // Panel bắt đầu từ bên phải, nên width = (containerWidth - mouseX) / containerWidth * 100
+      let newWidth = ((containerWidth - currentMouseX) / containerWidth) * 100;
+      
+      // Giới hạn min 25% (1/4) và max 50% (1/2)
+      newWidth = Math.max(25, Math.min(50, newWidth));
+      
+      setSplitPanelWidth(newWidth);
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, splitPanelWidth]);
 
   // Hàm kiểm tra xem đã chọn đủ số lượng bằng số đáp án đúng chưa
   const isVerified = (question: Question, selectedAnswers: Set<number> | undefined) => {
@@ -996,6 +1080,66 @@ const SubCategoryQuizPage: React.FC = () => {
           })()
         )}
 
+        {/* Các button sau khi chọn đáp án - chỉ hiển thị cho câu trắc nghiệm */}
+        {verified && !questionIsEssay && (
+          <div className="mb-6 flex items-center justify-between gap-4">
+            {/* Button "Sửa lỗi" căn trái */}
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-90"
+              style={{ backgroundColor: '#00C800' }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.3333 2.00004C11.5084 1.82493 11.7163 1.68606 11.9447 1.59131C12.1731 1.49657 12.4173 1.44775 12.6667 1.44775C12.916 1.44775 13.1602 1.49657 13.3886 1.59131C13.617 1.68606 13.8249 1.82493 14 2.00004C14.1751 2.17515 14.314 2.38305 14.4087 2.61146C14.5035 2.83987 14.5523 3.08407 14.5523 3.33337C14.5523 3.58268 14.5035 3.82688 14.4087 4.05529C14.314 4.2837 14.1751 4.4916 14 4.66671L5.00001 13.6667L1.33334 14.6667L2.33334 11L11.3333 2.00004Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+              Sửa lỗi
+            </button>
+
+            {/* 3 button căn phải */}
+            <div className="flex items-center gap-3">
+              <button
+                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                style={{
+                  borderColor: '#0000000D',
+                  color: '#00000080'
+                }}
+              >
+                Giải thích từng ý
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                style={{
+                  borderColor: '#0000000D',
+                  color: '#00000080'
+                }}
+              >
+                Vì sao đúng
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
+                style={{
+                  borderColor: '#0000000D',
+                  color: '#00000080'
+                }}
+              >
+                Đáp án sai
+              </button>
+            </div>
+          </div>
+        )}
+
         {questionIsEssay ? (
           // Layout cho essay: nếu có ảnh thì 2 cột, không có ảnh thì layout thường
           question.extraData?.image ? (
@@ -1210,7 +1354,7 @@ const SubCategoryQuizPage: React.FC = () => {
       />
       <main className="pt-20 bg-white dark:bg-black relative">
         {/* Nút expand sidebar khi collapsed - cố định ở góc trái */}
-        {isSidebarCollapsed && (
+        {isSidebarCollapsed && !activePanel && (
           <button
             onClick={toggleSidebar}
             className="fixed left-4 top-24 p-2 hover:scale-110 rounded transition-all z-40 duration-300"
@@ -1227,7 +1371,7 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {/* Sidebar cố định bên trái */}
-        {!isSidebarCollapsed && (
+        {!isSidebarCollapsed && !activePanel && (
           <div className="fixed left-0 top-20 w-[280px] lg:w-[320px] h-[calc(100vh-5rem)] flex flex-col z-30">
             {/* Header với category title và nút collapse */}
             <div className="flex items-center justify-between pl-8 pr-0 py-5">
@@ -1311,19 +1455,61 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {/* Content area với margin để tránh bị che bởi sidebar */}
-        <div className={`transition-all duration-300 ${!isSidebarCollapsed ? 'ml-[280px] lg:ml-[320px]' : ''}`}>
-          <div className="max-w-6xl mx-auto">
-            <div className="p-8">
-              {/* Danh sách tất cả câu hỏi - scroll được */}
-              <div id="questions-scroll-container">
-                {questions.map((question, index) => (
-                  <div id={`question-${question.questionId}`} key={question.questionId}>
-                    {renderQuestion(question, index)}
-                  </div>
-                ))}
+        <div 
+          ref={contentContainerRef}
+          className={`transition-all duration-300 flex h-[calc(100vh-5rem)] ${!isSidebarCollapsed && !activePanel ? 'ml-[280px] lg:ml-[320px]' : ''}`}
+        >
+          {/* Phần quiz chính */}
+          <div 
+            className="flex-1 overflow-y-auto transition-all duration-300 h-full"
+            style={{
+              width: activePanel ? `${100 - splitPanelWidth}%` : '100%',
+            }}
+          >
+            <div className="max-w-6xl mx-auto">
+              <div className="p-8">
+                {/* Danh sách tất cả câu hỏi - scroll được */}
+                <div id="questions-scroll-container">
+                  {questions.map((question, index) => (
+                    <div id={`question-${question.questionId}`} key={question.questionId}>
+                      {renderQuestion(question, index)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Divider để resize */}
+          {activePanel && (
+            <div
+              className="w-1 bg-gray-200 dark:bg-gray-700 cursor-col-resize hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors relative group"
+              onMouseDown={handleResizeStart}
+              style={{
+                cursor: isResizing ? 'col-resize' : 'col-resize',
+              }}
+            >
+              {/* Handle visual indicator */}
+              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-1 bg-gray-400 dark:bg-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          )}
+
+          {/* Split panel bên phải */}
+          {activePanel && (
+            <div
+              className="transition-all duration-300 h-full"
+              style={{
+                width: `${splitPanelWidth}%`,
+                minWidth: '25%',
+                maxWidth: '50%',
+              }}
+            >
+              {activePanel === 'star' && <StarPanel onClose={() => setActivePanel(null)} />}
+              {activePanel === 'print' && <PrintPanel onClose={() => setActivePanel(null)} />}
+              {activePanel === '3d' && <ThreeDPanel onClose={() => setActivePanel(null)} />}
+              {activePanel === 'kiem' && <KiemPanel onClose={() => setActivePanel(null)} />}
+            </div>
+          )}
         </div>
 
         {/* Nút nộp bài floating ở bottom center */}
@@ -1419,7 +1605,8 @@ const SubCategoryQuizPage: React.FC = () => {
         )}
 
         {/* Sidebar nhỏ ở góc dưới bên phải */}
-        <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
+        {!activePanel && (
+          <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
           {/* Icon Star 2.svg */}
           <div className="relative flex items-center gap-2">
             {hoveredIcon === 'star' && (
@@ -1432,9 +1619,7 @@ const SubCategoryQuizPage: React.FC = () => {
               aria-label="Hỏi đáp Hack"
               onMouseEnter={() => setHoveredIcon('star')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                // TODO: Xử lý click cho icon Star
-              }}
+              onClick={() => toggleSplitPanel('star')}
             >
               <Image
                 src="/quiz/Star 2.svg"
@@ -1458,9 +1643,7 @@ const SubCategoryQuizPage: React.FC = () => {
               aria-label="Giải phẫu 3D"
               onMouseEnter={() => setHoveredIcon('3d')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                // TODO: Xử lý click cho icon 3D
-              }}
+              onClick={() => toggleSplitPanel('3d')}
             >
               <Image
                 src="/quiz/3d.svg"
@@ -1484,9 +1667,7 @@ const SubCategoryQuizPage: React.FC = () => {
               aria-label="In"
               onMouseEnter={() => setHoveredIcon('print')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                // TODO: Xử lý click cho icon Print
-              }}
+              onClick={() => toggleSplitPanel('print')}
             >
               <Image
                 src="/quiz/print.svg"
@@ -1510,9 +1691,7 @@ const SubCategoryQuizPage: React.FC = () => {
               aria-label="Kiểm tra"
               onMouseEnter={() => setHoveredIcon('kiem')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                // TODO: Xử lý click cho icon Kiem
-              }}
+              onClick={() => toggleSplitPanel('kiem')}
             >
               <Image
                 src="/quiz/kiem.svg"
@@ -1524,6 +1703,7 @@ const SubCategoryQuizPage: React.FC = () => {
             </button>
           </div>
         </div>
+        )}
       </main>
     </div>
   );
