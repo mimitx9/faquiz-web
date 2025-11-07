@@ -15,5 +15,483 @@
   body {
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+  
+}
+
+/* Print styles */
+@page {
+  /* Margin cho trang in - không cần margin-top lớn vì không có logo */
+  margin: 0.5in;
+}
+
+@media print {
+  /* Ẩn hoàn toàn header và tất cả logos.png khi in */
+  header,
+  header *,
+  img[src*="logos.png"],
+  img[src*="/logos/logos.png"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ẩn tất cả các phần không cần thiết */
+  header > div:nth-child(2),
+  header > div:nth-child(3),
+  button[aria-label="Mở rộng sidebar"],
+  button[aria-label="Thu gọn sidebar"],
+  .fixed.left-0,
+  .fixed.bottom-8.right-8,
+  button[aria-label="Nộp bài"],
+  button[aria-label="Hỏi đáp Hack"],
+  button[aria-label="Giải phẫu 3D"],
+  button[aria-label="In"],
+  button[aria-label="Kiểm tra"],
+  .fixed.inset-0.bg-black,
+  .fixed.bottom-8.left-1\/2,
+  /* Ẩn divider resize */
+  .cursor-col-resize,
+  /* Ẩn modal zoom */
+  .fixed.inset-0.z-\[100\],
+  /* Ẩn các button trong câu hỏi (buttons sau khi verify) */
+  .mb-6.flex.items-center.justify-between,
+  /* Ẩn icon gửi và verify icon trong textarea */
+  button[aria-label="Gửi câu trả lời"],
+  .absolute.top-1\/2.right-6,
+  .absolute.top-3.right-12,
+  .absolute.top-3.right-3 {
+    display: none !important;
+  }
+
+  /* Ẩn split panels - ẩn panel bên phải (có minWidth và maxWidth trong style) */
+  div[style*="minWidth"],
+  div[style*="maxWidth"] {
+    display: none !important;
+  }
+  
+  /* Đảm bảo content chính full width */
+  div[class*="flex-1"][class*="overflow-y-auto"] {
+    width: 100% !important;
+  }
+  
+  /* Đảm bảo container không bị ảnh hưởng */
+  div[ref] {
+    margin-left: 0 !important;
+  }
+
+  /* Đảm bảo main content không bị ảnh hưởng bởi header đã bị ẩn */
+  main {
+    margin-top: 0 !important;
+    padding-top: 0.5in !important;
+    background: white !important;
+    position: relative !important;
+    z-index: 0 !important;
+  }
+  
+  body {
+    padding-top: 0 !important;
+    position: relative !important;
+  }
+  
+  .max-w-6xl,
+  #questions-scroll-container {
+    position: relative !important;
+    z-index: 0 !important;
+    margin-top: 0 !important;
+  }
+  
+  .p-8:first-of-type {
+    margin-top: 0 !important;
+    padding-top: 0.25rem !important;
+  }
+  
+  .max-w-6xl {
+    padding-top: 0 !important;
+  }
+  
+  #questions-scroll-container {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Body và container */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .min-h-screen {
+    min-height: auto !important;
+  }
+
+  /* Sidebar - ẩn hoàn toàn */
+  .fixed.left-0,
+  .fixed.left-4 {
+    display: none !important;
+  }
+
+  /* Content area - full width */
+  div[class*="ml-\["] {
+    margin-left: 0 !important;
+  }
+
+  /* Chia trang thành 2 cột để tiết kiệm giấy */
+  #questions-scroll-container {
+    column-count: 2 !important;
+    column-gap: 1.5rem !important;
+    column-fill: auto !important;
+    column-rule: none !important;
+    width: 100% !important;
+  }
+
+  /* Câu hỏi - style basic, giảm padding và margin, đảm bảo không bị đè bởi logo */
+  .p-8 {
+    padding: 0.25rem 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    margin-top: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    display: block !important;
+    position: relative !important;
+    z-index: 0 !important;
+  }
+
+  /* Câu hỏi số - inline với câu hỏi, không xuống dòng */
+  .text-xl.font-bold {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+    margin: 0 !important;
+    display: inline !important;
+    white-space: nowrap !important;
+  }
+
+  /* Tiêu đề câu hỏi - inline với câu số, cùng dòng, không bị cắt */
+  h2.text-lg {
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+    margin: 0 0 0 0.25rem !important;
+    display: inline !important;
+    line-height: 1.3 !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+  
+  /* Đảm bảo câu số và câu hỏi không xuống dòng */
+  .p-8 > span:first-child + h2 {
+    display: inline !important;
+  }
+
+  /* Message khi verify - ẩn */
+  .mb-6 > p.text-lg {
+    display: none !important;
+  }
+
+  /* Giải thích tham khảo - ẩn */
+  .mb-6 > div.flex.items-start,
+  .mb-6 > div.grid {
+    display: none !important;
+  }
+
+  /* Options - bỏ border và padding, khoảng cách tối thiểu (như chỉ xuống dòng) */
+  .space-y-3 > button,
+  .space-y-3 > div,
+  button[class*="rounded-2xl"][class*="border-2"],
+  button[class*="border-2"] {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 0.1rem !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    display: block !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+  }
+
+  /* Text trong options - font nhỏ hơn, không bị cắt chữ */
+  .space-y-3 button span,
+  .space-y-3 button div {
+    color: #000 !important;
+    font-size: 0.7rem !important;
+    line-height: 1.3 !important;
+    word-wrap: break-word !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    white-space: normal !important;
+  }
+  
+  /* Container options - giảm khoảng cách tối đa, đảm bảo nằm dưới ảnh */
+  .space-y-3 {
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+    position: static !important;
+    float: none !important;
+    clear: both !important;
+    z-index: auto !important;
+  }
+  
+  /* Option letter và text cùng dòng, không bị cắt */
+  .space-y-3 button > div {
+    display: inline !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+  }
+  
+  .space-y-3 button > div > span:first-child {
+    margin-right: 0.25rem !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Đảm bảo text của phương án không bị cắt */
+  .space-y-3 button > div > span:last-child,
+  .space-y-3 button > div > span:nth-child(2) {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  /* Ẩn verify icons */
+  .w-5.h-5.rounded-full,
+  .w-6.h-6.rounded-full {
+    display: none !important;
+  }
+
+  /* Textarea cho essay - style basic, font nhỏ */
+  textarea {
+    border: 1px solid #d1d5db !important;
+    border-radius: 0.25rem !important;
+    padding: 0.25rem !important;
+    background: white !important;
+    color: #000 !important;
+    font-size: 0.7rem !important;
+    min-height: 40px !important;
+    max-height: 60px !important;
+    margin-top: 0.25rem !important;
+  }
+
+  /* Container ảnh - nằm dưới câu hỏi, trên phương án */
+  .mb-6.flex.justify-center {
+    margin: 0.25rem 0 0.5rem 0 !important;
+    margin-bottom: 0.5rem !important;
+    display: block !important;
+    text-align: center !important;
+    position: static !important;
+    float: none !important;
+    z-index: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    clear: both !important;
+  }
+  
+  /* Ảnh trong câu hỏi - nhỏ lại, nằm dưới câu hỏi, trên phương án */
+  .relative.w-full.aspect-video,
+  .relative.w-full.max-w-2xl.aspect-video,
+  .mb-6.flex.justify-center .relative {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    aspect-ratio: auto !important;
+    min-height: 60px !important;
+    max-height: 100px !important;
+    margin: 0 auto 0.5rem auto !important;
+    display: block !important;
+    position: static !important;
+    float: none !important;
+    z-index: auto !important;
+    clear: both !important;
+  }
+  
+  /* Ảnh Image component - đảm bảo không đè lên */
+  .mb-6.flex.justify-center img,
+  .relative.w-full.aspect-video img,
+  .relative.w-full.max-w-2xl.aspect-video img,
+  .mb-6.flex.justify-center .relative img {
+    width: 100% !important;
+    height: auto !important;
+    max-height: 100px !important;
+    object-fit: contain !important;
+    position: static !important;
+    display: block !important;
+    float: none !important;
+    z-index: auto !important;
+    clear: both !important;
+  }
+  
+
+  /* Đảm bảo tất cả câu hỏi hiển thị (đã định nghĩa ở trên) */
+
+  /* Container chính */
+  .max-w-6xl {
+    max-width: 100% !important;
+  }
+
+  /* Scroll container */
+  .overflow-y-auto {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Flex container */
+  .flex.h-\[calc\(100vh-5rem\)\] {
+    height: auto !important;
+    flex-direction: column !important;
+  }
+
+  /* Page breaks - giảm margin tối đa */
+  .p-8.mb-6 {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Giảm khoảng cách giữa các phần tử trong câu hỏi */
+  .mb-6 {
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .mb-4 {
+    margin-bottom: 0.2rem !important;
+  }
+  
+  /* Container câu hỏi chính */
+  #questions-scroll-container > div {
+    margin-bottom: 0.5rem !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Giảm font size tổng thể */
+  body {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Đảm bảo không có khoảng cách thừa */
+  .p-8 > *:first-child {
+    margin-top: 0 !important;
+  }
+  
+  .p-8 > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Ẩn dark mode styles khi in */
+  .dark\:bg-black,
+  .dark\:text-white,
+  .dark\:text-gray-200,
+  .dark\:text-gray-300,
+  .dark\:bg-gray-800 {
+    background: white !important;
+    color: #000 !important;
+  }
+
+  /* Đảm bảo text luôn màu đen khi in (trừ ảnh) */
+  *:not(img):not(svg) {
+    color: #000 !important;
+  }
+
+  /* Ẩn các phần tử có background màu (trừ ảnh) */
+  [style*="background-color"]:not(img):not(svg),
+  [style*="backgroundColor"]:not(img):not(svg) {
+    background: white !important;
+  }
+
+  /* Đảm bảo tất cả options không có border khi in - override cả inline styles */
+  button[class*="rounded-2xl"],
+  button[class*="border-2"],
+  button[class*="border"],
+  button[style*="border"],
+  button[style*="borderColor"],
+  button[style*="border-color"] {
+    border: none !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    border-color: transparent !important;
+    background: transparent !important;
+    color: #000 !important;
+  }
+  
+  /* Override tất cả inline border styles */
+  button[style] {
+    border: none !important;
+    border-width: 0 !important;
+  }
+
+  /* Ẩn các phần tử có màu sắc phức tạp và đảm bảo không có border */
+  [style*="#00C800"],
+  [style*="#EC5300"],
+  [style*="#8D7EF7"],
+  [style*="#41C911"],
+  [style*="#E05B00"],
+  [style*="borderColor"],
+  [style*="border-color"] {
+    background: white !important;
+    border: none !important;
+    border-width: 0 !important;
+    border-color: transparent !important;
+    color: #000 !important;
+  }
+
+  /* Đảm bảo images hiển thị đúng */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  /* Print footer - hiển thị trên mọi trang in, nằm sát mép dưới như localhost */
+  .print-footer {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    background: transparent !important;
+    z-index: 9999 !important;
+    font-size: 0.7rem !important;
+    page-break-inside: avoid !important;
+    line-height: 1 !important;
+  }
+
+  .print-footer span {
+    color: #8D7EF7 !important;
+    font-weight: bold !important;
+    display: block !important;
+  }
+
+  .print-footer span:first-child {
+    text-align: left !important;
+    margin-right: auto !important;
+  }
+
+  .print-footer span:last-child {
+    text-align: right !important;
+    margin-left: auto !important;
+  }
+
+  /* Thêm padding-bottom cho content để không bị che bởi footer */
+  main,
+  #questions-scroll-container,
+  .max-w-6xl {
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+/* Ẩn footer khi không in */
+.print-footer {
+  display: none;
 }
 

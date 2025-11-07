@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import '../app/globals.css';
 import { AuthProvider } from '@/hooks/useAuth';
 import { ThemeProvider } from '@/hooks/useTheme';
-import Footer from '@/components/layout/Footer';
 import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -27,7 +26,6 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             {children}
-            <Footer />
           </AuthProvider>
         </ThemeProvider>
         <Analytics />

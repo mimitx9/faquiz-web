@@ -1608,9 +1608,9 @@ const SubCategoryQuizPage: React.FC = () => {
         {!activePanel && (
           <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-40 items-end">
           {/* Icon Star 2.svg */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
             {hoveredIcon === 'star' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-w  hite dark:bg-black py-2 px-4 shadow-md rounded-full">
                 Hỏi đáp Hack
               </span>
             )}
@@ -1632,9 +1632,9 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
 
           {/* Icon 3d.svg */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
             {hoveredIcon === '3d' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
                 Giải phẫu 3D
               </span>
             )}
@@ -1656,22 +1656,22 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
 
           {/* Icon print.svg */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
             {hoveredIcon === 'print' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
-                In
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                In đề
               </span>
             )}
             <button
               className="p-3 rounded-lg bg-white transition-all duration-300"
-              aria-label="In"
+              aria-label="In đề"
               onMouseEnter={() => setHoveredIcon('print')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => toggleSplitPanel('print')}
+              onClick={() => window.print()}
             >
               <Image
                 src="/quiz/print.svg"
-                alt="In"
+                alt="In đề"
                 width={28}
                 height={26}
                 className="w-[28px] h-[26px]"
@@ -1680,22 +1680,22 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
 
           {/* Icon kiem.svg */}
-          <div className="relative flex items-center gap-2">
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
             {hoveredIcon === 'kiem' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black px-2 py-1 rounded">
-                Kiểm tra
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                Đấu battle
               </span>
             )}
             <button
               className="p-3 rounded-lg bg-white transition-all duration-300"
-              aria-label="Kiểm tra"
+              aria-label="Đấu battle"
               onMouseEnter={() => setHoveredIcon('kiem')}
               onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => toggleSplitPanel('kiem')}
+              onClick={() => window.open('https://fabattle.com', '_blank')}
             >
               <Image
                 src="/quiz/kiem.svg"
-                alt="Kiểm tra"
+                alt="Đấu battle"
                 width={30}
                 height={30}
                 className="w-[30px] h-[30px]"
@@ -1705,6 +1705,12 @@ const SubCategoryQuizPage: React.FC = () => {
         </div>
         )}
       </main>
+        
+        {/* Print footer - chỉ hiển thị khi in */}
+        <div className="print-footer">
+          <span>FA Quiz - Trắc nghiệm Y khoa cục súc</span>
+          <span>www.facourse.com</span>
+        </div>
     </div>
   );
 };
