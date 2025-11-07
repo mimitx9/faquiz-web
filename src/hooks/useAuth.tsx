@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, useContext, useEffect, useState, ReactNode} from 'react';
+import React, {createContext, useContext, useEffect, useState, useRef, ReactNode} from 'react';
 import {User, LoginRequest, RegisterRequest} from '@/types';
 import {authApiService} from '@/lib/api';
 import {useUserCache} from './useUserCache';
@@ -35,14 +35,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
+    const hasInitializedRef = useRef(false);
     
     // Use the cache hook
     const { saveUserToCache, getUserFromCache, clearUserCache } = useUserCache();
 
-    // Chỉ dùng một effect duy nhất để tránh race condition
+    // Effect để initialize auth khi component mount hoặc khi isInitialized reset về false
     useEffect(() => {
-        // Tránh chạy nhiều lần
-        if (isInitialized) {
+        // Chỉ chạy một lần khi mount, hoặc khi isInitialized reset về false sau logout
+        if (hasInitializedRef.current && isInitialized) {
             return;
         }
 
@@ -51,6 +52,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             if (typeof window === 'undefined') {
                 setLoading(false);
                 setIsInitialized(true);
+                hasInitializedRef.current = true;
                 return;
             }
 
@@ -63,6 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
                     setUser(cachedUser);
                     setLoading(false);
                     setIsInitialized(true);
+                    hasInitializedRef.current = true;
                     return;
                 }
 
@@ -75,6 +78,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
                     // Check if it's a 401 error and handle it
                     if (error?.response?.status === 401) {
                         handle401Error();
+                        setIsInitialized(false); // Reset để có thể re-initialize
+                        hasInitializedRef.current = false;
                     } else {
                         localStorage.removeItem('auth_token');
                         clearUserCache();
@@ -89,13 +94,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
             setLoading(false);
             setIsInitialized(true);
+            hasInitializedRef.current = true;
         };
 
         initAuth().catch(() => {
             setLoading(false);
             setIsInitialized(true);
+            hasInitializedRef.current = true;
         });
-    }, []);
+    }, [isInitialized]); // Chỉ depend on isInitialized để có thể re-run khi reset về false
 
     const login = async (data: LoginRequest) => {
         setLoading(true);
@@ -130,6 +137,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             // Step 4: Set user data and cache it
             setUser(userData);
             saveUserToCache(userData);
+            setIsInitialized(true); // Đảm bảo isInitialized được set khi login thành công
+            hasInitializedRef.current = true; // Đánh dấu đã initialized
 
         } catch (error: any) {
             // Cleanup nếu có lỗi
@@ -137,6 +146,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             clearUserCache();
             resetFirePoints(); // Reset đốm lửa khi login thất bại
             setUser(null);
+            setIsInitialized(false); // Reset isInitialized khi login thất bại
+            hasInitializedRef.current = false; // Reset ref
             throw error;
         } finally {
             setLoading(false);
@@ -176,11 +187,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             const userData = await authApiService.getProfile();
             setUser(userData);
             saveUserToCache(userData);
+            setIsInitialized(true); // Đảm bảo isInitialized được set khi register thành công
+            hasInitializedRef.current = true; // Đánh dấu đã initialized
         } catch (error: any) {
             localStorage.removeItem('auth_token');
             clearUserCache();
             resetFirePoints();
             setUser(null);
+            setIsInitialized(false); // Reset isInitialized khi register thất bại
+            hasInitializedRef.current = false; // Reset ref
             throw error;
         } finally {
             setLoading(false);
@@ -198,6 +213,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
             clearUserCache();
             resetFirePoints(); // Reset đốm lửa khi logout
             setUser(null);
+            setIsInitialized(false); // Reset isInitialized để có thể re-initialize khi login lại
+            hasInitializedRef.current = false; // Reset ref để có thể re-initialize
             setLoading(false);
         }
     };
