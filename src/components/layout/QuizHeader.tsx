@@ -171,7 +171,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
   const remainingDays = calculateRemainingDays();
 
   return (
-    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
+    <header className="h-20 flex items-center px-8 fixed top-0 left-0 right-0 z-50 bg-white dark:bg-black">
       {/* Cột 1: Logo */}
       <div className="flex items-center w-1/3">
         <Link href="/" className="flex items-center relative h-8 w-auto">
@@ -347,7 +347,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired 
 
                 {/* Dark/Light mode toggle */}
                 <div className="flex items-center justify-between px-4 py-2 text-black dark:text-white transition-colors">
-                  <span className="text-sm">{theme === 'dark' ? 'Chế độ tối' : 'Chế độ sáng'}</span>
+                  <span className="text-sm">{theme === 'dark' ? 'Cú đêm' : 'Ban ngày'}</span>
                   <ThemeToggle />
                 </div>
 

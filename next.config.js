@@ -23,6 +23,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'facourse.com',
       },
+      {
+        protocol: 'https',
+        hostname: '*.cloudfront.net',
+      },
     ],
   },
 }
