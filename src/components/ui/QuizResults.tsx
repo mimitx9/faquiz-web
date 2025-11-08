@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import SubCategoryCard from './SubCategoryCard';
+import BannerSlide from './BannerSlide';
 import { SubCategoryInfo } from '@/types';
 import { createSubCategorySlug } from '@/lib/utils';
 
@@ -113,49 +114,69 @@ const QuizResults: React.FC<QuizResultsProps> = ({
             </button>
           </div>
 
-          {/* FA Battle Advertisement Box */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <div
-              className="col-span-4 flex items-center justify-between px-16 py-16 rounded-3xl h-full"
-              style={{ backgroundColor: '#04002A' }}
-            >
-              {/* Logo bên trái */}
-              <div className="flex-shrink-0 mr-8">
-                <Image
-                  src="/logos/battle/battle.png"
-                  alt="FA Battle Logo"
-                  width={160}
-                  height={160}
-                  className="object-contain"
-                />
-              </div>
-
-              {/* Text ở giữa */}
-              <div className="flex flex-col justify-center flex-grow ml-4">
-                <h3
-                  className="text-4xl font-bold mb-4"
-                  style={{
-                    background: 'linear-gradient(90deg,rgb(221, 0, 255) 0%,rgb(255, 170, 0) 30%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  Đấu trường FA Battle
-                </h3>
-                <p className="text-lg text-white font-medium">
-                  Ai giỏi hơn ai, vô đấu là biết ngay
-                </p>
-              </div>
-
-              {/* Button bên phải */}
-              <button
-                onClick={() => window.open('https://fabattle.com/', '_blank')}
-                className="py-6 px-10 rounded-full text-white text-xl font-bold tracking-wide transition bg-gradient-to-b from-[#FFD700] to-[#FF8C00] shadow-xl shadow-[#FFBA08]/20 hover:shadow-[#FFBA08]/30"
-              >
-                ĐẤU NGAY
-              </button>
-            </div>
+          {/* Banner Slide */}
+          <div className="mb-8">
+            <BannerSlide
+              banners={[
+                {
+                  id: 'fa-quiz-pro',
+                  logo: '/logos/favicon.png',
+                  title: 'FA Quiz Pro',
+                  description: 'Làm full không giới hạn đề',
+                  buttonText: 'NÂNG CẤP',
+                  buttonLink: '/upgrade',
+                  backgroundColor: 'rgb(40, 0, 119)',
+                  titleColor: '#FFAA00',
+                  descriptionColor: '#FFFFFF',
+                },
+                {
+                  id: 'fa-battle',
+                  logo: '/logos/battle/battle.png',
+                  title: 'Đấu trường FA Battle',
+                  description: 'Ai giỏi hơn ai, vô đấu là biết ngay',
+                  buttonText: 'XEM NGAY',
+                  buttonLink: 'https://fabattle.com/',
+                  backgroundColor: '#04002A',
+                  titleColor: 'rgb(192, 248, 87)',
+                  descriptionColor: '#FFFFFF',
+                },
+                {
+                  id: 'fa-streak',
+                  logo: '/logos/battle/streak.png',
+                  title: 'FA Streak - Luyện thi tiếng Anh',
+                  description: 'Thi thử tiếng Anh đầu ra B1, B2..',
+                  buttonText: 'XEM NGAY',
+                  buttonLink: 'https://fastreak.com/',
+                  backgroundColor: 'rgb(95, 61, 3)',
+                  titleColor: 'rgb(255, 225, 0)',
+                  descriptionColor: '#FFFFFF',
+                },
+                {
+                  id: 'fa-class',
+                  logo: '/logos/battle/class.png',
+                  title: 'FA Class - Học Y quá easy',
+                  description: 'Video bài giảng và lớp học trực tuyến',
+                  buttonText: 'XEM NGAY',
+                  buttonLink: 'https://appfaclass.com/',
+                  backgroundColor: 'rgb(0, 0, 0)',
+                  titleColor: '#FFFFFF',
+                  descriptionColor: '#FFFFFF',
+                },
+                {
+                  id: 'fa-hack',
+                  logo: '/logos/battle/hack.png',
+                  title: 'FA Hack - Học Y phá cách',
+                  description: 'Giải đáp kiến thức Y khoa chuẩn xác',
+                  buttonText: 'XEM NGAY',
+                  buttonLink: 'https://fahack.net/',
+                  backgroundColor: 'rgb(255, 255, 255, 0.1)',
+                  titleColor: 'rgb(255, 94, 234)',
+                  descriptionColor: '#888888',
+                },
+              ]}
+              autoPlay={true}
+              autoPlayInterval={3000}
+            />
           </div>
 
           {/* Đề liên quan */}

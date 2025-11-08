@@ -78,7 +78,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
   const features = [
     'Không giới hạn đề',
     'Không giới hạn tính năng',
-    'Không giới hạn hỏi đáp',
+    'Hỗ trợ trả góp gói vĩnh viễn',
   ];
 
   // Kiểm tra xem numTimePackage có phải là vô cực không
@@ -122,26 +122,54 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
     window.open('https://m.me/appfaquiz', '_blank');
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+    router.back();
+  };
+
   if (!isOpen) return null;
 
   return (
     <>
       {/* Blur overlay background */}
       <div 
-        className="fixed inset-0 bg-black/30 backdrop-blur-md z-[200] transition-opacity duration-300"
+        className="fixed inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-lg z-[200] transition-opacity duration-300"
         onClick={onClose}
       />
       
       {/* Upgrade content overlay */}
       <div className="fixed inset-0 z-[201] flex items-center justify-center p-4 overflow-y-auto">
+        {/* Close button */}
+        <button
+          onClick={handleClose}
+          className="fixed top-10 right-10 z-[202] w-10 h-10 md:w-12 md:h-12 flex items-center justify-center"
+          aria-label="Đóng"
+        >
+          <svg
+            className="w-8 h-8 md:w-10 md:h-10 text-gray-400 dark:text-gray-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
         <div 
-          className="bg-white dark:bg-black rounded-3xl shadow-2xl max-w-6xl w-full my-8"
+          className="max-w-6xl w-full my-8"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-8 md:p-12">
             <div className="text-center mb-12">
-              <h1 className="text-3xl md:text-4xl font-bold mb-8 tracking-wider" style={{ color: '#FFBB00' }}>
-                {config?.privileged || 'Nâng cấp Pro để làm full 1.000.000 Quiz'}
+              <h1 className="text-3xl md:text-4xl font-bold mb-8 tracking-wide" style={{ color: '#FFBB00' }}>
+                Nâng Pro để làm full +1.000.000 đề
               </h1>
               <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-12">
                 {features.map((feature, index) => (
@@ -182,7 +210,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
                       className="bg-white dark:bg-black rounded-3xl min-h-[360px] md:min-h-[420px] p-6 flex flex-col border-2 border-[#8D7EF7]/10 dark:border-gray-700 hover:scale-110 transition-all hover:cursor-pointer"
                     >
                       <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-3 text-center">
-                        {plan.name}
+                        Quiz {plan.name}
                       </h3>
                       <div className="flex justify-center items-center mb-6 flex-grow">
                         <span className="text-6xl tracking-wide font-bold text-black dark:text-white">{plan.price}</span>
@@ -213,7 +241,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
                             e.stopPropagation();
                             handleSupport();
                           }}
-                          className="text-md text-[#8D7EF7] hover:underline cursor-pointer"
+                          className="text-md text-[#8D7EF7] cursor-pointer"
                         >
                           Hỗ trợ
                         </button>
@@ -228,7 +256,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
                     onClick={() => window.open('https://m.me/appfaquiz', '_blank')}
                     className="text-[#8D7EF7] dark:text-[#A694F7] text-2xl font-semibold"
                   >
-                    Đăng nhập tài khoản Pro →
+                    Đăng nhập Pro để làm tiếp →
                   </button>
                 </div>
               </>

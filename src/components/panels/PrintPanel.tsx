@@ -6,7 +6,7 @@ interface PrintPanelProps {
 
 const PrintPanel: React.FC<PrintPanelProps> = ({ onClose }) => {
   return (
-    <div className="bg-white dark:bg-black border-l border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 h-full">
+    <div className="bg-white dark:bg-black flex flex-col transition-all duration-300 h-full">
       {/* Header của panel */}
       <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-2">

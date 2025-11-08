@@ -6,7 +6,8 @@ import QuizHeader from '@/components/layout/QuizHeader';
 import SearchBar from '@/components/ui/SearchBar';
 import { categorySubcategoriesApiService } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import { removeVietnameseDiacritics } from '@/lib/utils';
+import { useTheme } from '@/hooks/useTheme';
+import { removeVietnameseDiacritics, hexToRgba } from '@/lib/utils';
 import ProgressBar from '@/components/ui/ProgressBar';
 
 interface SubCategoryItem {
@@ -25,6 +26,7 @@ const CategoryPage: React.FC = () => {
     const router = useRouter();
     const params = useParams();
     const { user, isInitialized } = useAuth();
+    const { theme } = useTheme();
     const slugParam = params?.slug as string;
 
     const [category, setCategory] = useState<{
@@ -42,6 +44,7 @@ const CategoryPage: React.FC = () => {
     const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
     const [sortOrder, setSortOrder] = useState<'oldest' | 'newest'>('oldest');
     const [showSortMenu, setShowSortMenu] = useState(false);
+    const [hoveredSubCategoryId, setHoveredSubCategoryId] = useState<number | null>(null);
 
     useEffect(() => {
         const loadData = async () => {
@@ -183,8 +186,8 @@ const CategoryPage: React.FC = () => {
                     <div className="relative">
                         <button
                             onClick={() => setShowSortMenu(!showSortMenu)}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                            aria-label="Sắp xếp"
+                            className="p-2 transition-all hover:scale-110 cursor-pointer dark:opacity-50"
+                            aria-label="Sắp xếp đề"
                         >
                             <svg 
                                 width="28" 
@@ -244,20 +247,16 @@ const CategoryPage: React.FC = () => {
                                     className="fixed inset-0 z-10"
                                     onClick={() => setShowSortMenu(false)}
                                 />
-                                <div className="absolute left-0 top-full mt-2 bg-white dark:bg-black border-2 border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 min-w-[200px]">
+                                <div className="absolute left-0 top-full mt-2 bg-white dark:bg-black border-2 border-gray-100 dark:border-white/10 rounded-3xl shadow-lg z-20 min-w-[200px]">
                                     <button
                                         onClick={() => {
                                             setSortOrder('newest');
                                             setShowSortMenu(false);
                                         }}
-                                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                                            sortOrder === 'newest'
-                                                ? 'bg-gray-50 dark:bg-gray-800'
-                                                : ''
-                                        }`}
+                                        className={`w-full text-left px-6 py-2 mt-4 rounded-3xl hover:opacity-80 transition-colors`}
                                     >
                                         <span 
-                                            className="text-gray-800 dark:text-gray-200"
+                                            className="text-gray-500 dark:text-gray-200 text-lg"
                                             style={{
                                                 color: sortOrder === 'newest' ? '#8D7EF7' : undefined
                                             }}
@@ -270,14 +269,10 @@ const CategoryPage: React.FC = () => {
                                             setSortOrder('oldest');
                                             setShowSortMenu(false);
                                         }}
-                                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                                            sortOrder === 'oldest'
-                                                ? 'bg-gray-50 dark:bg-gray-800'
-                                                : ''
-                                        }`}
+                                        className={`w-full text-left px-6 py-2 mb-4 rounded-3xl hover:opacity-80 transition-colors`}
                                     >
                                         <span 
-                                            className="text-gray-800 dark:text-gray-200"
+                                            className="text-gray-500 dark:text-gray-200 text-lg"
                                             style={{
                                                 color: sortOrder === 'oldest' ? '#8D7EF7' : undefined
                                             }}
@@ -291,13 +286,16 @@ const CategoryPage: React.FC = () => {
                     </div>
 
                     {/* Label Filter Buttons */}
-                    <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-4 flex-wrap">
                         <button
                             onClick={() => setSelectedLabel(null)}
-                            className="px-6 py-2 rounded-full text-sm font-medium transition-all duration-200"
+                            className={`px-8 py-2 rounded-full text-lg border-gray-100 dark:border-white/10 font-medium text-gray-500 dark:text-white transition-all duration-200 hover:scale-105 ${
+                                selectedLabel === null 
+                                    ? 'bg-gray-100 dark:bg-white/10' 
+                                    : 'bg-transparent'
+                            }`}
                             style={{
-                                backgroundColor: '#5555550D',
-                                color: '#555555',
+                                borderWidth: '3px',
                             }}
                         >
                             Tất cả
@@ -310,18 +308,18 @@ const CategoryPage: React.FC = () => {
                                         selectedLabel === label.text ? null : label.text
                                     )
                                 }
-                                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                className={`px-8 py-2 rounded-full text-lg font-medium transition-all duration-200 hover:scale-105 ${
                                     selectedLabel === label.text
                                         ? 'text-white'
                                         : ''
                                 }`}
                                 style={{
                                     backgroundColor: selectedLabel === label.text
-                                        ? label.color
-                                        : `${label.color}1A`,
-                                    color: selectedLabel === label.text
-                                        ? 'white'
-                                        : label.color,
+                                        ? `${label.color}1A`
+                                        : 'transparent',
+                                    borderColor:  `${label.color}1A`,
+                                    borderWidth: '3px',
+                                    color: label.color,
                                 }}
                             >
                                 {label.text}
@@ -337,41 +335,44 @@ const CategoryPage: React.FC = () => {
                         onClick={handleTestTongHopClick}
                         className="rounded-3xl p-8 cursor-pointer transition-all hover:scale-[1.02] relative overflow-hidden"
                         style={{
-                            backgroundColor: '#FFBB001A',
+                            backgroundColor: 'rgba(255, 187, 0, 0.1)',
                         }}
                     >
                         <div>
                             <h3
-                                className="text-2xl font-semibold mb-2"
+                                className="text-xl font-bold uppercase tracking-wide"
                                 style={{ color: '#FFBB00' }}
                             >
                                 Test tổng hợp
                             </h3>
-                            <span
-                                className="px-3 py-1 rounded-full text-xs font-semibold inline-block"
-                                style={{
-                                    backgroundColor: '#FFBB001A',
-                                    color: '#FFBB00',
-                                }}
-                            >
-                                PRO
-                            </span>
                         </div>
                     </div>
 
                     {/* Danh sách subcategories */}
-                    {filteredAndSortedSubCategories.map((subCategory) => (
+                    {filteredAndSortedSubCategories.map((subCategory) => {
+                        const isHovered = hoveredSubCategoryId === subCategory.id;
+                        return (
                         <div
                             key={subCategory.id}
                             onClick={() => handleSubCategoryClick(subCategory)}
-                            className="rounded-3xl border-2 p-6 cursor-pointer hover:scale-[1.02] transition-all bg-white dark:bg-black"
+                            onMouseEnter={() => setHoveredSubCategoryId(subCategory.id)}
+                            onMouseLeave={() => setHoveredSubCategoryId(null)}
+                            className={`rounded-3xl border-2 px-6 py-8 cursor-pointer transition-all mb-4 duration-200 bg-white dark:bg-black ${
+                                isHovered ? 'border-transparent' : ''
+                            }`}
                             style={{
-                                borderColor: 'rgba(0, 0, 0, 0.05)',
+                                borderColor: isHovered 
+                                    ? 'transparent' 
+                                    : (category.backgroundColor ? hexToRgba(category.backgroundColor, theme === 'dark' ? 0.2 : 0.05) : undefined),
+                                backgroundColor: isHovered 
+                                    ? (category.backgroundColor ? hexToRgba(category.backgroundColor, theme === 'dark' ? 0.2 : 0.05) : undefined)
+                                    : undefined,
+                                transform: isHovered ? 'scale(1.02)' : 'scale(1)'
                             }}
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-3">
+                                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
                                         {subCategory.title}
                                     </h3>
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -398,7 +399,7 @@ const CategoryPage: React.FC = () => {
                                         )}
                                         {subCategory.labelText && (
                                             <span
-                                                className="px-3 py-1 rounded-full text-xs font-semibold"
+                                                className="px-4 py-1 rounded-full text-xs font-medium tracking-wide"
                                                 style={{
                                                     backgroundColor: `${subCategory.labelColor}1A`,
                                                     color: subCategory.labelColor,
@@ -411,7 +412,8 @@ const CategoryPage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
 
                     {/* No results message */}
                     {filteredAndSortedSubCategories.length === 0 && (

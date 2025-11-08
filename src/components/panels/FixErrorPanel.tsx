@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Question, SubCategoryInfo } from '@/types';
-import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { fixQuizApiService } from '@/lib/api';
 
@@ -22,7 +21,9 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   if (!question) {
     return null;
@@ -33,10 +34,16 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
     if (question) {
       setEditedQuestion(question.question || '');
       const initialOptions: Record<string, string> = {};
+      const initialSelected = new Set<string>();
       question.options?.forEach(opt => {
         initialOptions[opt.answerId] = opt.text || '';
+        // Khởi tạo selectedOptions với phương án đúng ban đầu
+        if (opt.isCorrect) {
+          initialSelected.add(opt.answerId.toString());
+        }
       });
       setEditedOptions(initialOptions);
+      setSelectedOptions(initialSelected);
       // Reset ảnh khi question thay đổi
       setUploadedImage(null);
       setImagePreview(null);
@@ -55,13 +62,13 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
   const handleOptionToggle = (answerId: number) => {
     const answerIdStr = answerId.toString();
     setSelectedOptions(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(answerIdStr)) {
-        newSet.delete(answerIdStr);
+      // Nếu phương án này đã được chọn, bỏ chọn
+      if (prev.has(answerIdStr)) {
+        return new Set<string>();
       } else {
-        newSet.add(answerIdStr);
+        // Nếu chọn phương án mới, chỉ giữ lại phương án này (bỏ phương án cũ)
+        return new Set([answerIdStr]);
       }
-      return newSet;
     });
   };
 
@@ -69,11 +76,30 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
     setEditedQuestion(value);
   };
 
+  // Tính số hàng dựa trên độ dài text, tối đa 6 hàng
+  const calculateRows = (text: string): number => {
+    if (!text) return 1;
+    // Đếm số dòng từ newlines
+    const lineBreaks = (text.match(/\n/g) || []).length;
+    // Ước tính số hàng dựa trên độ dài (khoảng 50 ký tự mỗi hàng cho text-lg)
+    const estimatedRows = Math.ceil(text.length / 50);
+    // Lấy giá trị lớn hơn giữa lineBreaks + 1 và estimatedRows
+    const rows = Math.max(lineBreaks + 1, estimatedRows);
+    // Giới hạn tối đa 6 hàng
+    return Math.min(rows, 6);
+  };
+
   const handleOptionChange = (answerId: number, value: string) => {
     setEditedOptions(prev => ({
       ...prev,
       [answerId]: value
     }));
+  };
+
+  const handleOptionFocus = (answerId: number) => {
+    const answerIdStr = answerId.toString();
+    // Set phương án này là correct, bỏ correct của phương án cũ
+    setSelectedOptions(new Set([answerIdStr]));
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,10 +215,13 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
   };
 
   return (
-    <div className="border-l border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 h-full" style={{ backgroundColor: '#CCCCCC40' }}>
+    <div 
+      className="flex flex-col transition-all duration-300 h-full bg-gray-100/60 dark:bg-white/5 relative"
+    >
       {/* Header của panel */}
       <div className="flex items-center justify-end px-4 py-4 dark:border-gray-800">
-        <button
+       
+      <button
           onClick={onClose}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
           aria-label="Đóng panel"
@@ -214,16 +243,16 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
       </div>
 
       {/* Nội dung panel */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-6 pt-0 pb-28">
         {/* Câu hỏi */}
         <div className="mb-6">
-          <div className="w-full text-left p-4 rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-700">
+          <div className="w-full text-left p-6 rounded-2xl border-2 border-gray-200 dark:border-white/5 flex items-center hover:scale-[1.02] transition-all duration-200">
             <textarea
               value={editedQuestion}
               onChange={(e) => handleQuestionChange(e.target.value)}
-              className="w-full text-lg font-semibold text-gray-800 dark:text-gray-200 bg-transparent border-none outline-none resize-none"
-              rows={3}
-              placeholder="Nhập câu hỏi"
+              className="w-full text-lg font-medium text-gray-800 dark:text-gray-200 bg-transparent border-none outline-none resize-none py-0"
+              rows={calculateRows(editedQuestion)}
+              placeholder="Sửa câu hỏi"
             />
           </div>
         </div>
@@ -232,48 +261,49 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
         <div className="space-y-3 mb-6">
           {question.options?.map((opt, idx) => {
             const optionLetter = String.fromCharCode(65 + idx);
-            const isCorrect = opt.isCorrect;
             const isSelected = selectedOptions.has(opt.answerId.toString());
+            // Dùng isSelected để xác định isCorrect (phương án được chọn là correct)
+            const isCorrect = isSelected;
             
             return (
               <div
                 key={opt.answerId}
-                className={`w-full text-left p-4 rounded-2xl flex items-center bg-white dark:bg-black transition-all duration-200 ${
+                className={`w-full text-left p-6 rounded-2xl hover:scale-[1.02] flex items-start border-2 transition-all duration-200 ${
                   isCorrect 
-                    ? 'border-2 border-[#00C800]' 
-                    : 'border border-gray-200 dark:border-gray-700'
+                    ? 'border-[#00C800]' 
+                    : 'border-gray-200 dark:border-white/5'
                 }`}
               >
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-start gap-2 flex-1">
+                  <span 
+                    className={`font-semibold text-lg flex-shrink-0 self-center text-gray-600 dark:text-gray-300`}
+                  >
+                    {optionLetter}.
+                  </span>
+                  <textarea
+                    value={editedOptions[opt.answerId] || ''}
+                    onChange={(e) => handleOptionChange(opt.answerId, e.target.value)}
+                    onFocus={() => handleOptionFocus(opt.answerId)}
+                    className="flex-1 text-lg bg-transparent border-none outline-none text-gray-600 dark:text-gray-300 resize-none overflow-hidden"
+                    placeholder={`Sửa ý ${optionLetter}`}
+                    rows={calculateRows(editedOptions[opt.answerId] || '')}
+                  />
+                  
                   <button
                     onClick={() => handleOptionToggle(opt.answerId)}
-                    className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer"
+                    className="self-center w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 hover:scale-[1.2] transition-all duration-200 cursor-pointer"
                     style={{
-                      borderColor: isSelected ? '#00C800' : '#CCCCCC',
-                      backgroundColor: isSelected ? '#00C800' : 'transparent'
+                      borderColor: isCorrect ? '#00C800' : 'rgba(0, 0, 0, 0.05)',
+                      backgroundColor: isCorrect ? '#00C800' : 'transparent'
                     }}
                     aria-label={`Chọn đáp án ${optionLetter}`}
                   >
-                    {isSelected && (
+                    {isCorrect && (
                       <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     )}
                   </button>
-                  <span 
-                    className="font-semibold text-lg flex-shrink-0"
-                    style={isSelected ? { color: '#00C800' } : { color: '#666' }}
-                  >
-                    {optionLetter}.
-                  </span>
-                  <input
-                    type="text"
-                    value={editedOptions[opt.answerId] || ''}
-                    onChange={(e) => handleOptionChange(opt.answerId, e.target.value)}
-                    className="flex-1 text-lg bg-transparent border-none outline-none"
-                    style={isSelected ? { color: '#00C800' } : { color: '#333' }}
-                    placeholder={`Nhập phương án ${optionLetter}`}
-                  />
                 </div>
               </div>
             );
@@ -281,33 +311,29 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
         </div>
 
         {/* Textarea để viết giải thích */}
-        <div className="mb-6 relative">
-          <textarea
-            value={explanation}
-            onChange={(e) => setExplanation(e.target.value)}
-            placeholder="Viết giải thích"
-            className="fix-error-textarea w-full px-4 py-3 pr-12 rounded-3xl bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none resize-none"
-            style={{ 
-              border: '1px solid #00C8000D'
-            }}
-            rows={4}
-          />
-          {/* Icon upload ảnh ở góc dưới bên trái */}
-          <button
-            type="button"
-            onClick={handleImageIconClick}
-            className="absolute bottom-3 left-3 p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-            aria-label="Upload ảnh"
-          >
-            <Image
-              src="/quiz/image-line-icon.svg"
-              alt="Upload ảnh"
-              width={16}
-              height={16}
-              className="w-4 h-4 opacity-60"
-              style={{ filter: 'brightness(0) saturate(100%) invert(50%)' }}
+        <div className="mb-6">
+          <div className="w-full p-6 rounded-2xl flex items-start border-2 hover:scale-[1.02] transition-all duration-200 border-[#8D7EF7]/50 hover:border-[#8D7EF7] focus-within:border-[#8D7EF7]">
+            <textarea
+              value={explanation}
+              onChange={(e) => setExplanation(e.target.value)}
+              placeholder="Giải thích của bạn"
+              className="flex-1 bg-transparent text-lg text-gray-600 dark:text-gray-300 focus:outline-none resize-none overflow-hidden placeholder:text-[#8D7EF7]/60"
+              rows={calculateRows(explanation)}
             />
-          </button>
+            {/* Button upload ảnh ở bên phải */}
+            <button
+              type="button"
+              onClick={handleImageIconClick}
+              className="self-center w-5 h-5 rounded-md border-2 border-[#8D7EF7] flex items-center justify-center flex-shrink-0 hover:scale-[1.2] transition-all duration-200 cursor-pointer"
+              aria-label="Upload ảnh"
+            >
+              <img
+                src="data:image/svg+xml,%3csvg%20width='19'%20height='13'%20viewBox='0%200%2019%2013'%20fill='none'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M1%2012L4.78955%207.11073C5.60707%206.05598%207.2086%206.08248%207.99077%207.16371L9.90958%209.81618C10.6961%2010.9034%2012.3249%2010.902%2013.1376%209.83413C13.9379%208.78234%2015.5359%208.7619%2016.3363%209.81369L18%2012'%20stroke='%238D7EF7'%20stroke-width='2'%20stroke-linecap='round'/%3e%3ccircle%20cx='15'%20cy='3'%20r='2'%20stroke='%238D7EF7'%20stroke-width='1.5'/%3e%3c/svg%3e"
+                alt="Upload ảnh"
+                className="w-4 h-4"
+              />
+            </button>
+          </div>
           {/* Input file ẩn */}
           <input
             ref={fileInputRef}
@@ -318,17 +344,19 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
           />
           {/* Preview ảnh đã upload */}
           {imagePreview && (
-            <div className="mt-3 relative inline-block">
-              <div className="relative w-full max-w-xs rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-                <img
-                  src={imagePreview}
-                  alt="Preview"
-                  className="w-full h-auto object-contain max-h-64"
-                />
+            <div className="mt-6 flex justify-center">
+              <div className="relative inline-block">
+                <div className="w-full max-w-sm rounded-2xl overflow-hidden">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={handleRemoveImage}
-                  className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  className="absolute -top-2 -right-2 p-1 bg-white dark:bg-gray-800 shadow-md rounded-full hover:scale-150 transition-all duration-200"
                   aria-label="Xóa ảnh"
                 >
                   <svg
@@ -340,7 +368,7 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2}
+                      strokeWidth={3}
                       d="M6 18L18 6M6 6l12 12"
                     />
                   </svg>
@@ -351,29 +379,42 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
         </div>
       </div>
 
-      {/* Footer với nút submit */}
-      <div className="p-4 flex flex-col items-center gap-2">
+      {/* Footer với nút submit - fixed ở dưới cùng */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 flex flex-col items-center">
         {submitError && (
-          <div className="text-red-500 text-sm text-center px-4">
+          <div className="text-red-500 text-sm text-center px-4 mb-2">
             {submitError}
           </div>
         )}
         {submitSuccess && (
-          <div className="text-green-500 text-sm text-center px-4">
-            Gửi yêu cầu thành công!
+          <div className="text-green-500 text-sm text-center px-4 mb-2">
+            Thanks bro! Quiz sẽ duyệt lại trong hôm nay
           </div>
         )}
-        <button
-          onClick={handleSubmit}
-          disabled={!explanation.trim() || isSubmitting}
-          className="px-6 py-2 rounded-3xl text-white font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ 
-            backgroundColor: '#00C800',
-            border: '1px solid #00C800'
+        <div 
+          className="relative"
+          onMouseEnter={() => {
+            if (!explanation.trim() || isSubmitting) {
+              setShowTooltip(true);
+            }
           }}
+          onMouseLeave={() => setShowTooltip(false)}
         >
-          {isSubmitting ? 'Đang gửi...' : 'GỬI'}
-        </button>
+          <button
+            ref={buttonRef}
+            onClick={handleSubmit}
+            disabled={!explanation.trim() || isSubmitting}
+            className="px-10 py-4 rounded-full text-white text-lg font-semibold tracking-wider transition-all duration-200 bg-[#00C800] hover:scale-110 disabled:bg-gray-400 disabled:cursor-not-allowed shadow-2xl"
+          >
+            {isSubmitting ? 'Đang gửi...' : 'GỬI'}
+          </button>
+          {showTooltip && (!explanation.trim() || isSubmitting) && (
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 
+            px-4 py-2 bg-[#8D7EF7] text-white text-md rounded-full whitespace-nowrap z-50">
+              Viết giải thích giùm Quiz zới nha ^o^
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

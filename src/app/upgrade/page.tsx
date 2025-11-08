@@ -78,7 +78,7 @@ const UpgradePage: React.FC = () => {
   const features = [
     'Không giới hạn đề',
     'Không giới hạn tính năng',
-    'Hỗ trợ trả góp vĩnh viễn',
+    'Hỗ trợ trả góp gói vĩnh viễn',
   ];
 
   // Kiểm tra xem numTimePackage có phải là vô cực không
@@ -199,7 +199,7 @@ const UpgradePage: React.FC = () => {
                       onClick={(e) => {
                         e.stopPropagation();
                       }}
-                      className="text-md text-[#8D7EF7] hover:underline cursor-pointer"
+                      className="text-md text-[#8D7EF7] cursor-pointer"
                     >
                       Hỗ trợ
                     </button>

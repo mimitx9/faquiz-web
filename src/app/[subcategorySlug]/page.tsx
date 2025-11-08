@@ -307,6 +307,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const resizeStartX = useRef<number>(0); // Vị trí X khi bắt đầu resize
   const resizeStartWidth = useRef<number>(33.33); // Width khi bắt đầu resize
   const contentContainerRef = useRef<HTMLDivElement>(null); // Ref cho container content
+  const scrollContainerRef = useRef<HTMLDivElement>(null); // Ref cho scroll container
   const [showUpgradeOverlay, setShowUpgradeOverlay] = useState(false); // Hiển thị overlay upgrade khi gặp câu hỏi rỗng
   const [showSuccessBadge, setShowSuccessBadge] = useState(false); // Hiển thị badge thành công
 
@@ -417,22 +418,34 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Xử lý scroll để ẩn/hiện nút nộp bài
   useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+      const currentScrollY = scrollContainer.scrollTop;
       
-      // Nếu scroll xuống (scrollY tăng) thì ẩn, scroll lên (scrollY giảm) thì hiện
-      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+      // Luôn hiện nút khi ở đầu trang
+      if (currentScrollY < 100) {
+        setShowSubmitButton(true);
+      } 
+      // Nếu scroll xuống (scrollTop tăng) thì ẩn
+      else if (currentScrollY > lastScrollY.current) {
         setShowSubmitButton(false);
-      } else if (currentScrollY < lastScrollY.current) {
+      } 
+      // Nếu scroll lên (scrollTop giảm) thì hiện
+      else if (currentScrollY < lastScrollY.current) {
         setShowSubmitButton(true);
       }
       
       lastScrollY.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    // Khởi tạo giá trị ban đầu
+    lastScrollY.current = scrollContainer.scrollTop;
+    
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [questions.length]); // Re-run khi questions được load
 
   // Tự động collapse sidebar khi panel được mở
   useEffect(() => {
@@ -1022,9 +1035,14 @@ const SubCategoryQuizPage: React.FC = () => {
 
     return (
       <div className="p-8 mb-6">
-        <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
+        <div className="flex justify-between items-center">
+          <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
             Câu {index + 1}
-        </span>
+          </span>
+          <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
+            {question.questionId}
+          </span>
+        </div>
 
         {/* Chỉ hiển thị câu hỏi ở đây nếu không phải essay có ảnh */}
         {!(questionIsEssay && question.extraData?.image) && (
@@ -1194,7 +1212,7 @@ const SubCategoryQuizPage: React.FC = () => {
             {/* Button "Sửa lỗi" căn trái */}
             <button
               onClick={() => handleOpenFixError(question)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 hover:opacity-90"
+              className="flex items-center gap-2 px-5 py-3 rounded-full text-white font-medium transition-all duration-200 hover:scale-105"
               style={{ backgroundColor: '#00C800' }}
             >
               <svg
@@ -1210,10 +1228,10 @@ const SubCategoryQuizPage: React.FC = () => {
                   strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  fill="none"
+                  fill="currentColor"
                 />
               </svg>
-              Sửa lỗi
+              Sửa lỗi &nbsp;
             </button>
 
             {/* 3 button căn phải - chỉ hiển thị khi user đã thanh toán */}
@@ -1579,6 +1597,7 @@ const SubCategoryQuizPage: React.FC = () => {
         >
           {/* Phần quiz chính */}
           <div 
+            ref={scrollContainerRef}
             className={`flex-1 overflow-y-auto h-full ${!isResizing ? 'transition-all duration-300' : ''}`}
             style={{
               width: activePanel ? `${100 - splitPanelWidth}%` : '100%',
@@ -1745,31 +1764,40 @@ const SubCategoryQuizPage: React.FC = () => {
         {/* Sidebar nhỏ ở góc dưới bên phải */}
         {!activePanel && user && (
           <div className="fixed bottom-8 right-8 sm:right-4 flex flex-col gap-4 z-40 items-end">
-          {/* Icon Star 2.svg - chỉ hiển thị khi user đã thanh toán */}
-          {user?.faQuizInfo?.isPaid === true && (
-            <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-              {hoveredIcon === 'star' && (
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                  Hỏi đáp Hack
+          {/* Icon Star 2.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
+            {hoveredIcon === 'star' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                Hỏi đáp Hack
+              </span>
+            )}
+            <button
+              className="p-3 transition-all duration-300 relative"
+              aria-label="Hỏi đáp Hack"
+              onMouseEnter={() => setHoveredIcon('star')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                if (user?.faQuizInfo?.isPaid === true) {
+                  toggleSplitPanel('star');
+                } else {
+                  setShowUpgradeOverlay(true);
+                }
+              }}
+            >
+              <Image
+                src="/quiz/Star 2.svg"
+                alt="Hỏi đáp Hack"
+                width={30}
+                height={30}
+                className="w-[30px] h-[30px]"
+              />
+              {user?.faQuizInfo?.isPaid !== true && (
+                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
+                  PRO
                 </span>
               )}
-              <button
-                className="p-3 transition-all duration-300"
-                aria-label="Hỏi đáp Hack"
-                onMouseEnter={() => setHoveredIcon('star')}
-                onMouseLeave={() => setHoveredIcon(null)}
-                onClick={() => toggleSplitPanel('star')}
-              >
-                <Image
-                  src="/quiz/Star 2.svg"
-                  alt="Hỏi đáp Hack"
-                  width={30}
-                  height={30}
-                  className="w-[30px] h-[30px]"
-                />
-              </button>
-            </div>
-          )}
+            </button>
+          </div>
 
           {/* Icon 3d.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
@@ -1795,31 +1823,40 @@ const SubCategoryQuizPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Icon print.svg - chỉ hiển thị khi user đã thanh toán */}
-          {user?.faQuizInfo?.isPaid === true && (
-            <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-              {hoveredIcon === 'print' && (
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                  In đề
+          {/* Icon print.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
+            {hoveredIcon === 'print' && (
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
+                In đề
+              </span>
+            )}
+            <button
+              className="p-3 transition-all duration-300 relative"
+              aria-label="In đề"
+              onMouseEnter={() => setHoveredIcon('print')}
+              onMouseLeave={() => setHoveredIcon(null)}
+              onClick={() => {
+                if (user?.faQuizInfo?.isPaid === true) {
+                  window.print();
+                } else {
+                  setShowUpgradeOverlay(true);
+                }
+              }}
+            >
+              <Image
+                src="/quiz/print.svg"
+                alt="In đề"
+                width={28}
+                height={26}
+                className="w-[28px] h-[26px]"
+              />
+              {user?.faQuizInfo?.isPaid !== true && (
+                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
+                  PRO
                 </span>
               )}
-              <button
-                className="p-3 transition-all duration-300"
-                aria-label="In đề"
-                onMouseEnter={() => setHoveredIcon('print')}
-                onMouseLeave={() => setHoveredIcon(null)}
-                onClick={() => window.print()}
-              >
-                <Image
-                  src="/quiz/print.svg"
-                  alt="In đề"
-                  width={28}
-                  height={26}
-                  className="w-[28px] h-[26px]"
-                />
-              </button>
-            </div>
-          )}
+            </button>
+          </div>
 
           {/* Icon kiem.svg */}
           <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
