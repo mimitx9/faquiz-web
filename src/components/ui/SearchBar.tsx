@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Input from './Input';
+import { trackHomepageSearchSuggestionClick } from '@/lib/analytics';
 
 interface Suggestion {
     title: string;
@@ -45,6 +46,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
     const showSuggestions = isFocused && value.trim().length > 0 && suggestions.length > 0;
 
     const handleSuggestionClick = (suggestion: Suggestion) => {
+        // Track event
+        trackHomepageSearchSuggestionClick(suggestion.title);
+        
         onChange(suggestion.title);
         setIsFocused(false);
         setSelectedIndex(-1);

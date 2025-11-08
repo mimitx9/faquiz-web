@@ -7,6 +7,7 @@ import SubCategoryCard from './SubCategoryCard';
 import BannerSlide from './BannerSlide';
 import { SubCategoryInfo } from '@/types';
 import { createSubCategorySlug } from '@/lib/utils';
+import { trackResultsRetry, trackResultsRelatedSubcategoryClick } from '@/lib/analytics';
 
 interface QuizResultsProps {
   totalScore: number; // Số câu đúng
@@ -16,6 +17,8 @@ interface QuizResultsProps {
   relatedSubCategories?: SubCategoryInfo[]; // Danh sách subcategories liên quan
   categoryBackgroundColor?: string; // Màu của category
   currentSubCategoryId?: number; // ID của subcategory hiện tại
+  categoryCode?: string; // Code của category để tracking
+  subCategoryCode?: string; // Code của subcategory để tracking
 }
 
 const QuizResults: React.FC<QuizResultsProps> = ({
@@ -26,6 +29,8 @@ const QuizResults: React.FC<QuizResultsProps> = ({
   relatedSubCategories = [],
   categoryBackgroundColor = '#3B82F6',
   currentSubCategoryId,
+  categoryCode,
+  subCategoryCode,
 }) => {
   const router = useRouter();
 
@@ -48,6 +53,14 @@ const QuizResults: React.FC<QuizResultsProps> = ({
 
   // Handler khi click vào subcategory card
   const handleSubCategoryClick = (subCategory: SubCategoryInfo) => {
+    // Track event
+    trackResultsRelatedSubcategoryClick(
+      subCategory.code || '',
+      subCategory.title || '',
+      subCategory.id,
+      categoryCode || ''
+    );
+    
     const slug = subCategory.slug;
     router.push(`/${slug}`);
   };
@@ -90,7 +103,13 @@ const QuizResults: React.FC<QuizResultsProps> = ({
 
             {/* Nút Làm lại */}
             <button
-              onClick={onRetry}
+              onClick={() => {
+                // Track retry event
+                if (categoryCode && subCategoryCode) {
+                  trackResultsRetry(categoryCode, subCategoryCode, totalQuestions);
+                }
+                onRetry();
+              }}
               className="col-span-1 flex flex-col items-center justify-center px-16 py-16 rounded-3xl transition-opacity hover:opacity-80 h-full dark:bg-gray-800/50"
               style={{ backgroundColor: 'rgba(141, 126, 247, 0.1)' }}
             >

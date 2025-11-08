@@ -14,6 +14,16 @@ import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, hexT
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import ProgressBar from '@/components/ui/ProgressBar';
+import {
+  trackHomepageSearch,
+  trackHomepageSearchEnter,
+  trackHomepageSearchSuggestionClick,
+  trackHomepageCategoryClick,
+  trackHomepageSubcategoryClick,
+  trackHomepageSubtitleFilter,
+  trackHomepageSubtitleFilterRemove,
+  trackHomepageBannerClick,
+} from '@/lib/analytics';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
@@ -349,6 +359,13 @@ const HomePage: React.FC = () => {
   }, [subtitleSuggestions, updateScrollButtons]); // Chạy lại khi subtitleSuggestions thay đổi
 
   const handleCategoryClick = (category: CategoriesSlide) => {
+    // Track event
+    trackHomepageCategoryClick(
+      category.code || '',
+      category.title || '',
+      category.id
+    );
+    
     // Nếu click lại vào category đang được chọn thì tắt split view
     if (selectedCategory && selectedCategory.id === category.id) {
       setSelectedCategory(null);
@@ -366,6 +383,22 @@ const HomePage: React.FC = () => {
   };
 
   const handleSubCategoryClick = (subCategory: SubCategoriesSlide) => {
+    // Track event - tìm category cha để lấy thông tin
+    const parentCategory = fullData.find(c => 
+      c.subCategoriesSlide?.some(sub => sub.id === subCategory.id)
+    ) || top10Categories.find(c => 
+      c.subCategoriesSlide?.some(sub => sub.id === subCategory.id)
+    );
+    
+    trackHomepageSubcategoryClick(
+      subCategory.code || '',
+      subCategory.title || '',
+      subCategory.id,
+      parentCategory?.code,
+      parentCategory?.title,
+      subCategory.isPayment
+    );
+    
     // Nếu là đề PRO và chưa đăng nhập thì redirect đến trang login
     if (subCategory.isPayment === true && isInitialized && !user) {
       router.push('/login');
@@ -418,6 +451,9 @@ const HomePage: React.FC = () => {
   };
 
   const handleSubtitleSuggestionClick = (subtitle: string, backgroundColor: string) => {
+    // Track event
+    trackHomepageSubtitleFilter(subtitle);
+    
     // Apply filter theo subtitle (không thêm vào searchQuery)
     setAppliedSubtitleFilter({ subtitle, backgroundColor });
     // Reset searchByCodeOnly khi apply filter
@@ -427,6 +463,9 @@ const HomePage: React.FC = () => {
   };
 
   const handleRemoveSubtitleFilter = () => {
+    // Track event
+    trackHomepageSubtitleFilterRemove();
+    
     setAppliedSubtitleFilter(null);
     // Trở về giao diện home bình thường
     setSearchQuery('');
@@ -466,8 +505,16 @@ const HomePage: React.FC = () => {
               setSearchQuery(value);
               // Reset searchByCodeOnly khi user đang typing
               setSearchByCodeOnly(false);
+              // Track search khi user đang typing (debounce sẽ được xử lý ở phía client)
+              if (value.trim().length > 0) {
+                trackHomepageSearch(value, 'title');
+              }
             }}
             onEnterPress={() => {
+              // Track search enter
+              if (searchQuery.trim().length > 0) {
+                trackHomepageSearchEnter(searchQuery);
+              }
               // Khi nhấn Enter mà không có suggestion nào được chọn, chỉ tìm theo code
               setSearchByCodeOnly(true);
             }}
@@ -751,7 +798,7 @@ const HomePage: React.FC = () => {
               <div className="mb-12">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">GẦN ĐÂY</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {top10RecentSubCategories.slice(0, 8).map((subCategory) => {
+                  {top10RecentSubCategories.map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {
                       ...subCategory,
@@ -777,7 +824,7 @@ const HomePage: React.FC = () => {
               <div className="my-24">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">{user ? 'MÔN HỌC GỢI Ý' : 'MÔN MỚI HÔM NAY'}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {filteredCategories.slice(0, 8).map((category, index) => {
+                  {filteredCategories.map((category, index) => {
                     // Ưu tiên load ảnh cho 5 category đầu tiên (above the fold)
                     const isPriority = index < 5;
                     return (
@@ -798,7 +845,7 @@ const HomePage: React.FC = () => {
               <div className="mb-12">
                 <h2 className="text-md text-gray-300 dark:text-white/20 tracking-widest font-bold mb-8">ĐỀ MỚI HÔM NAY</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {filteredSubCategories.slice(0, 8).map((subCategory) => {
+                  {filteredSubCategories.map((subCategory) => {
                     const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                     const enrichedSub = {
                       ...subCategory,

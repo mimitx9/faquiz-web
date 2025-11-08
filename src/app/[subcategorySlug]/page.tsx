@@ -18,6 +18,19 @@ import FixErrorPanel from '@/components/panels/FixErrorPanel';
 import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
 import { createTitleSlug } from '@/lib/utils';
 import ProgressBar from '@/components/ui/ProgressBar';
+import {
+  trackQuizStart,
+  trackQuizQuestionAnswer,
+  trackQuizQuestionEssaySubmit,
+  trackQuizSubmit,
+  trackQuizRetry,
+  trackQuizTimerExpired,
+  trackQuizPanelOpen,
+  trackQuizPanelClose,
+  trackQuizImageZoom,
+  trackQuizFixErrorSubmit,
+  trackUpgradeOverlayShow,
+} from '@/lib/analytics';
 
 const COMMENT_MESSAGE_SUCCESS = [
   'Tuyệt cú mèo',
@@ -387,6 +400,17 @@ const SubCategoryQuizPage: React.FC = () => {
         // Bắt đầu đếm thời gian khi tải xong câu hỏi
         setStartTime(Date.now());
         
+        // Track quiz start
+        if (currentCategory && currentSubCategory && questionsData.length > 0) {
+          trackQuizStart(
+            currentSubCategory.code || '',
+            currentSubCategory.title || '',
+            currentCategory.code || '',
+            currentCategory.title || '',
+            questionsData.length
+          );
+        }
+        
       } catch (e: any) {
         // Kiểm tra HTTP status code 403 và mã lỗi 40300401 - yêu cầu thanh toán
         if (e.response?.status === 403 && e.response?.data?.meta?.code === 40300401) {
@@ -469,6 +493,9 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Hàm mở ảnh zoom và reset góc xoay
   const handleOpenZoom = (imageUrl: string) => {
+    // Track image zoom
+    trackQuizImageZoom(category?.code, subCategory?.code);
+    
     setZoomedImage(imageUrl);
     setImageRotation(0);
   };
@@ -591,6 +618,16 @@ const SubCategoryQuizPage: React.FC = () => {
         const isCorrect = isAnswerCorrect(question, newSet);
         const message = getRandomMessage(isCorrect);
         setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
+        
+        // Track answer event
+        const questionIndex = questions.findIndex(q => q.questionId === questionId);
+        trackQuizQuestionAnswer(
+          questionId,
+          questionIndex >= 0 ? questionIndex : 0,
+          isCorrect,
+          category?.code,
+          subCategory?.code
+        );
       }
       
       return { ...prev, [questionId]: newSet };
@@ -640,6 +677,16 @@ const SubCategoryQuizPage: React.FC = () => {
           const message = getRandomMessage(data.isCorrect);
           setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
         }
+        
+        // Track essay submit event
+        const questionIndex = questions.findIndex(q => q.questionId === questionId);
+        trackQuizQuestionEssaySubmit(
+          questionId,
+          questionIndex >= 0 ? questionIndex : 0,
+          data.isCorrect,
+          category?.code,
+          subCategory?.code
+        );
       }
     } catch (error) {
       // Silent fail
@@ -693,10 +740,21 @@ const SubCategoryQuizPage: React.FC = () => {
       // Nếu click vào icon, toggle panel đó
       const newPanel = activePanel === panelType ? null : panelType;
       setActivePanel(newPanel);
+      
+      // Track panel open/close
+      if (newPanel) {
+        trackQuizPanelOpen(newPanel, category?.code, subCategory?.code);
+      } else {
+        trackQuizPanelClose(panelType);
+      }
+      
       // Tự động collapse sidebar khi mở panel (set ngay lập tức)
       setIsSidebarCollapsed(true);
     } else {
       // Nếu không có panelType (đóng từ nút X), đóng panel
+      if (activePanel) {
+        trackQuizPanelClose(activePanel);
+      }
       setActivePanel(null);
       setFixErrorQuestion(null);
     }
@@ -941,7 +999,16 @@ const SubCategoryQuizPage: React.FC = () => {
     const correctAnswers = calculateCorrectAnswers();
     const quizDuration = questions.length * 15; // Số câu x 15 giây (giống như trong QuizHeader)
     
+    // Track submit event
     if (category?.code && subCategory?.code) {
+      trackQuizSubmit(
+        questions.length,
+        correctAnswers,
+        finalTimeSpent,
+        category.code,
+        subCategory.code
+      );
+      
       faquizApiService.submitQuiz({
         totalCorrect: correctAnswers,
         totalQuestion: questions.length,
@@ -955,6 +1022,11 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Handler làm lại bài
   const handleRetry = () => {
+    // Track retry event
+    if (category?.code && subCategory?.code) {
+      trackQuizRetry(category.code, subCategory.code, questions.length);
+    }
+    
     setIsSubmitted(false);
     setTextAnswers({});
     setMultiAnswers({});
@@ -972,6 +1044,11 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Handler khi hết giờ đếm ngược
   const handleTimerExpired = () => {
+    // Track timer expired event
+    if (category?.code && subCategory?.code) {
+      trackQuizTimerExpired(category.code, subCategory.code, questions.length);
+    }
+    
     if (!isSubmitted) {
       handleSubmit();
     }
@@ -1026,6 +1103,8 @@ const SubCategoryQuizPage: React.FC = () => {
           relatedSubCategories={subCategories}
           categoryBackgroundColor={category?.backgroundColor}
           currentSubCategoryId={subCategory?.id}
+          categoryCode={category?.code}
+          subCategoryCode={subCategory?.code}
         />
       </div>
     );
@@ -1775,6 +1854,7 @@ const SubCategoryQuizPage: React.FC = () => {
                 if (user?.faQuizInfo?.isPaid === true) {
                   toggleSplitPanel('star');
                 } else {
+                  trackUpgradeOverlayShow('star_panel');
                   setShowUpgradeOverlay(true);
                 }
               }}
@@ -1834,6 +1914,7 @@ const SubCategoryQuizPage: React.FC = () => {
                 if (user?.faQuizInfo?.isPaid === true) {
                   window.print();
                 } else {
+                  trackUpgradeOverlayShow('print_panel');
                   setShowUpgradeOverlay(true);
                 }
               }}

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
+import { trackHomepageBannerClick, trackResultsBannerClick } from '@/lib/analytics';
 
 interface BannerItem {
   id: string;
@@ -151,6 +152,14 @@ const BannerSlide: React.FC<BannerSlideProps> = ({
                 backgroundColor: banner.backgroundColor || '#04002A',
               }}
               onClick={() => {
+                // Track event - sử dụng banner id để xác định context (homepage hoặc results)
+                const isResultsPage = typeof window !== 'undefined' && window.location.pathname.includes('/result');
+                if (isResultsPage) {
+                  trackResultsBannerClick(banner.id, banner.title);
+                } else {
+                  trackHomepageBannerClick(banner.id, banner.title);
+                }
+                
                 if (banner.buttonLink) {
                   if (banner.buttonLink.startsWith('http')) {
                     window.open(banner.buttonLink, '_blank');

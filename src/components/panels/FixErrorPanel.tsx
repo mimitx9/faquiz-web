@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Question, SubCategoryInfo } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { fixQuizApiService } from '@/lib/api';
+import { trackQuizFixErrorSubmit } from '@/lib/analytics';
 
 interface FixErrorPanelProps {
   onClose: () => void;
@@ -196,6 +197,13 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
 
       // Gọi API
       await fixQuizApiService.requestFixQuiz(payload, uploadedImage || undefined);
+
+      // Track fix error submit
+      trackQuizFixErrorSubmit(
+        question.questionId,
+        subCategory?.code,
+        undefined // categoryCode không có trong FixErrorPanel, có thể thêm sau nếu cần
+      );
 
       setSubmitSuccess(true);
       
