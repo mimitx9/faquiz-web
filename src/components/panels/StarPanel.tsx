@@ -52,7 +52,7 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose }) => {
       </div>
 
       {/* Nội dung panel */}
-      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
         <div className="text-center">
           <div className="flex justify-center">
             <Image

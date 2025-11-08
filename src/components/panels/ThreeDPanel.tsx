@@ -231,7 +231,7 @@ const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ onClose }) => {
       {/* Nội dung panel */}
       <div className="flex-1 overflow-hidden">
         {viewMode === 'list' ? (
-          <div className="h-full overflow-y-auto p-4">
+          <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <div className="text-gray-400">Đang tải...</div>

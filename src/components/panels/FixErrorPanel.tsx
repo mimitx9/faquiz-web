@@ -243,7 +243,7 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
       </div>
 
       {/* Nội dung panel */}
-      <div className="flex-1 overflow-y-auto px-6 pt-0 pb-28">
+      <div className="flex-1 overflow-y-auto px-6 pt-0 pb-28 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
         {/* Câu hỏi */}
         <div className="mb-6">
           <div className="w-full text-left p-6 rounded-2xl border-2 border-gray-200 dark:border-white/5 flex items-center hover:scale-[1.02] transition-all duration-200">

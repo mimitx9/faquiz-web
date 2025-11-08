@@ -1533,7 +1533,7 @@ const SubCategoryQuizPage: React.FC = () => {
             </div>
 
             {/* Danh sách câu hỏi - có thể scroll */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
               <div className="space-y-2">
                 {questions.map((q, index) => {
                   const questionIsEssay = isEssay(q);
@@ -1598,7 +1598,7 @@ const SubCategoryQuizPage: React.FC = () => {
           {/* Phần quiz chính */}
           <div 
             ref={scrollContainerRef}
-            className={`flex-1 overflow-y-auto h-full ${!isResizing ? 'transition-all duration-300' : ''}`}
+            className={`flex-1 overflow-y-auto h-full ${!isResizing ? 'transition-all duration-300' : ''} [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700`}
             style={{
               width: activePanel ? `${100 - splitPanelWidth}%` : '100%',
             }}

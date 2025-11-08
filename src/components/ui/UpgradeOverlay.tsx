@@ -254,7 +254,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
                   <p className="text-gray-400 dark:text-gray-500 my-12">Hoặc</p>
                   <button
                     onClick={() => window.open('https://m.me/appfaquiz', '_blank')}
-                    className="text-[#8D7EF7] dark:text-[#A694F7] text-2xl font-semibold"
+                    className="text-[#8D7EF7] text-2xl font-semibold"
                   >
                     Đăng nhập Pro để làm tiếp →
                   </button>

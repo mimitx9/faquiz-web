@@ -281,7 +281,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
         <div className="relative" ref={dropdownRefDesktop}>
           <button
             onClick={handleAvatarClick}
-            className="cursor-pointer transition-opacity bg-white dark:bg-gray-800 rounded-full flex items-center border-2 border-gray-100 dark:border-gray-700"
+            className="cursor-pointer transition-opacity bg-white dark:bg-white/20 rounded-full flex items-center border-2 border-gray-100 dark:border-white/10"
           >
             {user && user.avatar ? (
               <Image
@@ -479,7 +479,7 @@ const QuizHeader: React.FC<QuizHeaderProps> = ({ totalQuestions, onTimerExpired,
         <div className="relative" ref={dropdownRefMobile}>
           <button
             onClick={handleAvatarClick}
-            className="cursor-pointer transition-opacity bg-white dark:bg-gray-800 rounded-full flex items-center border-2 border-gray-100 dark:border-gray-700"
+            className="cursor-pointer transition-opacity bg-white dark:bg-white/20 rounded-full flex items-center border-2 border-gray-100 dark:border-white/10"
           >
             {user && user.avatar ? (
               <Image
