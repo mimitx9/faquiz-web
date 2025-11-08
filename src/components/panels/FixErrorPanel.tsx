@@ -215,7 +215,6 @@ const FixErrorPanel: React.FC<FixErrorPanelProps> = ({ onClose, question, subCat
       // Đóng panel ngay lập tức
       onClose();
     } catch (error: any) {
-      console.error('Error submitting fix quiz:', error);
       setSubmitError(error?.response?.data?.meta?.message || 'Có lỗi xảy ra khi gửi yêu cầu. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);

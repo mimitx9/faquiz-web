@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { checkRateLimit, getRemainingRequests } from '@/lib/rateLimit';
 
 // Khởi tạo OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Constants for validation
+const MAX_MESSAGE_LENGTH = 5000; // characters
+const MAX_CONVERSATION_HISTORY_LENGTH = 20; // messages
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_QUESTIONS_COUNT = 100;
+
+// Rate limiting: 10 requests per minute per user
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 
 interface QuestionContext {
   questionId: number;
@@ -22,8 +33,82 @@ interface ConversationMessage {
   content: string;
 }
 
+/**
+ * Sanitize user input to prevent prompt injection
+ */
+function sanitizeInput(input: string): string {
+  // Remove potential prompt injection patterns
+  // This is a basic sanitization - consider more sophisticated approaches
+  return input
+    .replace(/[\r\n]+/g, ' ') // Replace newlines with spaces
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim()
+    .slice(0, MAX_MESSAGE_LENGTH); // Limit length
+}
+
+/**
+ * Get user identifier from request (token or IP)
+ */
+function getUserIdentifier(request: NextRequest): string {
+  // Try to get token from Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    // Use token as identifier (or extract user ID from token if JWT)
+    return `token:${token.substring(0, 20)}`; // Use first 20 chars as identifier
+  }
+  
+  // Fallback to IP address
+  const ip = request.headers.get('x-forwarded-for') || 
+              request.headers.get('x-real-ip') || 
+              'unknown';
+  return `ip:${ip}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // 1. Authentication check
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          const errorData = `data: ${JSON.stringify({ error: 'Vui lòng đăng nhập để sử dụng tính năng này' })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          controller.close();
+        },
+      });
+      return new Response(errorStream, {
+        status: 401,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+      });
+    }
+
+    // 2. Rate limiting
+    const userIdentifier = getUserIdentifier(request);
+    if (!checkRateLimit(userIdentifier, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
+      const remaining = getRemainingRequests(userIdentifier, RATE_LIMIT_MAX_REQUESTS);
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          const errorData = `data: ${JSON.stringify({ error: `Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.` })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          controller.close();
+        },
+      });
+      return new Response(errorStream, {
+        status: 429,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Retry-After': '60',
+        },
+      });
+    }
+
     // Check if request has form data (with image) or JSON
     const contentType = request.headers.get('content-type') || '';
     let userMessage: string;
@@ -39,14 +124,30 @@ export async function POST(request: NextRequest) {
       const formData = await request.formData();
       userMessage = (formData.get('userMessage') as string) || '';
       const questionsStr = formData.get('questions') as string;
-      questions = questionsStr ? JSON.parse(questionsStr) : [];
+      try {
+        questions = questionsStr ? JSON.parse(questionsStr) : [];
+      } catch (e) {
+        throw new Error('Invalid questions format');
+      }
       categoryTitle = (formData.get('categoryTitle') as string) || '';
       subCategoryTitle = (formData.get('subCategoryTitle') as string) || '';
       const historyStr = formData.get('conversationHistory') as string;
-      conversationHistory = historyStr ? JSON.parse(historyStr) : [];
+      try {
+        conversationHistory = historyStr ? JSON.parse(historyStr) : [];
+      } catch (e) {
+        conversationHistory = [];
+      }
       
       const image = formData.get('image') as File | null;
       if (image && image.size > 0) {
+        // Validate image size
+        if (image.size > MAX_IMAGE_SIZE) {
+          throw new Error(`Kích thước ảnh không được vượt quá ${MAX_IMAGE_SIZE / 1024 / 1024}MB`);
+        }
+        // Validate image type
+        if (!image.type.startsWith('image/')) {
+          throw new Error('File phải là ảnh');
+        }
         imageFile = image;
         // Convert image to base64
         const arrayBuffer = await image.arrayBuffer();
@@ -63,12 +164,59 @@ export async function POST(request: NextRequest) {
       conversationHistory = body.conversationHistory || [];
     }
 
-    // Validate input
-    if ((!userMessage && !imageFile) || !questions || !Array.isArray(questions)) {
-      return NextResponse.json(
-        { error: 'Thiếu thông tin: userMessage hoặc image và questions là bắt buộc' },
-        { status: 400 }
-      );
+    // 3. Input validation
+    // Validate message length
+    if (userMessage && userMessage.length > MAX_MESSAGE_LENGTH) {
+      throw new Error(`Tin nhắn không được vượt quá ${MAX_MESSAGE_LENGTH} ký tự`);
+    }
+
+    // Validate questions
+    if (!questions || !Array.isArray(questions)) {
+      throw new Error('Questions phải là một mảng');
+    }
+    if (questions.length > MAX_QUESTIONS_COUNT) {
+      throw new Error(`Số lượng câu hỏi không được vượt quá ${MAX_QUESTIONS_COUNT}`);
+    }
+
+    // Validate conversation history
+    if (conversationHistory && Array.isArray(conversationHistory)) {
+      if (conversationHistory.length > MAX_CONVERSATION_HISTORY_LENGTH) {
+        // Truncate to max length
+        conversationHistory = conversationHistory.slice(-MAX_CONVERSATION_HISTORY_LENGTH);
+      }
+      // Validate each message structure
+      conversationHistory = conversationHistory.filter((msg: any) => {
+        return msg && 
+               (msg.role === 'user' || msg.role === 'assistant') && 
+               typeof msg.content === 'string' &&
+               msg.content.length <= MAX_MESSAGE_LENGTH;
+      });
+    } else {
+      conversationHistory = [];
+    }
+
+    // Sanitize user message
+    if (userMessage) {
+      userMessage = sanitizeInput(userMessage);
+    }
+
+    // Final validation
+    if ((!userMessage && !imageFile) || !questions || !Array.isArray(questions) || questions.length === 0) {
+      const encoder = new TextEncoder();
+      const errorStream = new ReadableStream({
+        start(controller) {
+          const errorData = `data: ${JSON.stringify({ error: 'Thiếu thông tin: userMessage hoặc image và questions là bắt buộc' })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          controller.close();
+        },
+      });
+      return new Response(errorStream, {
+        status: 400,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+      });
     }
 
     // Kiểm tra API key
@@ -113,11 +261,11 @@ Nhiệm vụ của bạn:
 4. Nếu câu hỏi của người dùng không liên quan đến các câu hỏi được cung cấp, hãy trả lời dựa trên kiến thức y khoa chung của bạn
 5. Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ thông tin
 
-Môn học: ${categoryTitle || 'Y khoa'}
-Đề thi: ${subCategoryTitle || 'Đề thi thử'}`;
+Môn học: ${sanitizeInput(categoryTitle || 'Y khoa')}
+Đề thi: ${sanitizeInput(subCategoryTitle || 'Đề thi thử')}`;
 
     // Xây dựng messages array với conversation history
-    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> }> = [
       {
         role: 'system',
         content: systemInstruction,
@@ -142,10 +290,16 @@ Bạn có thể sử dụng thông tin này để trả lời các câu hỏi c�
       // Validate và thêm các message từ conversation history
       conversationHistory.forEach((msg: ConversationMessage) => {
         if (msg.role === 'user' || msg.role === 'assistant') {
-          messages.push({
-            role: msg.role,
-            content: msg.content,
-          });
+          // Sanitize content từ conversation history
+          const sanitizedContent = typeof msg.content === 'string' 
+            ? sanitizeInput(msg.content) 
+            : '';
+          if (sanitizedContent) {
+            messages.push({
+              role: msg.role,
+              content: sanitizedContent,
+            });
+          }
         }
       });
     }
@@ -158,7 +312,7 @@ Bạn có thể sử dụng thông tin này để trả lời các câu hỏi c�
       if (userMessage) {
         userContent.push({
           type: 'text',
-          text: userMessage,
+          text: sanitizeInput(userMessage),
         });
       }
       
@@ -177,7 +331,7 @@ Bạn có thể sử dụng thông tin này để trả lời các câu hỏi c�
       // Chỉ có text
       messages.push({
         role: 'user',
-        content: userMessage,
+        content: userMessage ? sanitizeInput(userMessage) : '',
       });
     }
 
@@ -227,8 +381,6 @@ Bạn có thể sử dụng thông tin này để trả lời các câu hỏi c�
       },
     });
   } catch (error: any) {
-    console.error('Error in star-chat API:', error);
-    
     // Trả về lỗi dưới dạng stream nếu có thể
     const encoder = new TextEncoder();
     const errorStream = new ReadableStream({

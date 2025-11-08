@@ -73,7 +73,6 @@ async function getCategoriesData(): Promise<SlideFastResponse | null> {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching categories data:', error);
     return null;
   }
 }
@@ -99,7 +98,6 @@ async function getBiodigitalCategories(): Promise<BiodigitalCategory[] | null> {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching biodigital categories:', error);
     return null;
   }
 }

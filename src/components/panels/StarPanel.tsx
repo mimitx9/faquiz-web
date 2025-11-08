@@ -136,8 +136,17 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
         formData.append('image', imageToSend);
       }
 
+      // Get auth token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/star-chat', {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -210,7 +219,6 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
               }
             } catch (e) {
               // Bỏ qua nếu không parse được JSON
-              console.error('Error parsing stream data:', e);
             }
           }
         }

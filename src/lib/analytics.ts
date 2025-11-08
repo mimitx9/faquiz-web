@@ -121,7 +121,6 @@ export function trackEvent(event: AnalyticsEvent, properties?: AnalyticsProperti
     track(event, cleaned);
   } catch (error) {
     // Silent fail để không ảnh hưởng đến UX
-    console.warn('Analytics tracking error:', error);
   }
 }
 
