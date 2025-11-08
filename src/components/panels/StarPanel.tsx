@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Question, CategoryInfo, SubCategoryInfo } from '@/types';
 import Markdown from '@/components/common/Markdown';
@@ -16,9 +16,10 @@ interface StarPanelProps {
   questions: Question[];
   category: CategoryInfo | null;
   subCategory: SubCategoryInfo | null;
+  initialMessage?: string | null;
 }
 
-const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, subCategory }) => {
+const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, subCategory, initialMessage }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,6 +28,9 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasSentInitialMessage = useRef(false);
+  const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hasSentRef = useRef(false); // Đánh dấu đã gửi tin nhắn ban đầu
 
   // Auto scroll to bottom when new message arrives
   useEffect(() => {
@@ -37,6 +41,24 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Reset flag khi initialMessage thay đổi hoặc panel đóng
+  useEffect(() => {
+    if (!initialMessage) {
+      hasSentInitialMessage.current = false;
+      hasSentRef.current = false;
+      // Clear timer nếu có
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+        autoSendTimerRef.current = null;
+      }
+    } else if (initialMessage && !hasSentInitialMessage.current) {
+      // Set inputValue và đánh dấu đã set
+      hasSentInitialMessage.current = true;
+      hasSentRef.current = false; // Reset flag gửi
+      setInputValue(initialMessage);
+    }
+  }, [initialMessage]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,8 +91,18 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
     }
   };
 
-  const handleSendMessage = async () => {
+  // Tạo hàm gửi tin nhắn với useCallback để có thể sử dụng trong useEffect
+  const handleSendMessage = useCallback(async () => {
     if ((!inputValue.trim() && !selectedImage) || isLoading) return;
+
+    // Clear timer tự động gửi nếu user gửi trước
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+      autoSendTimerRef.current = null;
+    }
+
+    // Đánh dấu đã gửi để tránh gửi lại
+    hasSentRef.current = true;
 
     const userMessage = inputValue.trim();
     const imageToSend = selectedImage;
@@ -81,6 +113,11 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    
+    // Reset flag sau khi gửi tin nhắn ban đầu
+    if (hasSentInitialMessage.current) {
+      hasSentInitialMessage.current = false;
     }
     
     // Lưu conversation history trước khi thêm messages mới
@@ -253,7 +290,34 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
       setIsLoading(false);
       inputRef.current?.focus();
     }
-  };
+  }, [inputValue, selectedImage, isLoading, messages, questions, category, subCategory, imagePreview]);
+
+  // Tự động gửi tin nhắn khi inputValue được set từ initialMessage (phải đặt sau khi handleSendMessage được định nghĩa)
+  useEffect(() => {
+    // Clear timer cũ nếu có
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+      autoSendTimerRef.current = null;
+    }
+
+    if (initialMessage && inputValue === initialMessage && !isLoading && messages.length === 0 && hasSentInitialMessage.current && !hasSentRef.current) {
+      // Đợi một chút để đảm bảo component đã render xong
+      autoSendTimerRef.current = setTimeout(() => {
+        if (!hasSentRef.current) {
+          hasSentRef.current = true;
+          handleSendMessage();
+        }
+        autoSendTimerRef.current = null;
+      }, 300);
+    }
+
+    return () => {
+      if (autoSendTimerRef.current) {
+        clearTimeout(autoSendTimerRef.current);
+        autoSendTimerRef.current = null;
+      }
+    };
+  }, [initialMessage, inputValue, isLoading, messages.length, handleSendMessage]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

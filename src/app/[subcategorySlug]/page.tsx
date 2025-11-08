@@ -315,6 +315,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null); // Icon đang được hover
   const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | 'fix-error' | null>(null); // Panel đang được mở
   const [fixErrorQuestion, setFixErrorQuestion] = useState<Question | null>(null); // Câu hỏi đang được sửa lỗi
+  const [initialStarMessage, setInitialStarMessage] = useState<string | null>(null); // Tin nhắn ban đầu cho StarPanel
   const [splitPanelWidth, setSplitPanelWidth] = useState<number>(33.33); // Width của split panel (% màn hình), mặc định 1/3 (33.33%)
   const [isResizing, setIsResizing] = useState(false); // Trạng thái đang resize
   const resizeStartX = useRef<number>(0); // Vị trí X khi bắt đầu resize
@@ -735,11 +736,18 @@ const SubCategoryQuizPage: React.FC = () => {
   };
 
   // Handler mở/đóng split panel
-  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error') => {
+  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error', initialMessage?: string) => {
     if (panelType) {
       // Nếu click vào icon, toggle panel đó
       const newPanel = activePanel === panelType ? null : panelType;
       setActivePanel(newPanel);
+      
+      // Set tin nhắn ban đầu nếu có
+      if (newPanel === 'star' && initialMessage) {
+        setInitialStarMessage(initialMessage);
+      } else if (newPanel !== 'star') {
+        setInitialStarMessage(null);
+      }
       
       // Track panel open/close
       if (newPanel) {
@@ -757,6 +765,7 @@ const SubCategoryQuizPage: React.FC = () => {
       }
       setActivePanel(null);
       setFixErrorQuestion(null);
+      setInitialStarMessage(null);
     }
   };
 
@@ -1330,16 +1339,31 @@ const SubCategoryQuizPage: React.FC = () => {
             {user?.faQuizInfo?.isPaid === true && (
               <div className="flex items-center gap-4">
                 <button
+                  onClick={() => {
+                    const bubbleText = 'Giải thích từng ý';
+                    const message = `${bubbleText} ${question.questionId}`;
+                    toggleSplitPanel('star', message);
+                  }}
                   className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Giải thích từng ý
                 </button>
                 <button
+                  onClick={() => {
+                    const bubbleText = 'Vì sao đúng';
+                    const message = `${bubbleText} ${question.questionId}`;
+                    toggleSplitPanel('star', message);
+                  }}
                   className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Vì sao đúng
                 </button>
                 <button
+                  onClick={() => {
+                    const bubbleText = 'Đáp án sai';
+                    const message = `${bubbleText} ${question.questionId}`;
+                    toggleSplitPanel('star', message);
+                  }}
                   className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Đáp án sai
@@ -1726,6 +1750,7 @@ const SubCategoryQuizPage: React.FC = () => {
                   questions={questions}
                   category={category}
                   subCategory={subCategory}
+                  initialMessage={initialStarMessage}
                 />
               )}
               {activePanel === 'print' && <PrintPanel onClose={() => toggleSplitPanel()} />}
