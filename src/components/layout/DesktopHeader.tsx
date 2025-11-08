@@ -175,7 +175,7 @@ const DesktopHeader: React.FC<DesktopHeaderProps> = ({
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={handleAvatarClick}
-            className="cursor-pointer transition-opacity bg-white dark:bg-white/10 rounded-full flex items-center border-2 border-gray-100 dark:border-white/10"
+            className="cursor-pointer transition-opacity bg-white dark:bg-white/20 rounded-full flex items-center border-2 border-gray-100 dark:border-white/10"
           >
             {user && user.avatar ? (
               <Image

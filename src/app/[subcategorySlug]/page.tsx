@@ -316,6 +316,19 @@ const SubCategoryQuizPage: React.FC = () => {
     return !question.options || question.options.length <= 1;
   };
 
+  // Tính số hàng dựa trên độ dài text, tối đa 6 hàng
+  const calculateRows = (text: string): number => {
+    if (!text) return 1;
+    // Đếm số dòng từ newlines
+    const lineBreaks = (text.match(/\n/g) || []).length;
+    // Ước tính số hàng dựa trên độ dài (khoảng 50 ký tự mỗi hàng cho text-lg)
+    const estimatedRows = Math.ceil(text.length / 50);
+    // Lấy giá trị lớn hơn giữa lineBreaks + 1 và estimatedRows
+    const rows = Math.max(lineBreaks + 1, estimatedRows);
+    // Giới hạn tối đa 6 hàng
+    return Math.min(rows, 6);
+  };
+
   useEffect(() => {
     const loadQuestions = async () => {
       if (!slugParam) return;
@@ -1039,7 +1052,7 @@ const SubCategoryQuizPage: React.FC = () => {
           <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
             Câu {index + 1}
           </span>
-          <span className="text-xl font-bold text-[#0000001A] dark:text-white/20">
+          <span className="text-md tracking-wider font-medium text-[#0000001A] dark:text-white/20">
             {question.questionId}
           </span>
         </div>
@@ -1236,31 +1249,19 @@ const SubCategoryQuizPage: React.FC = () => {
 
             {/* 3 button căn phải - chỉ hiển thị khi user đã thanh toán */}
             {user?.faQuizInfo?.isPaid === true && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <button
-                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                  style={{
-                    borderColor: '#0000000D',
-                    color: '#00000080'
-                  }}
+                  className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Giải thích từng ý
                 </button>
                 <button
-                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                  style={{
-                    borderColor: '#0000000D',
-                    color: '#00000080'
-                  }}
+                  className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Vì sao đúng
                 </button>
                 <button
-                  className="px-4 py-2 rounded-lg bg-white border transition-all duration-200 hover:opacity-80"
-                  style={{
-                    borderColor: '#0000000D',
-                    color: '#00000080'
-                  }}
+                  className="px-6 py-3 text-gray-500 dark:text-white/50 font-medium rounded-full border-2 border-gray-100 dark:border-white/10 transition-all duration-200 hover:scale-105"
                 >
                   Đáp án sai
                 </button>
@@ -1272,7 +1273,7 @@ const SubCategoryQuizPage: React.FC = () => {
         {questionIsEssay ? (
           // Layout cho essay: nếu có ảnh thì 2 cột, không có ảnh thì layout thường
           question.extraData?.image ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-stretch">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-3 mb-6 items-stretch">
               {/* Cột trái: Câu hỏi và ô input */}
               <div className="flex flex-col">
                 <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
@@ -1281,7 +1282,7 @@ const SubCategoryQuizPage: React.FC = () => {
                 <div className="flex-1 flex flex-col justify-end">
                   <div className="relative">
                     <textarea
-                      className={`w-full border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-white dark:bg-black dark:text-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
+                      className={`w-full border-2 rounded-2xl bg-white dark:bg-black dark:text-white px-8 pr-12 text-lg resize-none overflow-y-auto [&::-webkit-scrollbar]:hidden focus:outline-none transition-colors`}
                       placeholder="Viết đáp án..."
                       value={textAnswers[question.questionId] || ''}
                       onChange={(e) => handleEssayChange(question.questionId, e.target.value)}
@@ -1289,11 +1290,11 @@ const SubCategoryQuizPage: React.FC = () => {
                       onFocus={() => setFocusedEssayId(question.questionId)}
                       onBlur={() => setFocusedEssayId(null)}
                       disabled={verified || isGrading}
-                      rows={1}
+                      rows={calculateRows(textAnswers[question.questionId] || '')}
                       style={{
                         borderColor: verified 
                           ? (isCorrect ? '#00C800' : '#EC5300')
-                          : (focusedEssayId === question.questionId ? '#8D7EF7' : 'rgba(0, 0, 0, 0.05)'),
+                          : (focusedEssayId === question.questionId ? '#8D7EF7' : theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'),
                         minHeight: '5rem',
                         maxHeight: '7rem',
                         lineHeight: '1.5rem',
@@ -1302,18 +1303,12 @@ const SubCategoryQuizPage: React.FC = () => {
                         scrollbarWidth: 'none',
                         msOverflowStyle: 'none'
                       }}
-                      onInput={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        const newHeight = Math.min(target.scrollHeight, 7 * 16); // 7rem = 112px
-                        target.style.height = `${newHeight}px`;
-                      }}
                     />
                     {/* Icon gửi */}
                     {!verified && hasTextAnswer && !isGrading && (
                       <button
                         onClick={() => handleEssaySubmit(question.questionId, question)}
-                        className="absolute top-1/2 -translate-y-1/2 right-1.5 p-1.5 rounded-full transition-all duration-200 hover:opacity-80"
+                        className="absolute top-1/2 -translate-y-1/2 right-4 px-2 pt-1 pb-2 rounded-full transition-all duration-200 hover:opacity-80"
                         aria-label="Gửi câu trả lời"
                       >
                         <img 
