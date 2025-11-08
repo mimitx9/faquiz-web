@@ -1720,7 +1720,14 @@ const SubCategoryQuizPage: React.FC = () => {
                 maxWidth: '50%',
               }}
             >
-              {activePanel === 'star' && <StarPanel onClose={() => toggleSplitPanel()} />}
+              {activePanel === 'star' && (
+                <StarPanel 
+                  onClose={() => toggleSplitPanel()} 
+                  questions={questions}
+                  category={category}
+                  subCategory={subCategory}
+                />
+              )}
               {activePanel === 'print' && <PrintPanel onClose={() => toggleSplitPanel()} />}
               {activePanel === '3d' && <ThreeDPanel onClose={() => toggleSplitPanel()} />}
               {activePanel === 'kiem' && <KiemPanel onClose={() => toggleSplitPanel()} />}
