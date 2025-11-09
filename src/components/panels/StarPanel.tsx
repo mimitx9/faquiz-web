@@ -26,7 +26,7 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasSentInitialMessage = useRef(false);
   const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -113,6 +113,13 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    // Reset textarea height về 1 dòng
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const lineHeight = parseInt(getComputedStyle(inputRef.current).lineHeight) || 24;
+      inputRef.current.style.height = `${lineHeight}px`;
+      inputRef.current.style.overflowY = 'hidden';
     }
     
     // Reset flag sau khi gửi tin nhắn ban đầu
@@ -319,37 +326,60 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
     };
   }, [initialMessage, inputValue, isLoading, messages.length, handleSendMessage]);
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
+  // Auto-resize textarea với max 2 dòng
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(e.target.value);
+    
+    // Reset height để tính toán lại
+    e.target.style.height = 'auto';
+    
+    // Tính toán số dòng
+    const lineHeight = parseInt(getComputedStyle(e.target).lineHeight) || 24;
+    const maxHeight = lineHeight * 2; // 2 dòng
+    const scrollHeight = e.target.scrollHeight;
+    
+    // Giới hạn ở 2 dòng
+    if (scrollHeight <= maxHeight) {
+      e.target.style.height = `${scrollHeight}px`;
+      e.target.style.overflowY = 'hidden';
+    } else {
+      e.target.style.height = `${maxHeight}px`;
+      e.target.style.overflowY = 'auto';
+    }
+  };
+
   return (
-    <div className="bg-white dark:bg-black border-l border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 h-full">
+    <div className="flex flex-col transition-all duration-300 h-full bg-gray-100/60 dark:bg-white/5 relative">
       {/* Header của panel */}
-      <div className="flex items-center justify-between px-4 py-4">
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
-          aria-label="Đóng panel"
-        >
-          <svg
-            className="w-5 h-5 text-gray-600 dark:text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-      </div>
+      <div className="flex items-center justify-end px-4 py-4 dark:border-gray-800">
+       
+       <button
+           onClick={onClose}
+           className="p-2 hover:scale-150 transition-all duration-200"
+           aria-label="Đóng panel"
+         >
+           <svg
+             className="w-5 h-5 text-gray-600 dark:text-white/30"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24"
+           >
+             <path
+               strokeLinecap="round"
+               strokeLinejoin="round"
+               strokeWidth={3}
+               d="M6 18L18 6M6 6l12 12"
+             />
+           </svg>
+         </button>
+       </div>
 
       {/* Chat messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
@@ -360,13 +390,10 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
               alt="FA hack"
               width={150}
               height={31}
-              className="object-contain mb-4 opacity-50"
+              className="object-contain mb-4"
             />
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Hỏi đáp về các câu hỏi trong đề thi
-            </p>
-            <p className="text-gray-400 dark:text-gray-500 text-xs mt-2">
-              Ví dụ: "Giải thích câu hỏi số 1", "Tại sao đáp án A đúng?"
+            <p className="text-gray-500 dark:text-white/20 text-sm">
+              Giải đáp thắc mắc đề thi
             </p>
           </div>
         ) : (
@@ -383,16 +410,14 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
                   className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                    className={`max-w-[80%] text-lg text-gray-800 dark:text-gray-200 ${
                       message.role === 'user'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                        ? 'bg-white dark:bg-white/10 rounded-3xl px-6 py-3 shadow-sm border border-gray-100 dark:border-white/10'
+                        : 'bg-transparent px-4 py-3'
                     }`}
                   >
                     {message.role === 'assistant' ? (
-                      <div className="text-sm">
                         <Markdown content={message.content} />
-                      </div>
                     ) : (
                       <div className="space-y-2">
                         {message.imageUrl && (
@@ -400,12 +425,12 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
                             <img
                               src={message.imageUrl}
                               alt="Uploaded"
-                              className="max-w-full h-auto rounded-lg"
+                              className="max-h-[60px] rounded-xl shadow-sm"
                             />
                           </div>
                         )}
                         {message.content && (
-                          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                          <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         )}
                       </div>
                     )}
@@ -430,22 +455,23 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
       </div>
 
       {/* Input field ở dưới */}
-      <div className="p-4 space-y-2">
+      <div className="p-4 space-y-4">
         {/* Image preview */}
         {imagePreview && (
-          <div className="relative inline-block">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="max-w-[200px] max-h-[200px] rounded-lg object-contain border-2 border-gray-200 dark:border-gray-700"
-            />
+          <div className="flex justify-center">
+            <div className="relative inline-block">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="max-h-[60px] rounded-xl shadow-sm object-contain"
+              />
             <button
               onClick={handleRemoveImage}
-              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+              className="absolute -top-1 -right-2 p-0.5 bg-white dark:bg-gray-800 shadow-md rounded-full hover:scale-150 transition-all duration-200"
               aria-label="Xóa ảnh"
             >
               <svg
-                className="w-4 h-4"
+                className="w-3 h-3 opacity-50"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -453,15 +479,18 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
+                  strokeWidth={3}
                   d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
             </button>
+            </div>
           </div>
         )}
         
-        <div className="w-full p-6 rounded-2xl flex items-center border-2 hover:scale-[1.02] transition-all duration-200 border-[#0000000D] hover:border-[#8D7EF7] focus-within:border-[#8D7EF7]">
+        <div className="w-full max-w-sm mx-auto
+        bg-white dark:bg-white/5 rounded-3xl p-4 shadow-lg border border-gray-100 dark:border-white/5
+        flex items-center transition-all duration-200 focus-within:shadow-none">
           <input
             ref={fileInputRef}
             type="file"
@@ -473,50 +502,60 @@ const StarPanel: React.FC<StarPanelProps> = ({ onClose, questions, category, sub
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="mr-3 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            className="mr-3 p-1 opacity-50 hover:opacity-100 transition-all flex-shrink-0"
             aria-label="Chọn ảnh"
           >
             <svg
-              className="w-5 h-5 text-gray-600 dark:text-gray-400"
+              className="w-4 h-4 text-gray-600 dark:text-white/30"
+              width="19"
+              height="13"
+              viewBox="0 0 19 13"
               fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M1 12L4.78955 7.11073C5.60707 6.05598 7.2086 6.08248 7.99077 7.16371L9.90958 9.81618C10.6961 10.9034 12.3249 10.902 13.1376 9.83413C13.9379 8.78234 15.5359 8.7619 16.3363 9.81369L18 12"
+                stroke="currentColor"
+                strokeWidth="2"
                 strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+              <circle
+                cx="15"
+                cy="3"
+                r="2"
+                stroke="currentColor"
+                strokeWidth="1.5"
               />
             </svg>
           </button>
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={handleTextareaChange}
             onKeyPress={handleKeyPress}
-            placeholder="Nhập câu hỏi của bạn..."
+            placeholder="Viết câu hỏi"
             disabled={isLoading}
-            className="flex-1 bg-transparent text-lg text-gray-600 dark:text-gray-300 focus:outline-none placeholder:text-[#FF80F2] disabled:opacity-50 disabled:cursor-not-allowed"
+            rows={1}
+            className="flex-1 bg-transparent text-lg text-gray-800 dark:text-gray-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto max-h-[3rem] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ minHeight: '1.5rem', lineHeight: '1.5rem' }}
           />
           <button
             onClick={handleSendMessage}
             disabled={(!inputValue.trim() && !selectedImage) || isLoading}
-            className="ml-3 p-2 rounded-full bg-[#FF80F21A] hover:bg-[#FF80F230] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-            aria-label="Gửi tin nhắn"
+            className="ml-4 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+            aria-label="Gửi"
           >
             <svg
-              className="w-5 h-5 text-[#FF80F2] rotate-[60deg]"
+              className="w-4 h-4 text-[#FF80F2]"
+              width="20"
+              height="18"
+              viewBox="0 0 20 18"
               fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                d="M17.5436 0.892072C19.0975 0.879563 20.0714 2.56646 19.2837 3.90592L11.7367 16.738C10.8525 18.2414 8.60201 17.9717 8.09803 16.3021L7.03905 12.7937C6.6797 11.6032 7.09208 10.3144 8.07577 9.55366L12.4962 6.13506C12.7265 5.95691 12.5179 5.59555 12.2484 5.70597L7.08027 7.82378C5.92829 8.29584 4.60446 8.00736 3.75333 7.09879L1.2057 4.37923C0.0141876 3.1073 0.906414 1.026 2.6492 1.01197L17.5436 0.892072Z"
+                fill="#FF80F2"
               />
             </svg>
           </button>

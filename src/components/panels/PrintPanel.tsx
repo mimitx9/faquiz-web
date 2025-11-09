@@ -20,7 +20,7 @@ const PrintPanel: React.FC<PrintPanelProps> = ({ onClose }) => {
           aria-label="Đóng panel"
         >
           <svg
-            className="w-5 h-5 text-gray-600 dark:text-gray-400"
+            className="w-5 h-5 text-gray-600 dark:text-white/30"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -28,7 +28,7 @@ const PrintPanel: React.FC<PrintPanelProps> = ({ onClose }) => {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
+              strokeWidth={3}
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
