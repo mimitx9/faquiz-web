@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { checkRateLimit, getRemainingRequests } from '@/lib/rateLimit';
 
 // Khởi tạo OpenAI client
 const openai = new OpenAI({
@@ -13,9 +12,7 @@ const MAX_CONVERSATION_HISTORY_LENGTH = 20; // messages
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_QUESTIONS_COUNT = 100;
 
-// Rate limiting: 10 requests per minute per user
-const RATE_LIMIT_MAX_REQUESTS = 10;
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+// Rate limiting - Đã bỏ giới hạn lượt hỏi
 
 interface QuestionContext {
   questionId: number;
@@ -46,24 +43,6 @@ function sanitizeInput(input: string): string {
     .slice(0, MAX_MESSAGE_LENGTH); // Limit length
 }
 
-/**
- * Get user identifier from request (token or IP)
- */
-function getUserIdentifier(request: NextRequest): string {
-  // Try to get token from Authorization header
-  const authHeader = request.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    // Use token as identifier (or extract user ID from token if JWT)
-    return `token:${token.substring(0, 20)}`; // Use first 20 chars as identifier
-  }
-  
-  // Fallback to IP address
-  const ip = request.headers.get('x-forwarded-for') || 
-              request.headers.get('x-real-ip') || 
-              'unknown';
-  return `ip:${ip}`;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,27 +66,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2. Rate limiting
-    const userIdentifier = getUserIdentifier(request);
-    if (!checkRateLimit(userIdentifier, RATE_LIMIT_MAX_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
-      const remaining = getRemainingRequests(userIdentifier, RATE_LIMIT_MAX_REQUESTS);
-      const encoder = new TextEncoder();
-      const errorStream = new ReadableStream({
-        start(controller) {
-          const errorData = `data: ${JSON.stringify({ error: `Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau.` })}\n\n`;
-          controller.enqueue(encoder.encode(errorData));
-          controller.close();
-        },
-      });
-      return new Response(errorStream, {
-        status: 429,
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Retry-After': '60',
-        },
-      });
-    }
+    // 2. Rate limiting - Đã bỏ giới hạn lượt hỏi
 
     // Check if request has form data (with image) or JSON
     const contentType = request.headers.get('content-type') || '';
