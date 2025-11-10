@@ -8,7 +8,7 @@ const openai = new OpenAI({
 
 // Constants for validation
 const MAX_MESSAGE_LENGTH = 5000; // characters
-const MAX_CONVERSATION_HISTORY_LENGTH = 20; // messages
+const MAX_CONVERSATION_HISTORY_LENGTH = 100; // messages
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_QUESTIONS_COUNT = 100;
 
