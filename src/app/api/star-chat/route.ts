@@ -133,9 +133,6 @@ export async function POST(request: NextRequest) {
     if (!questions || !Array.isArray(questions)) {
       throw new Error('Questions phải là một mảng');
     }
-    if (questions.length > MAX_QUESTIONS_COUNT) {
-      throw new Error(`Số lượng câu hỏi không được vượt quá ${MAX_QUESTIONS_COUNT}`);
-    }
 
     // Validate conversation history
     if (conversationHistory && Array.isArray(conversationHistory)) {
