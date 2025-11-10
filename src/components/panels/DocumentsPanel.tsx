@@ -1,0 +1,940 @@
+'use client';
+
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  faquizApiService, 
+  DocumentGroup, 
+  DocumentGroupWithContent, 
+  DocumentWithContent,
+  googleSearchApiService,
+  GoogleSearchResult,
+  GoogleSearchPagination
+} from '@/lib/api';
+import { removeVietnameseDiacritics } from '@/lib/utils';
+import Markdown from '@/components/common/Markdown';
+import { useAuth } from '@/hooks/useAuth';
+
+interface DocumentsPanelProps {
+  onClose: () => void;
+  initialSearchQuery?: string;
+}
+
+type ContentType = 'sach' | 'web' | 'anh' | 'video';
+
+const BG_COLORS = ['#47B2FF1A', '#14DD1C1A', '#8D7EF71A', '#FFAA001A'];
+const TEXT_COLORS = ['#47B2FF', '#14DD1C', '#8D7EF7', '#FFAA00'];
+
+// Hàm lấy màu background và text tương ứng dựa trên index
+const getColorPair = (index: number): { bg: string; text: string } => {
+  const colorIndex = index % BG_COLORS.length;
+  return {
+    bg: BG_COLORS[colorIndex],
+    text: TEXT_COLORS[colorIndex],
+  };
+};
+
+const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQuery = '' }) => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [groups, setGroups] = useState<DocumentGroup[]>([]);
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ContentType>('sach');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [gridCols, setGridCols] = useState(2);
+
+  // Kiểm tra PRO - nếu không phải PRO thì đóng panel
+  const isPaid = user?.faQuizInfo?.isPaid === true;
+  
+  useEffect(() => {
+    if (user && !isPaid) {
+      // Đóng panel nếu user không phải PRO
+      onClose();
+    }
+  }, [user, isPaid, onClose]);
+  
+  // Detail view states
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [detailGroups, setDetailGroups] = useState<DocumentGroupWithContent[]>([]);
+  const [selectedDocumentIndex, setSelectedDocumentIndex] = useState<{ groupIndex: number; docIndex: number } | null>(null);
+  const [contentSearchQuery, setContentSearchQuery] = useState('');
+  const [loadingContent, setLoadingContent] = useState(false);
+
+  // Google Search states
+  const [googleSearchResults, setGoogleSearchResults] = useState<GoogleSearchResult[]>([]);
+  const [googleSearchPagination, setGoogleSearchPagination] = useState<GoogleSearchPagination | null>(null);
+  const [loadingGoogleSearch, setLoadingGoogleSearch] = useState(false);
+  const [googleSearchError, setGoogleSearchError] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Update searchQuery when initialSearchQuery changes
+  useEffect(() => {
+    if (initialSearchQuery) {
+      setSearchQuery(initialSearchQuery);
+    }
+  }, [initialSearchQuery]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await faquizApiService.getDocuments();
+        if (response.data && response.data.groups) {
+          setGroups(response.data.groups || []);
+        }
+      } catch (err: any) {
+        // Tự động chuyển đến trang đăng nhập khi gặp lỗi 401
+        if (err.response?.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        setError(err.message || 'Có lỗi xảy ra khi tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [router]);
+
+  // Reset Google Search results khi chuyển tab
+  useEffect(() => {
+    if (activeTab === 'sach') {
+      setGoogleSearchResults([]);
+      setGoogleSearchPagination(null);
+      setGoogleSearchError(null);
+    }
+  }, [activeTab]);
+
+  // Google Search effect - chỉ gọi khi tab là web/anh/video và có searchQuery
+  useEffect(() => {
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Chỉ search khi tab là web, anh, hoặc video
+    if (activeTab !== 'web' && activeTab !== 'anh' && activeTab !== 'video') {
+      return;
+    }
+
+    // Nếu không có searchQuery, clear results
+    if (!searchQuery.trim()) {
+      setGoogleSearchResults([]);
+      setGoogleSearchPagination(null);
+      setGoogleSearchError(null);
+      return;
+    }
+
+    // Debounce search - đợi 500ms sau khi user ngừng gõ
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setLoadingGoogleSearch(true);
+        setGoogleSearchError(null);
+        
+        // Map tab to API type
+        const typeMap: Record<'web' | 'anh' | 'video', 'website' | 'image' | 'video'> = {
+          web: 'website',
+          anh: 'image',
+          video: 'video',
+        };
+
+        const response = await googleSearchApiService.search({
+          keyword: searchQuery.trim(),
+          type: typeMap[activeTab as 'web' | 'anh' | 'video'],
+          pageOffset: 0,
+          pageSize: 10,
+        });
+
+        if (response.data) {
+          setGoogleSearchResults(response.data.results || []);
+          setGoogleSearchPagination(response.data.pagination || null);
+        }
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          router.replace('/login');
+          return;
+        }
+        setGoogleSearchError(err.message || 'Có lỗi xảy ra khi tìm kiếm');
+        setGoogleSearchResults([]);
+        setGoogleSearchPagination(null);
+      } finally {
+        setLoadingGoogleSearch(false);
+      }
+    }, 500);
+
+    // Cleanup
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, activeTab, router]);
+
+  // Filter groups theo search query và activeTab
+  const filteredGroups = useMemo(() => {
+    let filtered = groups;
+
+    // Filter theo tab (hiện tại chỉ có "Sách" có dữ liệu)
+    if (activeTab === 'sach') {
+      // Hiển thị tất cả groups khi chọn tab Sách
+      filtered = groups;
+    } else {
+      // Các tab khác chưa có dữ liệu, trả về mảng rỗng
+      filtered = [];
+    }
+
+    // Filter theo search query nếu có (search theo bookTitle, author, publisher, university)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      const queryNoDiacritics = removeVietnameseDiacritics(query).toLowerCase();
+      
+      filtered = filtered.filter((group) => {
+        const bookTitle = group.bookTitle || '';
+        const author = group.author || '';
+        const publisher = group.publisher || '';
+        const university = group.university || '';
+        
+        // Normalize cả có dấu và không dấu
+        const bookTitleLower = bookTitle.toLowerCase();
+        const authorLower = author.toLowerCase();
+        const publisherLower = publisher.toLowerCase();
+        const universityLower = university.toLowerCase();
+        const bookTitleNoDiacritics = removeVietnameseDiacritics(bookTitle).toLowerCase();
+        const authorNoDiacritics = removeVietnameseDiacritics(author).toLowerCase();
+        const publisherNoDiacritics = removeVietnameseDiacritics(publisher).toLowerCase();
+        const universityNoDiacritics = removeVietnameseDiacritics(university).toLowerCase();
+        
+        // Tìm kiếm: có thể match với text có dấu hoặc không dấu
+        return (
+          bookTitleLower.includes(query) ||
+          authorLower.includes(query) ||
+          publisherLower.includes(query) ||
+          universityLower.includes(query) ||
+          bookTitleNoDiacritics.includes(queryNoDiacritics) ||
+          authorNoDiacritics.includes(queryNoDiacritics) ||
+          publisherNoDiacritics.includes(queryNoDiacritics) ||
+          universityNoDiacritics.includes(queryNoDiacritics)
+        );
+      });
+    }
+
+    return filtered;
+  }, [searchQuery, groups, activeTab]);
+
+  // Detect panel width và cập nhật số cột grid
+  useEffect(() => {
+    const updateGridCols = () => {
+      if (containerRef.current && typeof window !== 'undefined') {
+        const panelWidth = containerRef.current.offsetWidth;
+        const viewportWidth = window.innerWidth;
+        const percentage = (panelWidth / viewportWidth) * 100;
+        
+        // 40-50%: 3 cột
+        // 30-40%: 2 cột
+        // < 30%: 1 cột
+        if (percentage >= 40 && percentage <= 50) {
+          setGridCols(3);
+        } else if (percentage >= 30 && percentage < 40) {
+          setGridCols(2);
+        } else {
+          setGridCols(1);
+        }
+      }
+    };
+
+    updateGridCols();
+    const resizeObserver = new ResizeObserver(updateGridCols);
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    window.addEventListener('resize', updateGridCols);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateGridCols);
+    };
+  }, []);
+
+  // Handle card click
+  const handleCardClick = async (group: DocumentGroup) => {
+    try {
+      setLoadingContent(true);
+      setError(null);
+      const response = await faquizApiService.getDocumentsWithContent({
+        bookTitles: group.bookTitle || null,
+        universities: group.university || null,
+        authors: group.author || null,
+        publishYears: group.publishYear || null,
+      });
+      
+      if (response.data && response.data.groups && response.data.groups.length > 0) {
+        setDetailGroups(response.data.groups);
+        // Select first document by default
+        if (response.data.groups[0].documents.length > 0) {
+          setSelectedDocumentIndex({ groupIndex: 0, docIndex: 0 });
+        }
+        setViewMode('detail');
+        setContentSearchQuery('');
+      }
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      setError(err.message || 'Có lỗi xảy ra khi tải nội dung');
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  // Get current document
+  const currentDocument = useMemo(() => {
+    if (!selectedDocumentIndex || !detailGroups.length) return null;
+    const { groupIndex, docIndex } = selectedDocumentIndex;
+    if (detailGroups[groupIndex] && detailGroups[groupIndex].documents[docIndex]) {
+      return detailGroups[groupIndex].documents[docIndex];
+    }
+    return null;
+  }, [selectedDocumentIndex, detailGroups]);
+
+  // Component để render markdown với highlight
+  const MarkdownWithHighlight: React.FC<{ content: string; searchQuery: string }> = ({ content, searchQuery }) => {
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (!contentRef.current || !searchQuery.trim()) return;
+
+      const element = contentRef.current;
+      const query = searchQuery.trim();
+      const queryNoDiacritics = removeVietnameseDiacritics(query).toLowerCase();
+
+      // Remove existing highlights
+      const marks = element.querySelectorAll('mark.highlight-search');
+      marks.forEach(mark => {
+        const parent = mark.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(mark.textContent || ''), mark);
+          parent.normalize();
+        }
+      });
+
+      // Highlight text in all text nodes
+      const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+
+      const textNodes: Text[] = [];
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.textContent && node.textContent.trim()) {
+          textNodes.push(node as Text);
+        }
+      }
+
+      textNodes.forEach(textNode => {
+        const text = textNode.textContent || '';
+        const textLower = text.toLowerCase();
+        const textNoDiacritics = removeVietnameseDiacritics(text).toLowerCase();
+        const queryLower = query.toLowerCase();
+
+        if (textLower.includes(queryLower) || textNoDiacritics.includes(queryNoDiacritics)) {
+          const parent = textNode.parentNode;
+          if (!parent) return;
+
+          // Create a document fragment to hold the highlighted content
+          const fragment = document.createDocumentFragment();
+          let lastIndex = 0;
+          let searchIndex = 0;
+
+          // Try to find matches
+          while (true) {
+            const index = textLower.indexOf(queryLower, searchIndex);
+            if (index === -1) {
+              // No more matches, add remaining text
+              if (lastIndex < text.length) {
+                fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+              }
+              break;
+            }
+
+            // Add text before match
+            if (index > lastIndex) {
+              fragment.appendChild(document.createTextNode(text.substring(lastIndex, index)));
+            }
+
+            // Add highlighted match
+            const match = text.substring(index, index + query.length);
+            const mark = document.createElement('mark');
+            mark.className = 'highlight-search bg-yellow-300 dark:bg-yellow-500/50';
+            mark.textContent = match;
+            fragment.appendChild(mark);
+
+            lastIndex = index + query.length;
+            searchIndex = index + 1;
+          }
+
+          parent.replaceChild(fragment, textNode);
+        }
+      });
+    }, [content, searchQuery]);
+
+    return (
+      <div ref={contentRef}>
+        <Markdown content={content} />
+      </div>
+    );
+  };
+
+  // Get all documents from all groups for vertical tabs
+  const allDocuments = useMemo(() => {
+    const docs: Array<{ groupIndex: number; docIndex: number; document: DocumentWithContent; group: DocumentGroupWithContent }> = [];
+    detailGroups.forEach((group, groupIndex) => {
+      group.documents.forEach((doc, docIndex) => {
+        docs.push({ groupIndex, docIndex, document: doc, group });
+      });
+    });
+    return docs;
+  }, [detailGroups]);
+
+  // Filter documents by search query
+  const filteredDocuments = useMemo(() => {
+    if (!contentSearchQuery.trim()) return allDocuments;
+    
+    const query = contentSearchQuery.toLowerCase().trim();
+    const queryNoDiacritics = removeVietnameseDiacritics(query).toLowerCase();
+    
+    return allDocuments.filter(({ document }) => {
+      const chapter = document.chapter || '';
+      const content = document.content || '';
+      
+      const chapterLower = chapter.toLowerCase();
+      const contentLower = content.toLowerCase();
+      const chapterNoDiacritics = removeVietnameseDiacritics(chapter).toLowerCase();
+      const contentNoDiacritics = removeVietnameseDiacritics(content).toLowerCase();
+      
+      return (
+        chapterLower.includes(query) ||
+        contentLower.includes(query) ||
+        chapterNoDiacritics.includes(queryNoDiacritics) ||
+        contentNoDiacritics.includes(queryNoDiacritics)
+      );
+    });
+  }, [allDocuments, contentSearchQuery]);
+
+  // Load more Google Search results (pagination) - tự động gọi khi scroll
+  const loadMoreGoogleSearch = useCallback(async () => {
+    if (!searchQuery.trim() || !googleSearchPagination) return;
+    if (loadingGoogleSearch) return;
+
+    const nextPageOffset = (googleSearchPagination.pageOffset || 0) + 1;
+    if (nextPageOffset >= (googleSearchPagination.totalPages || 0)) return;
+
+    try {
+      setLoadingGoogleSearch(true);
+      setGoogleSearchError(null);
+      
+      const typeMap: Record<'web' | 'anh' | 'video', 'website' | 'image' | 'video'> = {
+        web: 'website',
+        anh: 'image',
+        video: 'video',
+      };
+
+      const response = await googleSearchApiService.search({
+        keyword: searchQuery.trim(),
+        type: typeMap[activeTab as 'web' | 'anh' | 'video'],
+        pageOffset: nextPageOffset,
+        pageSize: 10,
+      });
+
+      if (response.data) {
+        setGoogleSearchResults(prev => [...prev, ...(response.data.results || [])]);
+        setGoogleSearchPagination(response.data.pagination || null);
+      }
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        router.replace('/login');
+        return;
+      }
+      setGoogleSearchError(err.message || 'Có lỗi xảy ra khi tải thêm kết quả');
+    } finally {
+      setLoadingGoogleSearch(false);
+    }
+  }, [searchQuery, googleSearchPagination, loadingGoogleSearch, activeTab, router]);
+
+  // Infinite scroll detection
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    
+    // Chỉ enable infinite scroll cho tab web/anh/video
+    if (activeTab !== 'web' && activeTab !== 'anh' && activeTab !== 'video') return;
+    if (!googleSearchPagination) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Load more khi còn cách đáy 200px
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        loadMoreGoogleSearch();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [loadMoreGoogleSearch, activeTab, googleSearchPagination]);
+
+  const SearchIcon = () => (
+    <svg
+      className="w-6 h-6 fill-gray-500 opacity-20 dark:fill-white dark:opacity-20"
+      viewBox="0 0 12 12"
+      width="24"
+      height="24"
+    >
+      <path d="M11.5306 11.5247C11.7901 11.2636 11.7893 10.8417 11.529 10.5815L10.1235 9.17686C10.8915 8.2158 11.3523 6.99444 11.3523 5.67297C11.3523 2.54283 8.80801 0 5.67613 0C2.54424 0 0 2.54283 0 5.67297C0 8.80311 2.54424 11.3459 5.67613 11.3459C6.99833 11.3459 8.22037 10.8854 9.18197 10.1246L10.5846 11.5264C10.846 11.7877 11.2701 11.787 11.5306 11.5247ZM5.67613 10.0111C3.28548 10.0111 1.33556 8.06229 1.33556 5.67297C1.33556 3.28365 3.28548 1.33482 5.67613 1.33482C8.06678 1.33482 10.0167 3.28365 10.0167 5.67297C10.0167 8.06229 8.06678 10.0111 5.67613 10.0111Z"></path>
+    </svg>
+  );
+
+  // Render detail view
+  if (viewMode === 'detail') {
+    const docsToShow = contentSearchQuery.trim() ? filteredDocuments : allDocuments;
+    
+    return (
+      <div ref={containerRef} className="bg-white dark:bg-black flex flex-col h-full">
+        {/* Header với search bar */}
+        <div className="flex items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
+          {/* Back button */}
+          <button
+            onClick={() => {
+              setViewMode('list');
+              setDetailGroups([]);
+              setSelectedDocumentIndex(null);
+              setContentSearchQuery('');
+            }}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+            aria-label="Quay lại"
+          >
+            <svg
+              className="w-6 h-6 text-gray-700 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          {/* Search input */}
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={contentSearchQuery}
+              onChange={(e) => setContentSearchQuery(e.target.value)}
+              placeholder="Tìm kiếm trong nội dung..."
+              className="w-full rounded-full bg-gray-100 dark:bg-white/5 px-8 py-3 pr-10 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-white/10 focus:border-2 focus:border-gray-300 dark:focus:border-white/20 focus:outline-none"
+              autoComplete="off"
+            />
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+              <SearchIcon />
+            </div>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+            aria-label="Đóng"
+          >
+            <svg
+              className="w-6 h-6 text-gray-700 dark:text-gray-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content area với vertical tabs và markdown */}
+        <div className="flex-1 overflow-hidden flex">
+          {/* Vertical tabs */}
+          <div className="w-64 border-r border-gray-200 dark:border-gray-800 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
+            {loadingContent ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-gray-400 dark:text-gray-500">Đang tải...</div>
+              </div>
+            ) : docsToShow.length > 0 ? (
+              <div className="p-2 space-y-1">
+                {docsToShow.map(({ groupIndex, docIndex, document, group }) => {
+                  const isSelected = selectedDocumentIndex?.groupIndex === groupIndex && 
+                                     selectedDocumentIndex?.docIndex === docIndex;
+                  return (
+                    <button
+                      key={`${groupIndex}-${docIndex}-${document.id}`}
+                      onClick={() => setSelectedDocumentIndex({ groupIndex, docIndex })}
+                      className={`w-full text-left p-3 rounded-lg transition-all ${
+                        isSelected
+                          ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
+                          : 'bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/8'
+                      }`}
+                    >
+                      <div className="text-sm font-medium line-clamp-2 mb-1">
+                        {document.chapter || 'Không có tiêu đề'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                        {group.bookTitle}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-sm">
+                Không tìm thấy kết quả
+              </div>
+            )}
+          </div>
+
+          {/* Markdown content */}
+          <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
+            {loadingContent ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-gray-400 dark:text-gray-500">Đang tải nội dung...</div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-red-400">{error}</div>
+              </div>
+            ) : currentDocument && currentDocument.content ? (
+              <div className="prose prose-lg dark:prose-invert max-w-none">
+                <MarkdownWithHighlight 
+                  content={currentDocument.content}
+                  searchQuery={contentSearchQuery}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-gray-400 dark:text-gray-500">
+                  {selectedDocumentIndex ? 'Không có nội dung' : 'Chọn một tài liệu để xem nội dung'}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render list view
+  return (
+    <div ref={containerRef} className="bg-white dark:bg-black flex flex-col h-full">
+      {/* Header của panel */}
+      <div className="flex items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
+        {/* Search input */}
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              setSearchQuery(newValue);
+            }}
+            placeholder="Tìm kiếm..."
+            className="w-full rounded-full bg-gray-100 dark:bg-white/5 px-8 py-3 pr-10 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-white/10 focus:border-2 focus:border-gray-300 dark:focus:border-white/20 focus:outline-none"
+            autoComplete="off"
+          />
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+            <SearchIcon />
+          </div>
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+          aria-label="Đóng"
+        >
+          <svg
+            className="w-6 h-6 text-gray-700 dark:text-gray-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={3}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+        <button
+          onClick={() => setActiveTab('sach')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            activeTab === 'sach'
+              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+          }`}
+        >
+          Sách
+        </button>
+        <button
+          onClick={() => setActiveTab('web')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            activeTab === 'web'
+              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+          }`}
+        >
+          Web
+        </button>
+        <button
+          onClick={() => setActiveTab('anh')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            activeTab === 'anh'
+              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+          }`}
+        >
+          Ảnh
+        </button>
+        <button
+          onClick={() => setActiveTab('video')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            activeTab === 'video'
+              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+          }`}
+        >
+          Video
+        </button>
+      </div>
+
+      {/* Nội dung panel */}
+      <div className="flex-1 overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700"
+        >
+          {/* Tab Sách - hiển thị documents */}
+          {activeTab === 'sach' && (
+            <>
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-gray-400 dark:text-gray-500">Đang tải...</div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-red-400">{error}</div>
+                </div>
+              ) : (
+                <>
+                  {filteredGroups.length > 0 ? (
+                    <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
+                      {filteredGroups.map((group, index) => {
+                        const { bg, text } = getColorPair(index);
+                        return (
+                          <div
+                            key={`${group.university}-${group.bookTitle}-${index}`}
+                            onClick={() => handleCardClick(group)}
+                            className="rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:scale-105 transition-all overflow-hidden flex flex-col"
+                            style={{ backgroundColor: bg }}
+                          >
+                            <div className="flex-1 flex flex-col justify-end p-6">
+                              <h3 
+                                className="text-xl font-semibold mb-2 line-clamp-2"
+                                style={{ color: text }}
+                              >
+                                {group.bookTitle}
+                              </h3>
+                              {group.author && (
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-1 line-clamp-1">
+                                  {group.author}
+                                </p>
+                              )}
+                              {(group.publisher || group.publishYear) && (
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                  {group.publisher && <span>{group.publisher}</span>}
+                                  {group.publisher && group.publishYear && <span> • </span>}
+                                  {group.publishYear && <span>{group.publishYear}</span>}
+                                </p>
+                              )}
+                              {group.university && (
+                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-auto pt-2 border-t border-gray-200 dark:border-gray-700 line-clamp-1">
+                                  {group.university}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-20">
+                      <p className="text-gray-400 dark:text-gray-500">
+                        {searchQuery.trim() 
+                          ? `Không tìm thấy kết quả nào cho "${searchQuery}"`
+                          : 'Không có dữ liệu'}
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* Tab Web/Ảnh/Video - hiển thị Google Search results */}
+          {(activeTab === 'web' || activeTab === 'anh' || activeTab === 'video') && (
+            <>
+              {loadingGoogleSearch && googleSearchResults.length === 0 ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-gray-400 dark:text-gray-500">Đang tìm kiếm...</div>
+                </div>
+              ) : googleSearchError ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-red-400">{googleSearchError}</div>
+                </div>
+              ) : !searchQuery.trim() ? (
+                <div className="text-center py-20">
+                  <p className="text-gray-400 dark:text-gray-500">Nhập từ khóa để tìm kiếm</p>
+                </div>
+              ) : googleSearchResults.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-gray-400 dark:text-gray-500">
+                    Không tìm thấy kết quả nào cho "{searchQuery}"
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Kết quả tìm kiếm */}
+                  {activeTab === 'web' && (
+                    <div className="space-y-3">
+                      {googleSearchResults.map((result, index) => (
+                        <a
+                          key={index}
+                          href={result.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                        >
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            {result.displayLink}
+                          </div>
+                          <h3 className="text-lg font-medium text-blue-600 dark:text-blue-400 mb-1 line-clamp-1">
+                            {result.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                            {result.snippet}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'anh' && (
+                    <div className={`grid gap-4`} style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}>
+                      {googleSearchResults.map((result, index) => {
+                        const { bg } = getColorPair(index);
+                        return (
+                          <a
+                            key={index}
+                            href={result.image?.contextLink || result.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:scale-105 transition-all overflow-hidden flex flex-col"
+                            style={{ backgroundColor: bg }}
+                          >
+                            <div className="w-full h-full flex items-center justify-center">
+                              {result.link ? (
+                                <img
+                                  src={result.link}
+                                  alt={result.title}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                  <span className="text-gray-400 dark:text-gray-500 text-xs">Không có ảnh</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Tooltip snippet khi hover */}
+                            {result.snippet && (
+                              <div className="absolute inset-0 bg-black/70 dark:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
+                                <p className="text-white text-sm text-center line-clamp-4">
+                                  {result.snippet}
+                                </p>
+                              </div>
+                            )}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {activeTab === 'video' && (
+                    <div className="space-y-3">
+                      {googleSearchResults.map((result, index) => (
+                        <a
+                          key={index}
+                          href={result.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                        >
+                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                            {result.displayLink}
+                          </div>
+                          <h3 className="text-lg font-medium text-blue-600 dark:text-blue-400 mb-1 line-clamp-1">
+                            {result.title}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                            {result.snippet}
+                          </p>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Loading indicator khi đang tải thêm */}
+                  {loadingGoogleSearch && googleSearchResults.length > 0 && (
+                    <div className="flex justify-center py-4">
+                      <div className="text-gray-400 dark:text-gray-500 text-sm">Đang tải thêm...</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DocumentsPanel;
+

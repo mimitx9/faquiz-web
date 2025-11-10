@@ -366,6 +366,64 @@ export interface SubmitQuizRequest {
     categoryCode: string;
 }
 
+// Documents API
+export interface Document {
+    id: number;
+    university: string;
+    grade: string;
+    program: string;
+    bookTitle: string;
+    author: string | null;
+    publisher: string | null;
+    publishYear: string;
+    chapter: string;
+    embedStatus: string;
+    stt: number;
+    categoryCode: string | null;
+}
+
+export interface DocumentGroup {
+    university: string;
+    bookTitle: string;
+    author: string;
+    publisher: string;
+    publishYear: string;
+    documents: Document[];
+}
+
+export interface DocumentWithContent extends Document {
+    content?: string;
+}
+
+export interface DocumentGroupWithContent {
+    university: string;
+    bookTitle: string;
+    author: string;
+    publisher: string;
+    publishYear: string;
+    documents: DocumentWithContent[];
+}
+
+export interface DocumentsResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        groups: DocumentGroup[];
+    };
+}
+
+export interface DocumentsWithContentResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        groups: DocumentGroupWithContent[];
+    };
+}
+
 export const faquizApiService = {
     submitQuiz: async (payload: SubmitQuizRequest): Promise<void> => {
         try {
@@ -375,6 +433,43 @@ export const faquizApiService = {
             });
         } catch (error: any) {
             // Silent fail để không ảnh hưởng đến flow chính
+        }
+    },
+    getDocuments: async (): Promise<DocumentsResponse> => {
+        try {
+            const response = await faquizApiInstance.get<DocumentsResponse>('/documents');
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+    getDocumentsWithContent: async (params: {
+        bookTitles?: string | null;
+        universities?: string | null;
+        authors?: string | null;
+        publishYears?: string | null;
+    }): Promise<DocumentsWithContentResponse> => {
+        try {
+            const queryParams = new URLSearchParams();
+            
+            // Chỉ thêm params nếu có giá trị hợp lệ (không null, undefined, hoặc empty string)
+            if (params.bookTitles && params.bookTitles.trim()) {
+                queryParams.append('bookTitles', params.bookTitles.trim());
+            }
+            if (params.universities && params.universities.trim()) {
+                queryParams.append('universities', params.universities.trim());
+            }
+            if (params.authors && params.authors.trim()) {
+                queryParams.append('authors', params.authors.trim());
+            }
+            if (params.publishYears && params.publishYears.trim()) {
+                queryParams.append('publishYears', params.publishYears.trim());
+            }
+            
+            const response = await faquizApiInstance.get<DocumentsWithContentResponse>(`/documents/with-content?${queryParams.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            throw error;
         }
     },
 };
@@ -500,6 +595,89 @@ export const fixQuizApiService = {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+        } catch (error: any) {
+            throw error;
+        }
+    },
+};
+
+// Google Search API
+export interface GoogleSearchImage {
+    contextLink: string;
+    height: number;
+    width: number;
+    byteSize: number;
+    thumbnailLink: string;
+    thumbnailHeight: number;
+    thumbnailWidth: number;
+}
+
+export interface GoogleSearchResult {
+    title: string;
+    link: string;
+    displayLink: string;
+    snippet: string;
+    image?: GoogleSearchImage;
+}
+
+export interface GoogleSearchPagination {
+    pageSize: number;
+    pageOffset: number;
+    totalRecords: number;
+    totalPages: number;
+}
+
+export interface GoogleSearchResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        results: GoogleSearchResult[];
+        pagination: GoogleSearchPagination;
+    };
+}
+
+// Google Search API instance - sử dụng BASE_URL trực tiếp
+const googleSearchApiInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
+
+// Add auth token to Google Search requests
+googleSearchApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+export const googleSearchApiService = {
+    search: async (params: {
+        keyword: string;
+        type: 'website' | 'image' | 'video';
+        pageOffset?: number;
+        pageSize?: number;
+    }): Promise<GoogleSearchResponse> => {
+        try {
+            const queryParams = new URLSearchParams();
+            queryParams.append('keyword', params.keyword);
+            queryParams.append('type', params.type);
+            
+            if (params.pageOffset !== undefined) {
+                queryParams.append('pageOffset', params.pageOffset.toString());
+            }
+            if (params.pageSize !== undefined) {
+                queryParams.append('pageSize', params.pageSize.toString());
+            }
+            
+            const response = await googleSearchApiInstance.get<GoogleSearchResponse>(
+                `/faquiz/google-search?${queryParams.toString()}`
+            );
+            return response.data;
         } catch (error: any) {
             throw error;
         }

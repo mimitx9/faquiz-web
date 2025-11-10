@@ -753,3 +753,17 @@
   color: #00000040;
 }
 
+/* Text selection highlight - đảm bảo không làm mất style của element cha */
+mark.text-selection-highlight {
+  display: inline;
+  color: #0099FF !important;
+  background-color: #0099FF1A !important;
+  /* Không override các thuộc tính khác để giữ nguyên style của element cha */
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-decoration: inherit;
+  font-family: inherit;
+}
+
