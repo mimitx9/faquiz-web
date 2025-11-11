@@ -2100,22 +2100,6 @@ const SubCategoryQuizPage: React.FC = () => {
           )}
         </div>
 
-        {/* Nút nộp bài floating ở bottom center */}
-        {!activePanel && (
-          <button
-            onClick={handleSubmit}
-            aria-label="Nộp bài"
-            className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full text-white shadow-2xl transition-all hover:scale-110 duration-300 z-50 tracking-wide ${
-              showSubmitButton 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-4 pointer-events-none'
-            }`}
-            style={{ backgroundColor: '#8D7EF7' }}
-          >
-            <span className="text-lg font-semibold">Nộp Bài</span>
-          </button>
-        )}
-
         {/* Modal zoom ảnh */}
         {zoomedImage && (
           <div
@@ -2194,175 +2178,218 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
         )}
 
-        {/* Sidebar nhỏ ở góc dưới bên phải */}
-        {!activePanel && user && (
-          <div className="fixed bottom-8 right-8 sm:right-4 flex flex-col gap-4 z-40 items-end">
-          {/* Icon Star 2.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'star' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Hỏi đáp Hack
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300 relative"
-              aria-label="Hỏi đáp Hack"
-              onMouseEnter={() => setHoveredIcon('star')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                if (user?.faQuizInfo?.isPaid === true) {
-                  toggleSplitPanel('star');
-                } else {
-                  trackUpgradeOverlayShow('star_panel');
-                  setShowUpgradeOverlay(true);
-                }
-              }}
-            >
-              <Image
-                src="/quiz/Star 2.svg"
-                alt="Hỏi đáp Hack"
-                width={30}
-                height={30}
-                className="w-[30px] h-[30px]"
-              />
-              {user?.faQuizInfo?.isPaid !== true && (
-                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
-                  PRO
+        {/* Container nút nộp bài và các icon ở bottom center */}
+        {!activePanel && (
+          <div 
+            className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 px-6 py-3 bg-white/50 dark:bg-black/50 rounded-full z-50 transition-all duration-300 backdrop-blur-md ${
+              showSubmitButton 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-10 pointer-events-none'
+            }`}
+            style={{boxShadow: '0 10px 20px rgba(141, 126, 247, 0.2), 0 0 0 1px rgba(141, 126, 247, 0.1)' }}
+          >
+            {/* Các icon bên trái nút Nộp bài */}
+            {user && (
+              <div className="flex items-center gap-4">
+               
+               
+
+                {/* Icon 3d.svg */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === '3d' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Giải phẫu 3D
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300"
+                    aria-label="Giải phẫu 3D"
+                    onMouseEnter={() => setHoveredIcon('3d')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => toggleSplitPanel('3d')}
+                  >
+                    <Image
+                      src="/quiz/3d.svg"
+                      alt="Giải phẫu 3D"
+                      width={28}
+                      height={30}
+                      className="w-[28px] h-[30px]"
+                    />
+                  </button>
+                </div>
+               
+               
+                {/* Icon Star 2.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'star' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Hỏi đáp Hack
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="Hỏi đáp Hack"
+                    onMouseEnter={() => setHoveredIcon('star')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        toggleSplitPanel('star');
+                      } else {
+                        trackUpgradeOverlayShow('star_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/Star 2.svg"
+                      alt="Hỏi đáp Hack"
+                      width={30}
+                      height={30}
+                      className="w-[30px] h-[30px]"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+
+
+            {/* Nút nộp bài ở giữa */}
+            <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+              {hoveredIcon === 'submit' && (
+                <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                  Nộp bài
                 </span>
               )}
-            </button>
-          </div>
+              <button
+                onClick={handleSubmit}
+                aria-label="Nộp bài"
+                className="w-10 h-10 mx-2 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:scale-110"
+                style={{ backgroundColor: '#8D7EF7' }}
+                onMouseEnter={() => setHoveredIcon('submit')}
+                onMouseLeave={() => setHoveredIcon(null)}
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
 
-          {/* Icon 3d.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === '3d' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Giải phẫu 3D
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300"
-              aria-label="Giải phẫu 3D"
-              onMouseEnter={() => setHoveredIcon('3d')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => toggleSplitPanel('3d')}
-            >
-              <Image
-                src="/quiz/3d.svg"
-                alt="Giải phẫu 3D"
-                width={28}
-                height={30}
-                className="w-[28px] h-[30px]"
-              />
-            </button>
-          </div>
 
-          {/* Icon print.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'print' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                In đề
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300 relative"
-              aria-label="In đề"
-              onMouseEnter={() => setHoveredIcon('print')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                if (user?.faQuizInfo?.isPaid === true) {
-                  window.print();
-                } else {
-                  trackUpgradeOverlayShow('print_panel');
-                  setShowUpgradeOverlay(true);
-                }
-              }}
-            >
-              <Image
-                src="/quiz/print.svg"
-                alt="In đề"
-                width={28}
-                height={26}
-                className="w-[28px] h-[26px]"
-              />
-              {user?.faQuizInfo?.isPaid !== true && (
-                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
-                  PRO
-                </span>
-              )}
-            </button>
-          </div>
+                {/* Icon search.svg */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'documents' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Tìm tài liệu
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="Tìm kiếm tài liệu"
+                    onMouseEnter={() => setHoveredIcon('documents')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        toggleSplitPanel('documents');
+                      } else {
+                        trackUpgradeOverlayShow('documents_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/icon search.svg"
+                      alt="Tìm kiếm tài liệu"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
 
-          {/* Icon kiem.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'kiem' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Đấu battle
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300"
-              aria-label="Đấu battle"
-              onMouseEnter={() => setHoveredIcon('kiem')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => window.open('https://fabattle.com', '_blank')}
-            >
-              <Image
-                src="/quiz/kiem.svg"
-                alt="Đấu battle"
-                width={30}
-                height={30}
-                className="w-[30px] h-[30px]"
-              />
-            </button>
-          </div>
+                
+                {/* Icon print.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'print' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      In đề
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="In đề"
+                    onMouseEnter={() => setHoveredIcon('print')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        window.print();
+                      } else {
+                        trackUpgradeOverlayShow('print_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/print.svg"
+                      alt="In đề"
+                      width={28}
+                      height={26}
+                      className="w-[28px] h-[26px]"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
 
-          {/* Icon search.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'documents' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Tìm kiếm tài liệu
-              </span>
+                {/* Icon kiem.svg */}
+                {/* <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'kiem' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-white whitespace-nowrap bg-black/80 dark:bg-black/90 py-1.5 px-3 shadow-md rounded-lg">
+                      Đấu battle
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300"
+                    aria-label="Đấu battle"
+                    onMouseEnter={() => setHoveredIcon('kiem')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => window.open('https://fabattle.com', '_blank')}
+                  >
+                    <Image
+                      src="/quiz/kiem.svg"
+                      alt="Đấu battle"
+                      width={30}
+                      height={30}
+                      className="w-[30px] h-[30px]"
+                    />
+                  </button>
+                </div> */}
+              </div>
+
+              
             )}
-            <button
-              className="p-3 transition-all duration-300 relative"
-              aria-label="Tìm kiếm tài liệu"
-              onMouseEnter={() => setHoveredIcon('documents')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                if (user?.faQuizInfo?.isPaid === true) {
-                  toggleSplitPanel('documents');
-                } else {
-                  trackUpgradeOverlayShow('documents_panel');
-                  setShowUpgradeOverlay(true);
-                }
-              }}
-            >
-              <Image
-                src="/quiz/icon search.svg"
-                alt="Tìm kiếm tài liệu"
-                width={24}
-                height={24}
-                className="w-6 h-6"
-              />
-              {user?.faQuizInfo?.isPaid !== true && (
-                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
-                  PRO
-                </span>
-              )}
-            </button>
           </div>
-        </div>
         )}
 
         {/* Button search icon khi text được highlight */}
         {selectedText && selectionPosition && !activePanel && (
           <button
-            className="text-selection-search-button fixed z-[60] p-2 rounded transition-all duration-200 hover:scale-110"
+            className="text-selection-search-button fixed z-[60] p-2 rounded-xl transition-all duration-200 bg-[#0099FF] shadow-md hover:scale-110"
             style={{
               top: `${selectionPosition.top}px`,
               left: `${selectionPosition.left}px`,
-              backgroundColor: '#0099FF1A',
             }}
             onClick={(e) => {
               e.stopPropagation();
@@ -2395,7 +2422,7 @@ const SubCategoryQuizPage: React.FC = () => {
               alt="Tìm kiếm"
               width={20}
               height={20}
-              className="w-5 h-5"
+              className="w-4 h-4 brightness-0 invert"
             />
           </button>
         )}

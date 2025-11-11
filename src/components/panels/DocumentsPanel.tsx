@@ -509,7 +509,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
     const docsToShow = contentSearchQuery.trim() ? filteredDocuments : allDocuments;
     
     return (
-      <div ref={containerRef} className="bg-white dark:bg-black flex flex-col h-full">
+      <div ref={containerRef} className="bg-gray-100/60 dark:bg-white/5 flex flex-col h-full">
         {/* Header với search bar */}
         <div className="flex items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
           {/* Back button */}
@@ -647,24 +647,44 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
 
   // Render list view
   return (
-    <div ref={containerRef} className="bg-white dark:bg-black flex flex-col h-full">
+    <div ref={containerRef} className="bg-gray-100/60 dark:bg-white/5 flex flex-col h-full">
       {/* Header của panel */}
-      <div className="flex items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
-        {/* Search input */}
-        <div className="flex-1 relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              const newValue = e.target.value;
-              setSearchQuery(newValue);
-            }}
-            placeholder="Tìm kiếm..."
-            className="w-full rounded-full bg-gray-100 dark:bg-white/5 px-8 py-3 pr-10 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-white/10 focus:border-2 focus:border-gray-300 dark:focus:border-white/20 focus:outline-none"
-            autoComplete="off"
-          />
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-            <SearchIcon />
+      <div className="flex items-center gap-4 p-4">
+        {/* Menu icon - luôn hiện */}
+        <button
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+          aria-label="Menu"
+        >
+          <svg
+            className="text-gray-700 dark:text-gray-300"
+            width="18"
+            height="14"
+            viewBox="0 0 18 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect width="18" height="4" rx="2" fill="currentColor" />
+            <rect y="10" width="12" height="4" rx="2" fill="currentColor" />
+          </svg>
+        </button>
+
+        {/* Search input - luôn hiện, nằm chính giữa */}
+        <div className="flex-1 flex justify-center">
+          <div className="relative max-w-sm w-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                setSearchQuery(newValue);
+              }}
+              placeholder="Tìm kiếm..."
+              className="w-full rounded-full bg-white dark:bg-white/5 px-8 py-4 pr-10 text-gray-900 dark:text-white placeholder:text-gray-400 focus-within:bg-white dark:focus-within:bg-white/10 border-2 border-transparent focus-within:border-2 border-white/5 focus-within:border-white/10 focus:outline-none shadow-sm focus-within:shadow-none"
+              autoComplete="off"
+            />
+            <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none">
+              <SearchIcon />
+            </div>
           </div>
         </div>
 
@@ -691,43 +711,43 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 dark:border-gray-800">
+      <div className="flex items-center gap-4 px-4 py-3">
         <button
           onClick={() => setActiveTab('sach')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+          className={`px-6 py-2 rounded-full font-medium hover:scale-105 transition-all duration-200 border-2 ${
             activeTab === 'sach'
-              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
-              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+              ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm border-transparent'
+              : 'bg-transparent dark:bg-white/5 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10'
           }`}
         >
           Sách
         </button>
         <button
           onClick={() => setActiveTab('web')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+          className={`px-6 py-2 rounded-full font-medium hover:scale-105 transition-all duration-200 border-2 ${
             activeTab === 'web'
-              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
-              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+              ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm border-transparent'
+              : 'bg-transparent dark:bg-white/5 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10'
           }`}
         >
           Web
         </button>
         <button
           onClick={() => setActiveTab('anh')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+          className={`px-6 py-2 rounded-full font-medium hover:scale-105 transition-all duration-200 border-2 ${
             activeTab === 'anh'
-              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
-              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+              ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm border-transparent'
+              : 'bg-transparent dark:bg-white/5 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10'
           }`}
         >
           Ảnh
         </button>
         <button
           onClick={() => setActiveTab('video')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+          className={`px-6 py-2 rounded-full font-medium hover:scale-105 transition-all duration-200 border-2 ${
             activeTab === 'video'
-              ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
-              : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-gray-150 dark:hover:bg-white/8'
+              ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm border-transparent'
+              : 'bg-transparent dark:bg-white/5 text-gray-500 dark:text-white/50 border-gray-200 dark:border-white/10'
           }`}
         >
           Video
@@ -765,13 +785,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                             style={{ backgroundColor: bg }}
                           >
                             <div className="flex-1 flex flex-col justify-end p-6">
-                              <h3 
-                                className="text-xl font-semibold mb-2 line-clamp-2"
-                                style={{ color: text }}
-                              >
-                                {group.bookTitle}
-                              </h3>
-                              {group.author && (
+                              {/* {group.author && (
                                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-1 line-clamp-1">
                                   {group.author}
                                 </p>
@@ -782,12 +796,19 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                                   {group.publisher && group.publishYear && <span> • </span>}
                                   {group.publishYear && <span>{group.publishYear}</span>}
                                 </p>
-                              )}
+                              )} */}
                               {group.university && (
-                                <p className="text-xs text-gray-500 dark:text-gray-500 mt-auto pt-2 border-t border-gray-200 dark:border-gray-700 line-clamp-1">
+                                <p className="line-clamp-2 flex-1 text-lg font-medium" 
+                                style={{ color: text }}>
                                   {group.university}
                                 </p>
                               )}
+                              
+                              <h2 
+                                className="text-2xl text-gray-800 dark:text-white font-semibold line-clamp-4"
+                              >
+                                {group.bookTitle}
+                              </h2>
                             </div>
                           </div>
                         );
