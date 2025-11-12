@@ -698,22 +698,34 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     presenceChannel.bind('pusher:subscription_succeeded', (members: any) => {
       const onlineUserIds = new Set<number>();
       const onlineUsersData: OnlineUser[] = [];
+      const now = Date.now();
+      const MAX_ONLINE_AGE = 5 * 60 * 1000; // 5 phút - nếu onlineSince quá cũ thì coi như không hợp lệ
       
       // members là object với key là user_id và value là user_info
       Object.keys(members.members || {}).forEach((userIdStr) => {
         const userId = parseInt(userIdStr, 10);
         if (!isNaN(userId) && userId !== user.userId) {
-          onlineUserIds.add(userId);
-          
           // Lấy thông tin đầy đủ của user từ members
           const memberInfo = members.members[userIdStr];
           if (memberInfo) {
+            // Kiểm tra onlineSince có hợp lệ không
+            const memberOnlineSince = memberInfo.onlineSince || now;
+            const age = now - memberOnlineSince;
+            
+            // Nếu onlineSince quá cũ (> 5 phút), bỏ qua user này (có thể là stale data)
+            // Hoặc reset về thời gian hiện tại nếu muốn giữ user nhưng reset timestamp
+            if (age > MAX_ONLINE_AGE) {
+              // Bỏ qua user này vì onlineSince quá cũ
+              return;
+            }
+            
+            onlineUserIds.add(userId);
             onlineUsersData.push({
               userId: userId,
               username: memberInfo.username || '',
               fullName: memberInfo.fullName || memberInfo.name || `User ${userId}`,
               avatar: memberInfo.avatar || null,
-              onlineSince: memberInfo.onlineSince || Date.now(), // Lưu timestamp khi user online
+              onlineSince: memberOnlineSince, // Giữ nguyên nếu hợp lệ
             });
           }
         }
@@ -788,10 +800,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       return;
     }
 
-    const OFFLINE_TIMEOUT = 2 * 60 * 1000; // 2 phút - giảm từ 3 phút để cleanup nhanh hơn
-    const CHECK_INTERVAL = 20 * 1000; // Check mỗi 20 giây (tăng tần suất)
+    const OFFLINE_TIMEOUT = 1 * 60 * 1000; // 1 phút - giảm để cleanup nhanh hơn
+    const CHECK_INTERVAL = 15 * 1000; // Check mỗi 15 giây (tăng tần suất hơn)
 
-    const cleanupInterval = setInterval(() => {
+    // Hàm cleanup chung để tái sử dụng
+    const performCleanup = () => {
       const now = Date.now();
       
       // Lấy danh sách members thực tế từ Pusher presence channel
@@ -821,12 +834,18 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             return false;
           }
           
-          // Xóa nếu không có onlineSince hoặc đã quá timeout
+          // Xóa nếu không có onlineSince
           if (!onlineUser.onlineSince) {
             return false;
           }
+          
+          // Xóa nếu đã quá timeout
           const timeSinceOnline = now - onlineUser.onlineSince;
-          return timeSinceOnline < OFFLINE_TIMEOUT;
+          if (timeSinceOnline >= OFFLINE_TIMEOUT) {
+            return false;
+          }
+          
+          return true;
         });
         
         // Thêm các users mới từ Pusher mà chưa có trong local state
@@ -838,13 +857,19 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           if (!isNaN(userId) && userId !== user.userId && !existingUserIds.has(userId)) {
             const memberInfo = members[userIdStr];
             if (memberInfo) {
-              newUsers.push({
-                userId: userId,
-                username: memberInfo.username || '',
-                fullName: memberInfo.fullName || memberInfo.name || `User ${userId}`,
-                avatar: memberInfo.avatar || null,
-                onlineSince: memberInfo.onlineSince || Date.now(),
-              });
+              const memberOnlineSince = memberInfo.onlineSince || Date.now();
+              const age = now - memberOnlineSince;
+              
+              // Chỉ thêm user nếu onlineSince hợp lệ (không quá cũ)
+              if (age < OFFLINE_TIMEOUT) {
+                newUsers.push({
+                  userId: userId,
+                  username: memberInfo.username || '',
+                  fullName: memberInfo.fullName || memberInfo.name || `User ${userId}`,
+                  avatar: memberInfo.avatar || null,
+                  onlineSince: memberOnlineSince,
+                });
+              }
             }
           }
         });
@@ -857,7 +882,13 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         
         return finalUsers;
       });
-    }, CHECK_INTERVAL);
+    };
+
+    // Chạy cleanup ngay lập tức khi mount để xóa users cũ
+    performCleanup();
+
+    // Sau đó chạy định kỳ
+    const cleanupInterval = setInterval(performCleanup, CHECK_INTERVAL);
 
     return () => {
       clearInterval(cleanupInterval);

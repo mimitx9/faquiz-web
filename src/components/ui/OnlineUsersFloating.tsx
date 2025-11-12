@@ -41,10 +41,28 @@ export default function OnlineUsersFloating() {
 
   // Lọc ra các user chưa bị ẩn và lấy tối đa 4 người đang online
   // Không cần bỏ user đang được chọn vì giờ có thể mở nhiều box chat cùng lúc
+  // Thêm filter để loại bỏ users có onlineSince quá cũ (> 2 phút) để đảm bảo chính xác
+  const now = Date.now();
+  const MAX_ONLINE_AGE = 2 * 60 * 1000; // 2 phút
+  
   const displayUsers = onlineUsersList
-    .filter(onlineUser => 
-      !hiddenUserIds.has(onlineUser.userId)
-    )
+    .filter(onlineUser => {
+      // Loại bỏ nếu đã bị ẩn
+      if (hiddenUserIds.has(onlineUser.userId)) {
+        return false;
+      }
+      
+      // Loại bỏ nếu onlineSince quá cũ hoặc không có
+      if (!onlineUser.onlineSince) {
+        return false;
+      }
+      const age = now - onlineUser.onlineSince;
+      if (age > MAX_ONLINE_AGE) {
+        return false;
+      }
+      
+      return true;
+    })
     .map(onlineUser => {
       const conversation = conversations.find(conv => conv.targetUserId === onlineUser.userId);
       return {
