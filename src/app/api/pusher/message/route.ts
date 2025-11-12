@@ -10,8 +10,9 @@ interface ChatMessage {
   avatar?: string;
   message: string;
   timestamp: number;
-  type: 'message' | 'icon' | 'sticker';
+  type: 'message' | 'icon' | 'sticker' | 'image';
   icon?: string;
+  image?: string; // Image URL nếu type là 'image'
 }
 
 // Khởi tạo Pusher server instance
@@ -57,81 +58,60 @@ export async function POST(request: NextRequest) {
 
     if (type === 'message') {
       // Broadcast tin nhắn mới
-      console.log('[Pusher API] Triggering message event:', {
-        channel: targetChannel,
-        from: (data as ChatMessage).userId,
-        to: targetUserId,
-        message: (data as ChatMessage).message?.substring(0, 50),
-      });
       await pusher.trigger(targetChannel, 'new-message', data as ChatMessage);
-      console.log('[Pusher API] Message event đã được trigger thành công');
       
       // Gửi notification đến notification channel của người nhận (nếu có targetUserId)
       if (targetUserId) {
         const notificationChannel = `notifications-${targetUserId}`;
-        console.log('[Pusher API] Gửi notification đến:', notificationChannel);
         await pusher.trigger(notificationChannel, 'new-message-notification', {
           fromUserId: (data as ChatMessage).userId,
           channelName: targetChannel,
           message: data as ChatMessage,
         });
-        console.log('[Pusher API] Notification đã được gửi thành công');
       }
     } else if (type === 'icon') {
       // Broadcast icon mới
-      console.log('[Pusher API] Triggering icon event:', {
-        channel: targetChannel,
-        from: (data as ChatMessage).userId,
-        to: targetUserId,
-        icon: (data as ChatMessage).icon,
-      });
       await pusher.trigger(targetChannel, 'new-icon', data as ChatMessage);
-      console.log('[Pusher API] Icon event đã được trigger thành công');
       
       // Gửi notification đến notification channel của người nhận (nếu có targetUserId)
       if (targetUserId) {
         const notificationChannel = `notifications-${targetUserId}`;
-        console.log('[Pusher API] Gửi notification đến:', notificationChannel);
         await pusher.trigger(notificationChannel, 'new-message-notification', {
           fromUserId: (data as ChatMessage).userId,
           channelName: targetChannel,
           message: data as ChatMessage,
         });
-        console.log('[Pusher API] Notification đã được gửi thành công');
       }
     } else if (type === 'sticker') {
       // Broadcast sticker mới
-      console.log('[Pusher API] Triggering sticker event:', {
-        channel: targetChannel,
-        from: (data as ChatMessage).userId,
-        to: targetUserId,
-        stickerId: (data as ChatMessage).icon,
-      });
       await pusher.trigger(targetChannel, 'new-sticker', data as ChatMessage);
-      console.log('[Pusher API] Sticker event đã được trigger thành công');
       
       // Gửi notification đến notification channel của người nhận (nếu có targetUserId)
       if (targetUserId) {
         const notificationChannel = `notifications-${targetUserId}`;
-        console.log('[Pusher API] Gửi notification đến:', notificationChannel);
         await pusher.trigger(notificationChannel, 'new-message-notification', {
           fromUserId: (data as ChatMessage).userId,
           channelName: targetChannel,
           message: data as ChatMessage,
         });
-        console.log('[Pusher API] Notification đã được gửi thành công');
+      }
+    } else if (type === 'image') {
+      // Broadcast ảnh mới
+      await pusher.trigger(targetChannel, 'new-image', data as ChatMessage);
+      
+      // Gửi notification đến notification channel của người nhận (nếu có targetUserId)
+      if (targetUserId) {
+        const notificationChannel = `notifications-${targetUserId}`;
+        await pusher.trigger(notificationChannel, 'new-message-notification', {
+          fromUserId: (data as ChatMessage).userId,
+          channelName: targetChannel,
+          message: data as ChatMessage,
+        });
       }
     } else if (type === 'typing') {
       // Broadcast typing indicator
       const typingData = data as { userId: number; isTyping: boolean };
-      console.log('[Pusher API] Triggering typing event:', {
-        channel: targetChannel,
-        from: typingData.userId,
-        to: targetUserId,
-        isTyping: typingData.isTyping,
-      });
       await pusher.trigger(targetChannel, 'typing', typingData);
-      console.log('[Pusher API] Typing event đã được trigger thành công');
     } else {
       return NextResponse.json(
         { error: 'Type không hợp lệ' },

@@ -692,8 +692,11 @@ export interface ChatMessageRequest {
     avatar: string | null;
     message: string;
     timestamp: number;
-    type: 'message' | 'icon' | 'sticker';
+    type: 'message' | 'icon' | 'sticker' | 'image';
     icon: string | null;
+    sticker?: string | null;
+    stickerCode?: string | null;
+    image?: string | null;
 }
 
 export interface ChatMessageResponse {
@@ -715,8 +718,10 @@ export interface ChatMessage {
     avatar: string | null;
     message: string;
     timestamp: number;
-    type: 'message' | 'icon' | 'sticker';
+    type: 'message' | 'icon' | 'sticker' | 'image';
     icon: string | null;
+    sticker?: string | null;
+    image?: string | null;
 }
 
 export interface GetMessagesResponse {
@@ -782,8 +787,57 @@ chatApiInstance.interceptors.request.use((config) => {
     return config;
 });
 
+// Upload Image API Types
+export interface UploadImageResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        urlFile: string;
+    };
+}
+
+// Upload Image API instance - sử dụng BASE_URL trực tiếp
+const uploadImageApiInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Accept': 'application/json',
+    },
+});
+
+// Add auth token to upload image requests
+uploadImageApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
 // Chat API Service
 export const chatApiService = {
+    // Upload ảnh
+    uploadImage: async (file: File): Promise<UploadImageResponse> => {
+        try {
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const response = await uploadImageApiInstance.post<UploadImageResponse>(
+                '/v1/file/upload-course-image',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
     // Gửi tin nhắn
     sendMessage: async (payload: ChatMessageRequest): Promise<ChatMessageResponse> => {
         try {

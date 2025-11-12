@@ -13,8 +13,10 @@ export interface ChatMessage {
   avatar?: string | null;
   message: string;
   timestamp: number;
-  type: 'message' | 'icon' | 'sticker';
-  icon?: string | null; // Emoji hoặc icon name nếu type là 'icon', hoặc sticker ID nếu type là 'sticker'
+  type: 'message' | 'icon' | 'sticker' | 'image';
+  icon?: string | null; // Emoji hoặc icon name nếu type là 'icon'
+  sticker?: string | null; // Sticker ID nếu type là 'sticker'
+  image?: string | null; // Image URL nếu type là 'image'
 }
 
 export interface ChatConversation {
@@ -40,6 +42,7 @@ export interface UseChatReturn {
   sendMessage: (message: string, targetUserId?: number) => void;
   sendIcon: (icon: string, targetUserId?: number) => void;
   sendSticker: (stickerId: string, targetUserId?: number) => void;
+  sendImage: (imageUrl: string, targetUserId?: number) => void;
   error: string | null;
   currentTargetUserId: number | null;
   setCurrentTargetUserId: (userId: number | null) => void;
@@ -193,17 +196,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     const messageKey = `${targetId}-${message.id}`;
     const alreadyProcessed = processedUnreadMessagesRef.current.has(messageKey);
     
-    console.log('[Chat] updateConversationInternal:', {
-      targetId,
-      messageUserId: message.userId,
-      messageId: message.id,
-      currentUserId: user.userId,
-      isFromNotification,
-      currentTargetId,
-      isConversationOpen,
-      alreadyProcessed,
-      openConversations: Array.from(openConversationsRef.current),
-    });
     
     setConversations((prev) => {
       const existing = prev.find((conv) => conv.targetUserId === targetId);
@@ -216,13 +208,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           processedUnreadMessagesRef.current.add(messageKey);
         }
         
-        console.log('[Chat] Cập nhật conversation:', {
-          targetId,
-          oldUnreadCount: existing.unreadCount,
-          newUnreadCount,
-          isConversationOpen,
-          alreadyProcessed,
-        });
         return prev.map((conv) =>
           conv.targetUserId === targetId
             ? {
@@ -242,12 +227,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           processedUnreadMessagesRef.current.add(messageKey);
         }
         
-        console.log('[Chat] Tạo conversation mới:', {
-          targetId,
-          newUnreadCount,
-          isConversationOpen,
-          alreadyProcessed,
-        });
         return [
           ...prev,
           {
@@ -277,22 +256,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     }
 
     // Subscribe vào private channel
-    console.log('[Chat] Đang subscribe vào channel:', channelName, {
-      currentUser: user.userId,
-      targetUser: targetUserId,
-    });
     const channel = pusherRef.current.subscribe(channelName);
     channelsRef.current.set(channelName, channel);
 
     // Lắng nghe tin nhắn mới - handler chung cho tất cả channels
     const handleNewMessage = (data: ChatMessage) => {
-      console.log('[Chat] Nhận được tin nhắn mới:', {
-        from: data.userId,
-        currentUser: user.userId,
-        channel: channelName,
-        message: data.message?.substring(0, 50),
-        currentTargetUserId,
-      });
       
       // Kiểm tra xem tin nhắn đã tồn tại chưa
       const conversationMessages = messagesByConversationRef.current.get(targetUserId) || [];
@@ -310,10 +278,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         if (currentTargetUserId === targetUserId) {
           setMessages((prev) => {
             if (prev.some((msg) => msg.id === data.id)) {
-              console.log('[Chat] Tin nhắn đã tồn tại, bỏ qua:', data.id);
               return prev;
             }
-            console.log('[Chat] Thêm tin nhắn của mình vào danh sách');
             const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
             // Lưu vào cache
             messagesByConversationRef.current.set(targetUserId, updated);
@@ -336,10 +302,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         if (currentTargetUserId === targetUserId) {
           setMessages((prev) => {
             if (prev.some((msg) => msg.id === data.id)) {
-              console.log('[Chat] Tin nhắn đã tồn tại, bỏ qua:', data.id);
               return prev;
             }
-            console.log('[Chat] Thêm tin nhắn từ user khác vào danh sách');
             const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
             // Lưu vào cache
             messagesByConversationRef.current.set(targetUserId, updated);
@@ -351,7 +315,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             return updated;
           });
         } else {
-          console.log('[Chat] Tin nhắn từ user khác nhưng không phải conversation hiện tại - đã cập nhật conversation list');
           // Vẫn lưu vào cache để khi mở conversation sẽ có tin nhắn
           if (!isDuplicate) {
             const updated = [...conversationMessages, data].sort((a, b) => a.timestamp - b.timestamp);
@@ -361,7 +324,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
               const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
               messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
             }
-            console.log('[Chat] Đã lưu tin nhắn vào cache cho conversation:', targetUserId);
           }
         }
       }
@@ -425,7 +387,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             if (prev.some((msg) => msg.id === data.id)) {
               return prev;
             }
-            console.log('[Chat] Thêm sticker của mình vào danh sách');
             const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
             // Lưu vào cache
             messagesByConversationRef.current.set(targetUserId, updated);
@@ -447,7 +408,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             if (prev.some((msg) => msg.id === data.id)) {
               return prev;
             }
-            console.log('[Chat] Thêm sticker từ user khác vào danh sách');
             const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
             // Lưu vào cache
             messagesByConversationRef.current.set(targetUserId, updated);
@@ -459,7 +419,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             return updated;
           });
         } else {
-          console.log('[Chat] Sticker từ user khác nhưng không phải conversation hiện tại - đã cập nhật conversation list');
           // Vẫn lưu vào cache để khi mở conversation sẽ có sticker
           if (!isDuplicate) {
             const updated = [...conversationMessages, data].sort((a, b) => a.timestamp - b.timestamp);
@@ -467,7 +426,60 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             // Tăng count
             const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
             messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
-            console.log('[Chat] Đã lưu sticker vào cache cho conversation:', targetUserId);
+          }
+        }
+      }
+    };
+
+    const handleNewImage = (data: ChatMessage) => {
+      const conversationMessages = messagesByConversationRef.current.get(targetUserId) || [];
+      const isDuplicate = conversationMessages.some((msg) => msg.id === data.id);
+      
+      if (data.userId === user.userId) {
+        if (currentTargetUserId === targetUserId) {
+          setMessages((prev) => {
+            if (prev.some((msg) => msg.id === data.id)) {
+              return prev;
+            }
+            const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
+            // Lưu vào cache
+            messagesByConversationRef.current.set(targetUserId, updated);
+            // Tăng count nếu ảnh mới
+            if (!isDuplicate) {
+              const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
+              messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
+            }
+            return updated;
+          });
+        } else if (!isDuplicate) {
+          const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
+          messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
+        }
+      } else {
+        updateConversationInternal(data);
+        if (currentTargetUserId === targetUserId) {
+          setMessages((prev) => {
+            if (prev.some((msg) => msg.id === data.id)) {
+              return prev;
+            }
+            const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
+            // Lưu vào cache
+            messagesByConversationRef.current.set(targetUserId, updated);
+            // Tăng count nếu ảnh mới
+            if (!isDuplicate) {
+              const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
+              messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
+            }
+            return updated;
+          });
+        } else {
+          // Vẫn lưu vào cache để khi mở conversation sẽ có ảnh
+          if (!isDuplicate) {
+            const updated = [...conversationMessages, data].sort((a, b) => a.timestamp - b.timestamp);
+            messagesByConversationRef.current.set(targetUserId, updated);
+            // Tăng count
+            const currentCount = messageCountByConversationRef.current.get(targetUserId) || 0;
+            messageCountByConversationRef.current.set(targetUserId, currentCount + 1);
           }
         }
       }
@@ -476,26 +488,17 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     channel.bind('new-message', handleNewMessage);
     channel.bind('new-icon', handleNewIcon);
     channel.bind('new-sticker', handleNewSticker);
+    channel.bind('new-image', handleNewImage);
 
     // Lắng nghe typing indicator
     const handleTyping = (data: { userId: number; isTyping: boolean }) => {
       // Chỉ xử lý nếu là typing từ user khác (không phải chính mình)
       if (data.userId === user.userId) {
-        console.log('[Chat] Bỏ qua typing event từ chính mình');
         return;
       }
       
-      console.log('[Chat] Nhận được typing event:', {
-        from: data.userId,
-        currentUser: user.userId,
-        isTyping: data.isTyping,
-        targetUserId,
-        channelName,
-      });
-      
       // Luôn cập nhật typing state cho conversation này vào ref
       typingByConversationRef.current.set(targetUserId, data.isTyping);
-      console.log('[Chat] Đã cập nhật typing state cho conversation:', targetUserId, data.isTyping);
       
       // Clear timeout cũ cho conversation này nếu có
       const existingTimeout = typingTimeoutByConversationRef.current.get(targetUserId);
@@ -507,7 +510,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Nếu đang typing, tự động tắt sau 3 giây
       if (data.isTyping) {
         const timeout = setTimeout(() => {
-          console.log('[Chat] Tự động tắt typing indicator sau 3 giây cho conversation:', targetUserId);
           typingByConversationRef.current.set(targetUserId, false);
           typingTimeoutByConversationRef.current.delete(targetUserId);
           
@@ -534,10 +536,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
     // Subscription thành công
     channel.bind('pusher:subscription_succeeded', () => {
-      console.log('[Chat] Đã subscribe thành công vào channel:', channelName, {
-        currentUser: user.userId,
-        targetUser: targetUserId,
-      });
     });
 
     // Subscription lỗi
@@ -577,7 +575,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Kiểm tra cache trước
       const cachedMessages = messagesByConversationRef.current.get(currentTargetUserId);
       if (cachedMessages && cachedMessages.length > 0 && loadedConversationsRef.current.has(currentTargetUserId)) {
-        console.log('[Chat] Load tin nhắn từ cache cho conversation:', currentTargetUserId, cachedMessages.length);
         setMessages(cachedMessages);
         return;
       }
@@ -593,7 +590,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         if (response.data?.messages) {
           const apiMessages = response.data.messages;
           const messageCount = response.data.count ?? apiMessages.length;
-          console.log('[Chat] Đã load messages từ API:', apiMessages.length, 'count:', messageCount);
           
           // Lưu vào cache
           messagesByConversationRef.current.set(currentTargetUserId, apiMessages);
@@ -648,13 +644,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       return;
     }
 
-    console.log('[Chat] Đang subscribe vào presence channel: presence-online-users');
     const presenceChannel = pusherRef.current.subscribe('presence-online-users');
     presenceChannelRef.current = presenceChannel;
 
     // Khi subscription thành công, lấy danh sách users đang online
     presenceChannel.bind('pusher:subscription_succeeded', (members: any) => {
-      console.log('[Chat] Presence subscription succeeded, online users:', members);
       const onlineUserIds = new Set<number>();
       const onlineUsersData: OnlineUser[] = [];
       
@@ -680,12 +674,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       
       setOnlineUsers(onlineUserIds);
       setOnlineUsersList(onlineUsersData);
-      console.log('[Chat] Đã cập nhật danh sách online users:', Array.from(onlineUserIds), onlineUsersData.length);
     });
 
     // Khi có user mới online
     presenceChannel.bind('pusher:member_added', (member: any) => {
-      console.log('[Chat] User online:', member);
       const userId = parseInt(member.id, 10);
       if (!isNaN(userId) && userId !== user.userId) {
         setOnlineUsers((prev) => {
@@ -710,14 +702,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             onlineSince: userInfo.onlineSince || Date.now(), // Lưu timestamp khi user online
           }];
         });
-        
-        console.log('[Chat] User đã online:', userId);
       }
     });
 
     // Khi có user offline
     presenceChannel.bind('pusher:member_removed', (member: any) => {
-      console.log('[Chat] User offline:', member);
       const userId = parseInt(member.id, 10);
       if (!isNaN(userId)) {
         setOnlineUsers((prev) => {
@@ -728,8 +717,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         
         // Xóa user khỏi danh sách
         setOnlineUsersList((prev) => prev.filter(u => u.userId !== userId));
-        
-        console.log('[Chat] User đã offline:', userId);
       }
     });
 
@@ -758,17 +745,13 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       return;
     }
 
-    console.log('[Chat] Đang subscribe vào notification channel:', notificationChannelName);
     const notificationChannel = pusherRef.current.subscribe(notificationChannelName);
     notificationChannelRef.current = notificationChannel;
     
     // Lắng nghe notification về tin nhắn mới
     const handleNotification = (data: { fromUserId: number; channelName: string; message: ChatMessage }) => {
-      console.log('[Chat] Nhận được notification về tin nhắn mới:', data);
-      
       // Tự động subscribe vào private channel nếu chưa subscribe
       if (!channelsRef.current.has(data.channelName)) {
-        console.log('[Chat] Tự động subscribe vào channel từ notification:', data.channelName);
         subscribeToChannel(data.fromUserId);
       }
       
@@ -780,7 +763,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       if (!conversationMessages.some((msg) => msg.id === data.message.id)) {
         const updatedMessages = [...conversationMessages, data.message].sort((a, b) => a.timestamp - b.timestamp);
         messagesByConversationRef.current.set(data.fromUserId, updatedMessages);
-        console.log('[Chat] Đã lưu tin nhắn từ notification vào conversation:', data.fromUserId);
       }
       
       const currentTargetId = currentTargetUserIdRef.current;
@@ -793,16 +775,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         setMessages((prev) => {
           // Tránh duplicate messages
           if (prev.some((msg) => msg.id === data.message.id)) {
-            console.log('[Chat] Tin nhắn từ notification đã tồn tại, bỏ qua:', data.message.id);
             return prev;
           }
-          console.log('[Chat] Thêm tin nhắn từ notification vào danh sách');
           return [...prev, data.message].sort((a, b) => a.timestamp - b.timestamp);
-        });
-      } else {
-        console.log('[Chat] Tin nhắn từ notification nhưng đang ở conversation khác - chỉ cập nhật conversation list', {
-          fromUserId: data.fromUserId,
-          currentTargetId,
         });
       }
     };
@@ -810,7 +785,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     notificationChannel.bind('new-message-notification', handleNotification);
     
     notificationChannel.bind('pusher:subscription_succeeded', () => {
-      console.log('[Chat] Đã subscribe thành công vào notification channel');
     });
     
     notificationChannel.bind('pusher:subscription_error', (err: any) => {
@@ -889,7 +863,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             return Array.from(merged.values());
           });
           
-          console.log('[Chat] Đã load và merge conversations từ API:', apiConversations.length);
         }
       } catch (error) {
         console.error('[Chat] Lỗi khi load conversations:', error);
@@ -923,7 +896,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       const targetId = message.userId;
       const channelName = getChatChannelName(user.userId, targetId);
       if (!channelsRef.current.has(channelName)) {
-        console.log('[Chat] Tự động subscribe vào channel khi nhận tin nhắn từ user mới:', channelName);
         subscribeToChannel(targetId);
       }
     }
@@ -971,7 +943,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          console.log('[Chat] Thêm tin nhắn của mình vào danh sách (optimistic update)');
           const updated = [...prev, messageData].sort((a, b) => a.timestamp - b.timestamp);
           // Lưu vào cache
           messagesByConversationRef.current.set(targetId, updated);
@@ -1016,8 +987,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
           messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          console.log('[Chat] Tin nhắn đã được lưu thành công:', finalMessageId);
-
           // Trigger Pusher event để người nhận nhận được tin nhắn real-time
           const token = localStorage.getItem('auth_token');
           const channelName = getChatChannelName(user.userId, targetId);
@@ -1036,7 +1005,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
                 targetUserId: targetId,
               }),
             });
-            console.log('[Chat] Pusher event đã được trigger');
           } catch (pusherError) {
             console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
             // Không throw error để không làm gián đoạn UX
@@ -1102,7 +1070,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          console.log('[Chat] Thêm icon của mình vào danh sách (optimistic update)');
           const updated = [...prev, iconData].sort((a, b) => a.timestamp - b.timestamp);
           // Lưu vào cache
           messagesByConversationRef.current.set(targetId, updated);
@@ -1146,8 +1113,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
           messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          console.log('[Chat] Icon đã được lưu thành công:', finalIconId);
-
           // Trigger Pusher event để người nhận nhận được icon real-time
           const token = localStorage.getItem('auth_token');
           const channelName = getChatChannelName(user.userId, targetId);
@@ -1166,7 +1131,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
                 targetUserId: targetId,
               }),
             });
-            console.log('[Chat] Pusher event đã được trigger cho icon');
           } catch (pusherError) {
             console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
             // Không throw error để không làm gián đoạn UX
@@ -1214,7 +1178,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         message: '',
         timestamp: Date.now(),
         type: 'sticker',
-        icon: stickerId,
+        sticker: stickerId,
+        icon: null,
       };
 
       // Tránh gửi duplicate
@@ -1231,7 +1196,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          console.log('[Chat] Thêm sticker của mình vào danh sách (optimistic update)');
           const updated = [...prev, stickerData].sort((a, b) => a.timestamp - b.timestamp);
           // Lưu vào cache
           messagesByConversationRef.current.set(targetId, updated);
@@ -1255,7 +1219,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             message: '',
             timestamp: stickerData.timestamp,
             type: 'sticker',
-            icon: stickerId,
+            icon: null,
+            sticker: stickerId,
           });
 
           const finalStickerId = response.data?.id || tempId;
@@ -1275,8 +1240,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
           messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          console.log('[Chat] Sticker đã được lưu thành công:', finalStickerId);
-
           // Trigger Pusher event để người nhận nhận được sticker real-time
           const token = localStorage.getItem('auth_token');
           const channelName = getChatChannelName(user.userId, targetId);
@@ -1295,7 +1258,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
                 targetUserId: targetId,
               }),
             });
-            console.log('[Chat] Pusher event đã được trigger cho sticker');
           } catch (pusherError) {
             console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
             // Không throw error để không làm gián đoạn UX
@@ -1320,29 +1282,154 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     [user, currentTargetUserId, updateConversationInternal]
   );
 
+  // Gửi ảnh
+  const sendImage = useCallback(
+    async (imageUrl: string, targetUserIdParam?: number) => {
+      if (!user) {
+        return;
+      }
+
+      const targetId = targetUserIdParam || currentTargetUserId;
+      if (!targetId || targetId === user.userId) {
+        setError('Vui lòng chọn người để chat');
+        return;
+      }
+
+      const tempId = `temp-${Date.now()}-${Math.random()}`;
+      const imageData: ChatMessage = {
+        id: tempId,
+        userId: user.userId,
+        username: user.username,
+        fullName: user.fullName || user.username,
+        avatar: user.avatar || null,
+        message: '',
+        timestamp: Date.now(),
+        type: 'image',
+        icon: null,
+        image: imageUrl,
+      };
+
+      // Tránh gửi duplicate
+      if (sendingMessagesRef.current.has(tempId)) {
+        return;
+      }
+      sendingMessagesRef.current.add(tempId);
+
+      // Optimistic update: thêm ảnh vào messages ngay lập tức (KHÔNG CHỜ API)
+      // Không tăng count ở đây vì sẽ tăng khi nhận được từ Pusher
+      if (currentTargetUserId === targetId) {
+        setMessages((prev) => {
+          // Tránh duplicate
+          if (prev.some((msg) => msg.id === tempId)) {
+            return prev;
+          }
+          const updated = [...prev, imageData].sort((a, b) => a.timestamp - b.timestamp);
+          // Lưu vào cache
+          messagesByConversationRef.current.set(targetId, updated);
+          return updated;
+        });
+      }
+
+      // Optimistic update: cập nhật conversation ngay lập tức (KHÔNG CHỜ API)
+      // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
+      updateConversationInternal(imageData, false, targetId);
+
+      // Kiểm tra xem imageUrl có phải là blob URL không (preview URL)
+      const isBlobUrl = imageUrl.startsWith('blob:');
+
+      // Nếu là blob URL, không gọi API sendMessage ngay
+      // Sẽ được gọi sau khi upload xong trong handleImageSelect
+      if (isBlobUrl) {
+        sendingMessagesRef.current.delete(tempId);
+        return;
+      }
+
+      // Gửi API trong background (không block UI)
+      (async () => {
+        try {
+          // Gọi API để lưu ảnh vào database
+          const response = await chatApiService.sendMessage({
+            targetUserId: targetId,
+            username: user.username,
+            fullName: user.fullName || user.username,
+            avatar: user.avatar || null,
+            message: '',
+            timestamp: imageData.timestamp,
+            type: 'image',
+            icon: null,
+            image: imageUrl,
+          });
+
+          const finalImageId = response.data?.id || tempId;
+          const finalImageData = { ...imageData, id: finalImageId };
+
+          // Cập nhật ID thật từ server (thay thế temp ID)
+          if (currentTargetUserId === targetId) {
+            setMessages((prev) => {
+              const updated = prev.map((msg) =>
+                msg.id === tempId ? finalImageData : msg
+              );
+              messagesByConversationRef.current.set(targetId, updated);
+              return updated;
+            });
+          }
+          // Tăng count khi ảnh đã được lưu thành công
+          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
+          messageCountByConversationRef.current.set(targetId, currentCount + 1);
+
+          // Trigger Pusher event để người nhận nhận được ảnh real-time
+          const token = localStorage.getItem('auth_token');
+          const channelName = getChatChannelName(user.userId, targetId);
+          
+          try {
+            await fetch('/api/pusher/message', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                type: 'image',
+                data: finalImageData,
+                channelName,
+                targetUserId: targetId,
+              }),
+            });
+          } catch (pusherError) {
+            console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
+            // Không throw error để không làm gián đoạn UX
+          }
+
+          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
+          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
+          updateConversationInternal(finalImageData, false, targetId);
+          
+          // Tự động tắt typing indicator sau khi gửi ảnh
+          if (typingSentRef.current) {
+            typingSentRef.current = false;
+          }
+        } catch (error) {
+          console.error('[Chat] Lỗi khi gửi ảnh:', error);
+          // Không rollback để giữ UX mượt mà - ảnh vẫn hiển thị
+        } finally {
+          sendingMessagesRef.current.delete(tempId);
+        }
+      })();
+    },
+    [user, currentTargetUserId, updateConversationInternal]
+  );
+
   // Hàm để thông báo typing indicator
   const notifyTyping = useCallback(
     async (typing: boolean) => {
       if (!user || !currentTargetUserId || currentTargetUserId === user.userId) {
-        console.log('[Chat] Bỏ qua notifyTyping vì không có user hoặc targetUserId:', {
-          hasUser: !!user,
-          currentTargetUserId,
-          isSelf: currentTargetUserId === user?.userId,
-        });
         return;
       }
 
       // Chỉ gửi typing event nếu trạng thái thay đổi
       if (typing === typingSentRef.current) {
-        console.log('[Chat] Bỏ qua notifyTyping vì trạng thái không thay đổi:', typing);
         return;
       }
-
-      console.log('[Chat] Gửi typing indicator:', {
-        typing,
-        from: user.userId,
-        to: currentTargetUserId,
-      });
 
       typingSentRef.current = typing;
 
@@ -1367,9 +1454,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           }),
         });
         
-        if (response.ok) {
-          console.log('[Chat] Typing indicator đã được gửi thành công');
-        } else {
+        if (!response.ok) {
           console.error('[Chat] Lỗi khi gửi typing indicator:', await response.text());
         }
       } catch (error) {
@@ -1392,13 +1477,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   // Reset typing indicator khi đổi conversation
   useEffect(() => {
     // Reset typing indicator khi đổi conversation
-    console.log('[Chat] Đổi conversation, cập nhật typing indicator:', currentTargetUserId);
-    
     // Lấy typing state từ ref cho conversation mới
     if (currentTargetUserId) {
       const typingState = typingByConversationRef.current.get(currentTargetUserId) || false;
       setIsTyping(typingState);
-      console.log('[Chat] Typing state cho conversation mới:', currentTargetUserId, typingState);
     } else {
       setIsTyping(false);
     }
@@ -1457,6 +1539,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     sendMessage,
     sendIcon,
     sendSticker,
+    sendImage,
     error,
     currentTargetUserId,
     setCurrentTargetUserId,

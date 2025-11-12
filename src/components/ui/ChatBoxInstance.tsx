@@ -9,6 +9,7 @@ import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import StickerPicker, { getStickerUrl } from './StickerPicker';
+import { chatApiService } from '@/lib/api';
 
 // Danh sách emoji icons phổ biến
 const EMOJI_ICONS = [
@@ -60,6 +61,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     sendMessage,
     sendIcon,
     sendSticker,
+    sendImage,
     error,
     getMessagesForUser,
     getTypingForUser,
@@ -110,6 +112,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const [inputMessage, setInputMessage] = useState('');
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
+  const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stickerPickerRef = useRef<HTMLDivElement>(null);
@@ -117,6 +121,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const lastTypingSentRef = useRef<boolean>(false);
   const boxChatRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Map để lưu mapping giữa blob URL và real URL (để có thể zoom ngay cả khi blob URL đã bị revoke)
+  const blobUrlToRealUrlMapRef = useRef<Map<string, string>>(new Map());
 
   // Auto scroll to bottom khi có tin nhắn mới hoặc typing indicator
   useEffect(() => {
@@ -160,6 +166,21 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       }
     };
   }, [notifyTyping]);
+
+  // Xử lý phím Escape để đóng modal zoom ảnh
+  useEffect(() => {
+    if (!zoomedImage) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomedImage(null);
+        setImageRotation(0);
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [zoomedImage]);
 
   // Xử lý focus cho boxchat
   useEffect(() => {
@@ -292,15 +313,217 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     setShowStickerPicker(false);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Hàm mở ảnh zoom và reset góc xoay
+  const handleOpenZoom = (imageUrl: string, messageId?: string) => {
+    // Nếu URL là blob URL, tìm URL thật từ nhiều nguồn
+    let finalUrl = imageUrl;
+    if (imageUrl.startsWith('blob:')) {
+      // 1. Tìm trong mapping ref trước (nhanh nhất và đáng tin cậy nhất)
+      const mappedUrl = blobUrlToRealUrlMapRef.current.get(imageUrl);
+      if (mappedUrl) {
+        finalUrl = mappedUrl;
+      } else {
+        // 2. Tìm trong local state (messages)
+        let updatedMessage = messages.find(
+          (msg) =>
+            msg.type === 'image' &&
+            (messageId ? msg.id === messageId : msg.image === imageUrl) &&
+            msg.image &&
+            !msg.image.startsWith('blob:')
+        );
+        
+        // 3. Nếu không tìm thấy trong local state, tìm trong useChat context
+        if (!updatedMessage) {
+          const currentMessages = getMessagesForUser(targetUserId);
+          updatedMessage = currentMessages.find(
+            (msg) =>
+              msg.type === 'image' &&
+              (messageId ? msg.id === messageId : msg.image === imageUrl) &&
+              msg.image &&
+              !msg.image.startsWith('blob:')
+          );
+        }
+        
+        if (updatedMessage?.image) {
+          finalUrl = updatedMessage.image;
+          // Lưu vào mapping để lần sau không cần tìm lại
+          blobUrlToRealUrlMapRef.current.set(imageUrl, finalUrl);
+        } else {
+          // 4. Nếu vẫn không tìm thấy, thử đợi một chút rồi tìm lại (có thể đang trong quá trình upload)
+          setTimeout(() => {
+            const retryMessages = getMessagesForUser(targetUserId);
+            const retryMessage = retryMessages.find(
+              (msg) =>
+                msg.type === 'image' &&
+                (messageId ? msg.id === messageId : true) &&
+                msg.image &&
+                !msg.image.startsWith('blob:') &&
+                msg.userId === user?.userId
+            );
+            if (retryMessage?.image) {
+              blobUrlToRealUrlMapRef.current.set(imageUrl, retryMessage.image);
+              setZoomedImage(retryMessage.image);
+              setImageRotation(0);
+            } else {
+              console.warn('[Chat] Không thể zoom ảnh: blob URL đã bị revoke và chưa có URL thật');
+            }
+          }, 500);
+          return; // Return sớm, sẽ set zoom sau khi tìm thấy
+        }
+      }
+    }
+    
+    setZoomedImage(finalUrl);
+    setImageRotation(0);
+  };
+
+  // Hàm xoay ảnh 90 độ
+  const handleRotateImage = () => {
+    setImageRotation((prev) => (prev + 90) % 360);
+  };
+
+  // Hàm đóng modal và reset góc xoay
+  const handleCloseZoom = () => {
+    setZoomedImage(null);
+    setImageRotation(0);
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      // TODO: Implement image upload functionality
-      // For now, just reset the input
+    if (!file || !file.type.startsWith('image/')) {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      return;
     }
+
+    // Tạo preview URL để hiển thị ngay lập tức (giống Facebook Messenger)
+    const previewUrl = URL.createObjectURL(file);
+
+    // Hiển thị ảnh ngay lập tức với temp URL
+    sendImage(previewUrl, targetUserId);
+
+    // Upload ảnh lên server trong background
+    (async () => {
+      let tempMessageId: string | null = null;
+      try {
+        // Tìm temp message ID từ messages hiện tại
+        const currentMessages = getMessagesForUser(targetUserId);
+        const tempMessage = currentMessages.find(
+          (msg) =>
+            msg.type === 'image' &&
+            msg.image === previewUrl &&
+            msg.userId === user?.userId
+        );
+        tempMessageId = tempMessage?.id || null;
+
+        const response = await chatApiService.uploadImage(file);
+        const uploadedUrl = response.data.urlFile;
+
+        // Đợi một chút để message được thêm vào state
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Gọi API sendMessage trực tiếp để lưu vào database (không qua sendImage để tránh tạo message mới)
+        if (tempMessageId && tempMessage && user) {
+          const sendResponse = await chatApiService.sendMessage({
+            targetUserId: targetUserId,
+            username: user.username,
+            fullName: user.fullName || user.username,
+            avatar: user.avatar || null,
+            message: '',
+            timestamp: tempMessage.timestamp,
+            type: 'image',
+            icon: null,
+            image: uploadedUrl,
+          });
+
+          const finalImageId = sendResponse.data?.id || tempMessageId;
+
+          // Lưu mapping blob URL -> real URL để có thể zoom ngay cả khi blob URL đã bị revoke
+          blobUrlToRealUrlMapRef.current.set(previewUrl, uploadedUrl);
+
+          // Cập nhật message với URL thật và ID mới từ server
+          setMessages((prev) => {
+            const updated = prev.map((msg) => {
+              if (
+                msg.type === 'image' &&
+                msg.image === previewUrl &&
+                msg.userId === user?.userId
+              ) {
+                return { ...msg, id: finalImageId, image: uploadedUrl };
+              }
+              return msg;
+            });
+            return updated;
+          });
+
+          // Trigger Pusher event để người nhận nhận được ảnh real-time
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            try {
+              // Tính toán channel name giống như trong useChat
+              const [minId, maxId] = [user.userId, targetUserId].sort((a, b) => a - b);
+              const channelName = `private-chat-${minId}-${maxId}`;
+              
+              await fetch('/api/pusher/message', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  type: 'image',
+                  data: {
+                    id: finalImageId,
+                    userId: user.userId,
+                    username: user.username,
+                    fullName: user.fullName || user.username,
+                    avatar: user.avatar || null,
+                    message: '',
+                    timestamp: tempMessage.timestamp,
+                    type: 'image',
+                    icon: null,
+                    image: uploadedUrl,
+                  },
+                  channelName,
+                  targetUserId: targetUserId,
+                }),
+              });
+            } catch (pusherError) {
+              console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
+            }
+          }
+        }
+
+        // Revoke preview URL sau khi đã cập nhật message (đợi lâu hơn để đảm bảo message đã được cập nhật trong cả local state và useChat context)
+        // Delay 2 giây để đảm bảo message đã được sync từ useChat context
+        setTimeout(() => {
+          // Kiểm tra xem message đã được cập nhật với URL thật chưa trước khi revoke
+          const currentMessages = getMessagesForUser(targetUserId);
+          const stillHasBlobUrl = currentMessages.some(
+            (msg) =>
+              msg.type === 'image' &&
+              msg.image === previewUrl &&
+              msg.userId === user?.userId
+          );
+          
+          // Chỉ revoke nếu không còn message nào dùng blob URL này
+          // Mapping sẽ được giữ lại để có thể zoom ngay cả sau khi revoke
+          if (!stillHasBlobUrl) {
+            URL.revokeObjectURL(previewUrl);
+            // Không xóa mapping vì có thể cần dùng để zoom sau này
+          }
+        }, 2000);
+      } catch (error) {
+        console.error('[Chat] Lỗi khi upload ảnh:', error);
+        // Giữ preview URL nếu upload thất bại
+      } finally {
+        // Reset input để có thể chọn lại cùng file
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    })();
   };
 
   const getTargetName = () => {
@@ -476,8 +699,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                 const msgOpacity = opacity;
                 
                 const isMyMessage = msg.userId === user.userId;
-                const isSticker = msg.type === 'sticker' || (msg.icon && msg.icon.includes('/') && msg.icon.includes('.webp'));
-                const isTextMessage = msg.type !== 'icon' && !isSticker;
+                const isSticker = msg.type === 'sticker' && (msg.sticker || (msg.icon && msg.icon.includes('/') && msg.icon.includes('.webp')));
+                const isImage = msg.type === 'image';
+                const isTextMessage = msg.type !== 'icon' && !isSticker && !isImage;
                 
                 // Chỉ áp dụng border radius logic cho tin nhắn text
                 let borderRadiusClasses = 'rounded-2xl'; // Mặc định cho sticker/emoji
@@ -491,12 +715,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (prevMsg.userId !== msg.userId) {
                         break;
                       }
-                      const prevIsSticker = prevMsg.type === 'sticker' || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp'));
-                      if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker)) {
-                        // Gặp sticker/emoji thì dừng lại, không tiếp tục tìm
+                      const prevIsSticker = prevMsg.type === 'sticker' && (prevMsg.sticker || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp')));
+                      const prevIsImage = prevMsg.type === 'image';
+                      if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker || prevIsImage)) {
+                        // Gặp sticker/emoji/ảnh thì dừng lại, không tiếp tục tìm
                         break;
                       }
-                      if (prevMsg.userId === msg.userId && prevMsg.type !== 'icon' && !prevIsSticker) {
+                      if (prevMsg.userId === msg.userId && prevMsg.type !== 'icon' && !prevIsSticker && !prevIsImage) {
                         return prevMsg;
                       }
                     }
@@ -509,12 +734,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (nextMsg.userId !== msg.userId) {
                         break;
                       }
-                      const nextIsSticker = nextMsg.type === 'sticker' || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp'));
-                      if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker)) {
-                        // Gặp sticker/emoji thì dừng lại, không tiếp tục tìm
+                      const nextIsSticker = nextMsg.type === 'sticker' && (nextMsg.sticker || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp')));
+                      const nextIsImage = nextMsg.type === 'image';
+                      if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker || nextIsImage)) {
+                        // Gặp sticker/emoji/ảnh thì dừng lại, không tiếp tục tìm
                         break;
                       }
-                      if (nextMsg.userId === msg.userId && nextMsg.type !== 'icon' && !nextIsSticker) {
+                      if (nextMsg.userId === msg.userId && nextMsg.type !== 'icon' && !nextIsSticker && !nextIsImage) {
                         return nextMsg;
                       }
                     }
@@ -534,12 +760,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (prevMsg.userId !== msg.userId) {
                         break;
                       }
-                      const prevIsSticker = prevMsg.type === 'sticker' || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp'));
-                      if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker)) {
-                        // Gặp sticker/emoji thì dừng lại
+                      const prevIsSticker = prevMsg.type === 'sticker' && (prevMsg.sticker || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp')));
+                      const prevIsImage = prevMsg.type === 'image';
+                      if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker || prevIsImage)) {
+                        // Gặp sticker/emoji/ảnh thì dừng lại
                         break;
                       }
-                      if (prevMsg.userId === msg.userId && prevMsg.type !== 'icon' && !prevIsSticker) {
+                      if (prevMsg.userId === msg.userId && prevMsg.type !== 'icon' && !prevIsSticker && !prevIsImage) {
                         startIndex--;
                       } else {
                         break;
@@ -553,12 +780,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (nextMsg.userId !== msg.userId) {
                         break;
                       }
-                      const nextIsSticker = nextMsg.type === 'sticker' || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp'));
-                      if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker)) {
-                        // Gặp sticker/emoji thì dừng lại
+                      const nextIsSticker = nextMsg.type === 'sticker' && (nextMsg.sticker || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp')));
+                      const nextIsImage = nextMsg.type === 'image';
+                      if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker || nextIsImage)) {
+                        // Gặp sticker/emoji/ảnh thì dừng lại
                         break;
                       }
-                      if (nextMsg.userId === msg.userId && nextMsg.type !== 'icon' && !nextIsSticker) {
+                      if (nextMsg.userId === msg.userId && nextMsg.type !== 'icon' && !nextIsSticker && !nextIsImage) {
                         endIndex++;
                       } else {
                         break;
@@ -568,9 +796,11 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                     // Đếm số lượng tin nhắn TEXT trong khoảng này
                     groupSize = 0;
                     for (let i = startIndex; i <= endIndex; i++) {
+                      const msgSticker = messages[i]?.sticker;
                       const msgIcon = messages[i]?.icon;
-                      const msgIsSticker = messages[i]?.type === 'sticker' || (msgIcon && typeof msgIcon === 'string' && msgIcon.includes('/') && msgIcon.includes('.webp'));
-                      if (messages[i]?.userId === msg.userId && messages[i]?.type !== 'icon' && !msgIsSticker) {
+                      const msgIsSticker = messages[i]?.type === 'sticker' && (msgSticker || (msgIcon && typeof msgIcon === 'string' && msgIcon.includes('/') && msgIcon.includes('.webp')));
+                      const msgIsImage = messages[i]?.type === 'image';
+                      if (messages[i]?.userId === msg.userId && messages[i]?.type !== 'icon' && !msgIsSticker && !msgIsImage) {
                         groupSize++;
                       }
                     }
@@ -650,11 +880,26 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                         isMyMessage && 'items-end'
                       )}
                     >
-                      {/* Kiểm tra sticker trước (nếu icon là đường dẫn sticker) */}
-                      {(msg.type === 'sticker' || (msg.icon && msg.icon.includes('/') && msg.icon.includes('.webp'))) && msg.icon ? (
+                      {/* Kiểm tra ảnh trước */}
+                      {msg.type === 'image' && msg.image ? (
+                        <div 
+                          className="relative rounded-2xl overflow-hidden max-w-[200px] cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleOpenZoom(msg.image!, msg.id)}
+                        >
+                          <Image
+                            src={msg.image}
+                            alt="Ảnh"
+                            width={200}
+                            height={200}
+                            className="w-full h-auto object-contain"
+                            style={{ width: 'auto', height: 'auto' }}
+                            unoptimized
+                          />
+                        </div>
+                      ) : msg.type === 'sticker' && (msg.sticker || msg.icon) ? (
                         <div className="relative">
                           <Image
-                            src={getStickerUrl(msg.icon)}
+                            src={getStickerUrl(msg.sticker || msg.icon || '')}
                             alt="Sticker"
                             width={120}
                             height={120}
@@ -809,6 +1054,85 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           </div>
         </div>
       </div>
+
+      {/* Modal zoom ảnh */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 dark:bg-opacity-95 z-[100] flex items-center justify-center p-4"
+          onClick={handleCloseZoom}
+        >
+          <div
+            className="relative w-full h-full max-w-7xl max-h-[90vh] flex flex-col items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                transform: `rotate(${imageRotation}deg)`,
+                transition: 'transform 0.3s ease-in-out',
+              }}
+              className="relative w-full h-full flex items-center justify-center"
+            >
+              <Image
+                src={zoomedImage}
+                alt="Ảnh phóng to"
+                fill
+                className="object-contain"
+                quality={100}
+                sizes="100vw"
+                unoptimized
+              />
+            </div>
+            {/* Container các nút điều khiển ở phía dưới */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 z-[101]">
+              {/* Nút xoay ảnh */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRotateImage();
+                }}
+                className="text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full p-3"
+                aria-label="Xoay ảnh"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </button>
+              {/* Nút đóng */}
+              <button
+                onClick={handleCloseZoom}
+                className="text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 rounded-full p-3"
+                aria-label="Đóng"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -84,7 +84,6 @@ export default function OnlineUsersFloating() {
   const handleAvatarClick = (userId: number, e?: React.MouseEvent) => {
     e?.stopPropagation();
     e?.preventDefault();
-    console.log('[OnlineUsersFloating] Click avatar:', userId);
     // Mở ChatBox với user này (có thể mở tối đa 3 box)
     openChat(userId);
   };
