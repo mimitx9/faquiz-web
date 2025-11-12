@@ -35,7 +35,7 @@ const UpgradeOverlay: React.FC<UpgradeOverlayProps> = ({ isOpen, onClose }) => {
       try {
         const BASE_URL = process.env.NODE_ENV === 'production' 
           ? 'https://api.facourse.com/fai' 
-          : 'http://localhost:7071/fai';
+          : 'https://api.facourse.com/fai';
         
         const res = await fetch(
           `${BASE_URL}/faquiz/v1/remote-config/choose-purchase-package`,

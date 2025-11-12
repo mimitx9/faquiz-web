@@ -83,12 +83,12 @@ faquiz-web/
 
 API endpoints được cấu hình trong `src/lib/api.ts`:
 
-- Development: `http://localhost:7071/fai`
+- Development: `https://api.facourse.com/fai`
 - Production: `https://api.facourse.com/fai`
 
 ## Lưu ý
 
-- Backend API cần chạy ở `http://localhost:7071/fai` khi development
+- Backend API cần chạy ở `https://api.facourse.com/fai` khi development
 - Đảm bảo backend có các endpoints:
   - `/v1/quiz-web/new-quizzes` - Lấy danh sách đề mới
   - `/v1/quiz-web/new-subjects` - Lấy danh sách môn mới
