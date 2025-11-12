@@ -8,29 +8,21 @@ import { track } from '@vercel/analytics';
 // Event types
 export type AnalyticsEvent =
   // Homepage events
-  | 'homepage_search'
   | 'homepage_search_enter'
   | 'homepage_search_suggestion_click'
   | 'homepage_category_click'
-  | 'homepage_subcategory_click'
   | 'homepage_subtitle_filter_click'
-  | 'homepage_subtitle_filter_remove'
   | 'homepage_banner_click'
   
   // Quiz events
   | 'quiz_start'
-  | 'quiz_question_answer'
-  | 'quiz_question_essay_submit'
-  | 'quiz_submit'
   | 'quiz_retry'
-  | 'quiz_timer_expired'
   | 'quiz_panel_star_open'
   | 'quiz_panel_print_open'
   | 'quiz_panel_3d_open'
   | 'quiz_panel_kiem_open'
   | 'quiz_panel_fix_error_open'
   | 'quiz_panel_documents_open'
-  | 'quiz_panel_close'
   | 'quiz_image_zoom'
   | 'quiz_fix_error_submit'
   | 'quiz_text_highlight'
@@ -134,13 +126,6 @@ export function trackEvent(event: AnalyticsEvent, properties?: AnalyticsProperti
  */
 
 // Homepage tracking
-export const trackHomepageSearch = (query: string, type: 'code' | 'title' = 'title') => {
-  trackEvent('homepage_search', {
-    search_query: query,
-    search_type: type,
-  });
-};
-
 export const trackHomepageSearchEnter = (query: string) => {
   trackEvent('homepage_search_enter', {
     search_query: query,
@@ -167,32 +152,10 @@ export const trackHomepageCategoryClick = (
   });
 };
 
-export const trackHomepageSubcategoryClick = (
-  subcategoryCode: string,
-  subcategoryTitle: string,
-  subcategoryId: number,
-  categoryCode?: string,
-  categoryTitle?: string,
-  isPayment?: boolean
-) => {
-  trackEvent('homepage_subcategory_click', {
-    subcategory_code: subcategoryCode,
-    subcategory_title: subcategoryTitle,
-    subcategory_id: subcategoryId,
-    category_code: categoryCode,
-    category_title: categoryTitle,
-    is_paid: isPayment,
-  });
-};
-
 export const trackHomepageSubtitleFilter = (subtitle: string) => {
   trackEvent('homepage_subtitle_filter_click', {
     subtitle_filter: subtitle,
   });
-};
-
-export const trackHomepageSubtitleFilterRemove = () => {
-  trackEvent('homepage_subtitle_filter_remove');
 };
 
 export const trackHomepageBannerClick = (bannerId: string, bannerTitle: string) => {
@@ -219,72 +182,12 @@ export const trackQuizStart = (
   });
 };
 
-export const trackQuizQuestionAnswer = (
-  questionId: number,
-  questionIndex: number,
-  isCorrect: boolean,
-  categoryCode?: string,
-  subcategoryCode?: string
-) => {
-  trackEvent('quiz_question_answer', {
-    question_id: questionId,
-    question_index: questionIndex,
-    is_correct: isCorrect,
-    category_code: categoryCode,
-    subcategory_code: subcategoryCode,
-  });
-};
-
-export const trackQuizQuestionEssaySubmit = (
-  questionId: number,
-  questionIndex: number,
-  isCorrect: boolean,
-  categoryCode?: string,
-  subcategoryCode?: string
-) => {
-  trackEvent('quiz_question_essay_submit', {
-    question_id: questionId,
-    question_index: questionIndex,
-    is_correct: isCorrect,
-    category_code: categoryCode,
-    subcategory_code: subcategoryCode,
-  });
-};
-
-export const trackQuizSubmit = (
-  totalQuestions: number,
-  correctAnswers: number,
-  timeSpent: number,
-  categoryCode: string,
-  subcategoryCode: string
-) => {
-  trackEvent('quiz_submit', {
-    total_questions: totalQuestions,
-    correct_answers: correctAnswers,
-    time_spent: timeSpent,
-    category_code: categoryCode,
-    subcategory_code: subcategoryCode,
-  });
-};
-
 export const trackQuizRetry = (
   categoryCode: string,
   subcategoryCode: string,
   totalQuestions: number
 ) => {
   trackEvent('quiz_retry', {
-    category_code: categoryCode,
-    subcategory_code: subcategoryCode,
-    total_questions: totalQuestions,
-  });
-};
-
-export const trackQuizTimerExpired = (
-  categoryCode: string,
-  subcategoryCode: string,
-  totalQuestions: number
-) => {
-  trackEvent('quiz_timer_expired', {
     category_code: categoryCode,
     subcategory_code: subcategoryCode,
     total_questions: totalQuestions,
@@ -300,12 +203,6 @@ export const trackQuizPanelOpen = (
     panel_type: panelType,
     category_code: categoryCode,
     subcategory_code: subcategoryCode,
-  });
-};
-
-export const trackQuizPanelClose = (panelType: 'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents') => {
-  trackEvent('quiz_panel_close', {
-    panel_type: panelType,
   });
 };
 

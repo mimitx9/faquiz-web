@@ -21,13 +21,8 @@ import { createTitleSlug } from '@/lib/utils';
 import ProgressBar from '@/components/ui/ProgressBar';
 import {
   trackQuizStart,
-  trackQuizQuestionAnswer,
-  trackQuizQuestionEssaySubmit,
-  trackQuizSubmit,
   trackQuizRetry,
-  trackQuizTimerExpired,
   trackQuizPanelOpen,
-  trackQuizPanelClose,
   trackQuizImageZoom,
   trackQuizFixErrorSubmit,
   trackQuizTextHighlight,
@@ -937,16 +932,6 @@ const SubCategoryQuizPage: React.FC = () => {
         const isCorrect = isAnswerCorrect(question, newSet);
         const message = getRandomMessage(isCorrect);
         setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
-        
-        // Track answer event
-        const questionIndex = questions.findIndex(q => q.questionId === questionId);
-        trackQuizQuestionAnswer(
-          questionId,
-          questionIndex >= 0 ? questionIndex : 0,
-          isCorrect,
-          category?.code,
-          subCategory?.code
-        );
       }
       
       return { ...prev, [questionId]: newSet };
@@ -996,16 +981,6 @@ const SubCategoryQuizPage: React.FC = () => {
           const message = getRandomMessage(data.isCorrect);
           setQuestionMessages(prev => ({ ...prev, [questionId]: message }));
         }
-        
-        // Track essay submit event
-        const questionIndex = questions.findIndex(q => q.questionId === questionId);
-        trackQuizQuestionEssaySubmit(
-          questionId,
-          questionIndex >= 0 ? questionIndex : 0,
-          data.isCorrect,
-          category?.code,
-          subCategory?.code
-        );
       }
     } catch (error) {
       // Silent fail
@@ -1067,20 +1042,15 @@ const SubCategoryQuizPage: React.FC = () => {
         setInitialStarMessage(null);
       }
       
-      // Track panel open/close
+      // Track panel open
       if (newPanel) {
         trackQuizPanelOpen(newPanel, category?.code, subCategory?.code);
-      } else {
-        trackQuizPanelClose(panelType);
       }
       
       // Tự động collapse sidebar khi mở panel (set ngay lập tức)
       setIsSidebarCollapsed(true);
     } else {
       // Nếu không có panelType (đóng từ nút X), đóng panel
-      if (activePanel) {
-        trackQuizPanelClose(activePanel);
-      }
       setActivePanel(null);
       setFixErrorQuestion(null);
       setInitialStarMessage(null);
@@ -1326,16 +1296,7 @@ const SubCategoryQuizPage: React.FC = () => {
     const correctAnswers = calculateCorrectAnswers();
     const quizDuration = questions.length * 15; // Số câu x 15 giây (giống như trong QuizHeader)
     
-    // Track submit event
     if (category?.code && subCategory?.code) {
-      trackQuizSubmit(
-        questions.length,
-        correctAnswers,
-        finalTimeSpent,
-        category.code,
-        subCategory.code
-      );
-      
       faquizApiService.submitQuiz({
         totalCorrect: correctAnswers,
         totalQuestion: questions.length,
@@ -1371,11 +1332,6 @@ const SubCategoryQuizPage: React.FC = () => {
 
   // Handler khi hết giờ đếm ngược
   const handleTimerExpired = () => {
-    // Track timer expired event
-    if (category?.code && subCategory?.code) {
-      trackQuizTimerExpired(category.code, subCategory.code, questions.length);
-    }
-    
     if (!isSubmitted) {
       handleSubmit();
     }
