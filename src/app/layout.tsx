@@ -4,6 +4,8 @@ import '../app/globals.css';
 import { AuthProvider } from '@/hooks/useAuth';
 import { ThemeProvider } from '@/hooks/useTheme';
 import { Analytics } from '@vercel/analytics/next';
+import ChatProvider from '@/components/chat/ChatProvider';
+import OnlineUsersFloating from '@/components/ui/OnlineUsersFloating';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -25,7 +27,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <ChatProvider>
+              {children}
+              <OnlineUsersFloating />
+            </ChatProvider>
           </AuthProvider>
         </ThemeProvider>
         <Analytics />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
@@ -13,6 +13,15 @@ interface AvatarProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
+
+// Danh sách các hostname được phép (từ next.config.js)
+const ALLOWED_HOSTNAMES = [
+  'drive.google.com',
+  '*.googleusercontent.com',
+  'storage.googleapis.com',
+  'facourse.com',
+  '*.cloudfront.net',
+];
 
 export default function Avatar({ 
   src, 
@@ -53,11 +62,37 @@ export default function Avatar({
       .slice(0, 2);
   };
 
+  // Kiểm tra xem URL có hợp lệ và được phép không
+  const isValidImageUrl = useMemo(() => {
+    if (!src) return false;
+    
+    try {
+      const url = new URL(src);
+      const hostname = url.hostname.toLowerCase();
+      
+      // Kiểm tra xem hostname có trong danh sách được phép không
+      const isAllowed = ALLOWED_HOSTNAMES.some(allowed => {
+        if (allowed.startsWith('*.')) {
+          // Xử lý wildcard như *.googleusercontent.com hoặc *.cloudfront.net
+          const domain = allowed.slice(2); // Bỏ '*.'
+          return hostname === domain || hostname.endsWith('.' + domain);
+        }
+        // Match chính xác hoặc subdomain
+        return hostname === allowed || hostname.endsWith('.' + allowed);
+      });
+      
+      return isAllowed;
+    } catch (error) {
+      // URL không hợp lệ
+      return false;
+    }
+  }, [src]);
+
   const sizeClasses = getSizeClasses();
   const initials = name ? getInitials(name) : 'U';
 
-  // Nếu có src và chưa lỗi thì hiển thị image
-  if (src && !imageError) {
+  // Chỉ hiển thị image nếu URL hợp lệ, được phép và chưa có lỗi
+  if (src && isValidImageUrl && !imageError) {
     const sizeMap = {
       sm: 24,
       md: 32,

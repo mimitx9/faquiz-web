@@ -10,12 +10,12 @@ import {
     QuestionsBySubCategoryResponse,
     SlideFastResponse
 } from '../types';
-import { handle401Error } from './authUtils';
+import {handle401Error} from './authUtils';
 
 // Base URL configuration
-const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.facourse.com/fai' 
-  : 'http://localhost:7071/fai';
+const BASE_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.facourse.com/fai'
+    : 'http://localhost:7071/fai';
 
 const API_BASE_URL = `${BASE_URL}/api`;
 const AUTH_API_BASE_URL = `${BASE_URL}/v1/account`;
@@ -333,7 +333,7 @@ export const authApiService = {
 
 // Quiz Battle API
 export const quizBattleApiService = {
-    
+
     getQuestionsBySubCategory: async (payload: QuestionsBySubCategoryRequest): Promise<QuestionsBySubCategoryResponse> => {
         try {
             const response = await quizBattleApiInstance.post<QuestionsBySubCategoryResponse>('/questions/by-sub-category', payload);
@@ -451,7 +451,7 @@ export const faquizApiService = {
     }): Promise<DocumentsWithContentResponse> => {
         try {
             const queryParams = new URLSearchParams();
-            
+
             // Chỉ thêm params nếu có giá trị hợp lệ (không null, undefined, hoặc empty string)
             if (params.bookTitles && params.bookTitles.trim()) {
                 queryParams.append('bookTitles', params.bookTitles.trim());
@@ -465,7 +465,7 @@ export const faquizApiService = {
             if (params.publishYears && params.publishYears.trim()) {
                 queryParams.append('publishYears', params.publishYears.trim());
             }
-            
+
             const response = await faquizApiInstance.get<DocumentsWithContentResponse>(`/documents/with-content?${queryParams.toString()}`);
             return response.data;
         } catch (error: any) {
@@ -581,15 +581,15 @@ export const fixQuizApiService = {
     requestFixQuiz: async (payload: FixQuizRequestPayload, imageFile?: File): Promise<void> => {
         try {
             const formData = new FormData();
-            
+
             // Thêm payload vào formData
             formData.append('payload', JSON.stringify(payload));
-            
+
             // Thêm ảnh nếu có
             if (imageFile) {
                 formData.append('option_img', imageFile);
             }
-            
+
             await fixQuizApiInstance.post('/faquiz/request-fix-quiz', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -666,16 +666,185 @@ export const googleSearchApiService = {
             const queryParams = new URLSearchParams();
             queryParams.append('keyword', params.keyword);
             queryParams.append('type', params.type);
-            
+
             if (params.pageOffset !== undefined) {
                 queryParams.append('pageOffset', params.pageOffset.toString());
             }
             if (params.pageSize !== undefined) {
                 queryParams.append('pageSize', params.pageSize.toString());
             }
-            
+
             const response = await googleSearchApiInstance.get<GoogleSearchResponse>(
                 `/faquiz/google-search?${queryParams.toString()}`
+            );
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+};
+
+// Chat API Types
+export interface ChatMessageRequest {
+    targetUserId: number;
+    username: string;
+    fullName: string;
+    avatar: string | null;
+    message: string;
+    timestamp: number;
+    type: 'message' | 'icon' | 'sticker';
+    icon: string | null;
+}
+
+export interface ChatMessageResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        id: string;
+        saved: boolean;
+    };
+}
+
+export interface ChatMessage {
+    id: string;
+    userId: number;
+    username: string;
+    fullName: string;
+    avatar: string | null;
+    message: string;
+    timestamp: number;
+    type: 'message' | 'icon' | 'sticker';
+    icon: string | null;
+}
+
+export interface GetMessagesResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        messages: ChatMessage[];
+        hasMore: boolean;
+        count: number;
+    };
+}
+
+export interface ChatConversation {
+    targetUserId: number;
+    targetUsername: string;
+    targetFullName: string;
+    targetAvatar: string | null;
+    lastMessage: ChatMessage | null;
+    unreadCount: number;
+}
+
+export interface GetConversationsResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        conversations: ChatConversation[];
+    };
+}
+
+export interface MarkReadRequest {
+    targetUserId: number;
+}
+
+export interface MarkReadResponse {
+    meta: {
+        code: number;
+        message: string;
+    };
+    data: {
+        marked: boolean;
+    };
+}
+
+// Chat API instance - sử dụng BASE_URL trực tiếp
+const chatApiInstance = axios.create({
+    baseURL: BASE_URL,
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+});
+
+// Add auth token to Chat API requests
+chatApiInstance.interceptors.request.use((config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+// Chat API Service
+export const chatApiService = {
+    // Gửi tin nhắn
+    sendMessage: async (payload: ChatMessageRequest): Promise<ChatMessageResponse> => {
+        try {
+            const response = await chatApiInstance.post<ChatMessageResponse>(
+                '/faquiz/v1/chat/messages',
+                payload
+            );
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
+    // Lấy danh sách tin nhắn
+    getMessages: async (params: {
+        targetUserId: number;
+        limit?: number;
+    }): Promise<GetMessagesResponse> => {
+        try {
+            const queryParams = new URLSearchParams();
+            queryParams.append('targetUserId', params.targetUserId.toString());
+            if (params.limit !== undefined) {
+                queryParams.append('limit', params.limit.toString());
+            }
+
+            const response = await chatApiInstance.get<GetMessagesResponse>(
+                `/faquiz/v1/chat/messages?${queryParams.toString()}`
+            );
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
+    // Lấy danh sách conversations
+    getConversations: async (params?: {
+        limit?: number;
+    }): Promise<GetConversationsResponse> => {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params?.limit !== undefined) {
+                queryParams.append('limit', params.limit.toString());
+            }
+
+            const url = queryParams.toString()
+                ? `/faquiz/v1/chat/conversations?${queryParams.toString()}`
+                : '/faquiz/v1/chat/conversations';
+
+            const response = await chatApiInstance.get<GetConversationsResponse>(url);
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
+    // Đánh dấu đã đọc
+    markAsRead: async (payload: MarkReadRequest): Promise<MarkReadResponse> => {
+        try {
+            const response = await chatApiInstance.post<MarkReadResponse>(
+                '/faquiz/v1/chat/messages/read',
+                payload
             );
             return response.data;
         } catch (error: any) {
