@@ -782,20 +782,46 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
   // Periodic check để tự động xóa users đã offline lâu (cleanup stale users)
   // Pusher có thể không detect disconnect ngay lập tức, nên cần cleanup thủ công
+  // Đồng bộ với danh sách members thực tế từ Pusher để đảm bảo chính xác
   useEffect(() => {
-    if (!isConnected || !user) {
+    if (!isConnected || !user || !presenceChannelRef.current) {
       return;
     }
 
-    const OFFLINE_TIMEOUT = 3 * 60 * 1000; // 3 phút - nếu user không hoạt động quá 3 phút thì coi như offline
-    const CHECK_INTERVAL = 30 * 1000; // Check mỗi 30 giây
+    const OFFLINE_TIMEOUT = 2 * 60 * 1000; // 2 phút - giảm từ 3 phút để cleanup nhanh hơn
+    const CHECK_INTERVAL = 20 * 1000; // Check mỗi 20 giây (tăng tần suất)
 
     const cleanupInterval = setInterval(() => {
       const now = Date.now();
       
+      // Lấy danh sách members thực tế từ Pusher presence channel
+      const presenceChannel = presenceChannelRef.current;
+      if (!presenceChannel || !presenceChannel.members) {
+        return;
+      }
+      
+      // Lấy members từ presence channel (Pusher API)
+      // presenceChannel.members.members chứa object với key là user_id và value là user_info
+      const members = presenceChannel.members.members || {};
+      const actualMemberIds = new Set<number>();
+      
+      // Lấy danh sách user IDs thực tế đang online từ Pusher
+      Object.keys(members).forEach((userIdStr) => {
+        const userId = parseInt(userIdStr, 10);
+        if (!isNaN(userId) && userId !== user.userId) {
+          actualMemberIds.add(userId);
+        }
+      });
+      
+      // Cleanup: xóa users không còn trong Pusher members list hoặc đã quá timeout
       setOnlineUsersList((prev) => {
         const validUsers = prev.filter((onlineUser) => {
-          // Nếu không có onlineSince hoặc đã quá timeout, xóa khỏi danh sách
+          // Xóa nếu không còn trong Pusher members list
+          if (!actualMemberIds.has(onlineUser.userId)) {
+            return false;
+          }
+          
+          // Xóa nếu không có onlineSince hoặc đã quá timeout
           if (!onlineUser.onlineSince) {
             return false;
           }
@@ -803,13 +829,33 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           return timeSinceOnline < OFFLINE_TIMEOUT;
         });
         
-        // Nếu có user bị xóa, cập nhật onlineUsers Set
-        if (validUsers.length !== prev.length) {
-          const validUserIds = new Set(validUsers.map(u => u.userId));
-          setOnlineUsers(validUserIds);
-        }
+        // Thêm các users mới từ Pusher mà chưa có trong local state
+        const existingUserIds = new Set(validUsers.map(u => u.userId));
+        const newUsers: OnlineUser[] = [];
         
-        return validUsers;
+        Object.keys(members).forEach((userIdStr) => {
+          const userId = parseInt(userIdStr, 10);
+          if (!isNaN(userId) && userId !== user.userId && !existingUserIds.has(userId)) {
+            const memberInfo = members[userIdStr];
+            if (memberInfo) {
+              newUsers.push({
+                userId: userId,
+                username: memberInfo.username || '',
+                fullName: memberInfo.fullName || memberInfo.name || `User ${userId}`,
+                avatar: memberInfo.avatar || null,
+                onlineSince: memberInfo.onlineSince || Date.now(),
+              });
+            }
+          }
+        });
+        
+        const finalUsers = [...validUsers, ...newUsers];
+        
+        // Cập nhật onlineUsers Set
+        const validUserIds = new Set(finalUsers.map(u => u.userId));
+        setOnlineUsers(validUserIds);
+        
+        return finalUsers;
       });
     }, CHECK_INTERVAL);
 
