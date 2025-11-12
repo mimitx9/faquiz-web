@@ -98,6 +98,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   const typingByConversationRef = useRef<Map<number, boolean>>(new Map());
   // Lưu danh sách các conversation đang mở (để kiểm tra unread count)
   const openConversationsRef = useRef<Set<number>>(new Set());
+  // Lưu các message ID đã được xử lý để tăng unreadCount (tránh tăng trùng khi nhận từ nhiều nguồn)
+  const processedUnreadMessagesRef = useRef<Set<string>>(new Set());
 
   // Khởi tạo Pusher connection
   useEffect(() => {
@@ -166,38 +168,86 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   }, [user, isInitialized]);
 
   // Helper function để cập nhật conversation (khai báo trước để tránh circular dependency)
-  const updateConversationInternal = useCallback((message: ChatMessage, isFromNotification: boolean = false) => {
+  const updateConversationInternal = useCallback((message: ChatMessage, isFromNotification: boolean = false, explicitTargetId?: number) => {
     if (!user) return;
 
-    // Xác định targetUserId: nếu message từ user hiện tại thì target là currentTargetUserId, ngược lại là userId của message
-    const targetId = message.userId === user.userId 
-      ? (currentTargetUserId || message.userId) 
-      : message.userId;
+    // Xác định targetUserId: 
+    // - Nếu có explicitTargetId (khi gửi tin nhắn), dùng nó
+    // - Nếu message từ user hiện tại thì target là currentTargetUserId, ngược lại là userId của message
+    const targetId = explicitTargetId !== undefined
+      ? explicitTargetId
+      : (message.userId === user.userId 
+          ? (currentTargetUserIdRef.current || message.userId) 
+          : message.userId);
     
     // Bỏ qua nếu target là chính mình
     if (targetId === user.userId) return;
     
     // Kiểm tra xem conversation này có đang mở không
-    const isConversationOpen = openConversationsRef.current.has(targetId) || currentTargetUserId === targetId;
+    // Dùng ref để luôn có giá trị mới nhất, đặc biệt quan trọng khi nhận notification
+    const currentTargetId = currentTargetUserIdRef.current;
+    const isConversationOpen = openConversationsRef.current.has(targetId) || currentTargetId === targetId;
+    
+    // Kiểm tra xem message này đã được xử lý để tăng unreadCount chưa
+    // Tránh tăng trùng khi nhận từ nhiều nguồn (channel + notification)
+    const messageKey = `${targetId}-${message.id}`;
+    const alreadyProcessed = processedUnreadMessagesRef.current.has(messageKey);
+    
+    console.log('[Chat] updateConversationInternal:', {
+      targetId,
+      messageUserId: message.userId,
+      messageId: message.id,
+      currentUserId: user.userId,
+      isFromNotification,
+      currentTargetId,
+      isConversationOpen,
+      alreadyProcessed,
+      openConversations: Array.from(openConversationsRef.current),
+    });
     
     setConversations((prev) => {
       const existing = prev.find((conv) => conv.targetUserId === targetId);
       if (existing) {
+        // Chỉ tăng unreadCount nếu conversation chưa mở và message chưa được xử lý
+        let newUnreadCount = existing.unreadCount;
+        if (!isConversationOpen && !alreadyProcessed) {
+          newUnreadCount = existing.unreadCount + 1;
+          // Đánh dấu message đã được xử lý
+          processedUnreadMessagesRef.current.add(messageKey);
+        }
+        
+        console.log('[Chat] Cập nhật conversation:', {
+          targetId,
+          oldUnreadCount: existing.unreadCount,
+          newUnreadCount,
+          isConversationOpen,
+          alreadyProcessed,
+        });
         return prev.map((conv) =>
           conv.targetUserId === targetId
             ? {
                 ...conv,
                 lastMessage: message,
-                unreadCount:
-                  isConversationOpen
-                    ? 0
-                    : conv.unreadCount + 1,
+                unreadCount: newUnreadCount,
               }
             : conv
         );
       } else {
         // Tạo conversation mới - cần lấy thông tin target user
         // Tạm thời dùng thông tin từ message, sau này có thể fetch từ API
+        let newUnreadCount = 0;
+        if (!isConversationOpen && !alreadyProcessed) {
+          newUnreadCount = 1;
+          // Đánh dấu message đã được xử lý
+          processedUnreadMessagesRef.current.add(messageKey);
+        }
+        
+        console.log('[Chat] Tạo conversation mới:', {
+          targetId,
+          newUnreadCount,
+          isConversationOpen,
+          alreadyProcessed,
+        });
         return [
           ...prev,
           {
@@ -206,12 +256,12 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             targetFullName: message.userId === user.userId ? `User ${targetId}` : message.fullName,
             targetAvatar: message.userId === user.userId ? undefined : message.avatar,
             lastMessage: message,
-            unreadCount: isConversationOpen ? 0 : 1,
+            unreadCount: newUnreadCount,
           },
         ];
       }
     });
-  }, [user, currentTargetUserId]);
+  }, [user]);
 
   // Helper function để subscribe vào một channel
   const subscribeToChannel = useCallback((targetUserId: number) => {
@@ -733,9 +783,13 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         console.log('[Chat] Đã lưu tin nhắn từ notification vào conversation:', data.fromUserId);
       }
       
-      // Thêm tin nhắn vào messages ngay lập tức (từ notification)
-      // Nếu đang ở đúng conversation hoặc chưa có conversation nào được chọn
-      if (currentTargetUserId === data.fromUserId || !currentTargetUserId) {
+      const currentTargetId = currentTargetUserIdRef.current;
+      const isConversationActive =
+        currentTargetId === data.fromUserId ||
+        openConversationsRef.current.has(data.fromUserId);
+
+      // Thêm tin nhắn vào messages ngay lập tức nếu conversation đang được mở
+      if (isConversationActive) {
         setMessages((prev) => {
           // Tránh duplicate messages
           if (prev.some((msg) => msg.id === data.message.id)) {
@@ -745,14 +799,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           console.log('[Chat] Thêm tin nhắn từ notification vào danh sách');
           return [...prev, data.message].sort((a, b) => a.timestamp - b.timestamp);
         });
-        
-        // Tự động mở conversation nếu chưa có conversation nào được chọn
-        if (!currentTargetUserId) {
-          console.log('[Chat] Tự động mở conversation với user:', data.fromUserId);
-          setCurrentTargetUserId(data.fromUserId);
-        }
       } else {
-        console.log('[Chat] Tin nhắn từ notification nhưng đang ở conversation khác - chỉ cập nhật conversation list');
+        console.log('[Chat] Tin nhắn từ notification nhưng đang ở conversation khác - chỉ cập nhật conversation list', {
+          fromUserId: data.fromUserId,
+          currentTargetId,
+        });
       }
     };
     
@@ -785,7 +836,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         setIsLoadingConversations(true);
         const response = await chatApiService.getConversations({ limit: 20 });
         if (response.data?.conversations) {
-          const conversations = response.data.conversations.map((conv) => ({
+          const apiConversations = response.data.conversations.map((conv) => ({
             ...conv,
             targetAvatar: conv.targetAvatar ?? undefined,
             lastMessage: conv.lastMessage
@@ -796,8 +847,49 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
                 }
               : undefined,
           }));
-          setConversations(conversations);
-          console.log('[Chat] Đã load conversations từ API:', conversations.length);
+          
+          // Merge với conversations hiện có để giữ lại unreadCount đã cập nhật từ real-time
+          setConversations((prev) => {
+            const merged = new Map<number, ChatConversation>();
+            
+            // Thêm conversations từ API trước
+            apiConversations.forEach((conv) => {
+              merged.set(conv.targetUserId, conv);
+            });
+            
+            // Merge với conversations hiện có, ưu tiên giữ lại unreadCount và lastMessage mới hơn
+            prev.forEach((existingConv) => {
+              const apiConv = merged.get(existingConv.targetUserId);
+              if (apiConv) {
+                // Nếu có conversation từ API, so sánh lastMessage timestamp
+                const existingLastMsgTime = existingConv.lastMessage?.timestamp || 0;
+                const apiLastMsgTime = apiConv.lastMessage?.timestamp || 0;
+                
+                // Nếu lastMessage từ state mới hơn, giữ lại unreadCount và lastMessage từ state
+                if (existingLastMsgTime > apiLastMsgTime) {
+                  merged.set(existingConv.targetUserId, {
+                    ...apiConv,
+                    lastMessage: existingConv.lastMessage,
+                    unreadCount: existingConv.unreadCount,
+                  });
+                } else {
+                  // Nếu lastMessage từ API mới hơn, nhưng vẫn giữ unreadCount từ state nếu nó lớn hơn
+                  merged.set(existingConv.targetUserId, {
+                    ...apiConv,
+                    unreadCount: Math.max(apiConv.unreadCount, existingConv.unreadCount),
+                  });
+                }
+              } else {
+                // Conversation không có trong API nhưng có trong state (có thể là conversation mới từ notification)
+                // Giữ lại conversation từ state
+                merged.set(existingConv.targetUserId, existingConv);
+              }
+            });
+            
+            return Array.from(merged.values());
+          });
+          
+          console.log('[Chat] Đã load và merge conversations từ API:', apiConversations.length);
         }
       } catch (error) {
         console.error('[Chat] Lỗi khi load conversations:', error);
@@ -887,6 +979,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         });
       }
 
+      // Optimistic update: cập nhật conversation ngay lập tức (KHÔNG CHỜ API)
+      // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
+      updateConversationInternal(messageData, false, targetId);
+
       // Gửi API trong background (không block UI)
       (async () => {
         try {
@@ -946,8 +1042,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             // Không throw error để không làm gián đoạn UX
           }
 
-          // Cập nhật conversation
-          updateConversationInternal(finalMessageData);
+          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
+          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
+          updateConversationInternal(finalMessageData, false, targetId);
           
           // Tự động tắt typing indicator sau khi gửi tin nhắn
           if (typingSentRef.current) {
@@ -1013,6 +1110,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         });
       }
 
+      // Optimistic update: cập nhật conversation ngay lập tức (KHÔNG CHỜ API)
+      // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
+      updateConversationInternal(iconData, false, targetId);
+
       // Gửi API trong background (không block UI)
       (async () => {
         try {
@@ -1071,8 +1172,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             // Không throw error để không làm gián đoạn UX
           }
 
-          // Cập nhật conversation
-          updateConversationInternal(finalIconData);
+          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
+          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
+          updateConversationInternal(finalIconData, false, targetId);
           
           // Tự động tắt typing indicator sau khi gửi icon
           if (typingSentRef.current) {
@@ -1137,6 +1239,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         });
       }
 
+      // Optimistic update: cập nhật conversation ngay lập tức (KHÔNG CHỜ API)
+      // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
+      updateConversationInternal(stickerData, false, targetId);
+
       // Gửi API trong background (không block UI)
       (async () => {
         try {
@@ -1195,8 +1301,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             // Không throw error để không làm gián đoạn UX
           }
 
-          // Cập nhật conversation
-          updateConversationInternal(finalStickerData);
+          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
+          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
+          updateConversationInternal(finalStickerData, false, targetId);
           
           // Tự động tắt typing indicator sau khi gửi sticker
           if (typingSentRef.current) {
@@ -1336,8 +1443,13 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       );
     } else {
       openConversationsRef.current.delete(userId);
+      // Nếu đóng conversation và currentTargetUserId đang trỏ đến nó, reset về null
+      // Điều này đảm bảo khi có tin nhắn mới, unreadCount sẽ được tăng đúng
+      if (currentTargetUserIdRef.current === userId) {
+        setCurrentTargetUserId(null);
+      }
     }
-  }, []);
+  }, [setCurrentTargetUserId]);
 
   return {
     messages,

@@ -45,15 +45,36 @@ export default function OnlineUsersFloating() {
     .filter(onlineUser => 
       !hiddenUserIds.has(onlineUser.userId)
     )
-    .slice(0, 4)
     .map(onlineUser => {
       const conversation = conversations.find(conv => conv.targetUserId === onlineUser.userId);
       return {
         ...onlineUser,
         unreadCount: conversation?.unreadCount || 0,
-        lastMessage: conversation?.lastMessage
+        lastMessage: conversation?.lastMessage,
+        // Thêm timestamp để sắp xếp: ưu tiên lastMessage timestamp, nếu không có thì dùng onlineSince
+        sortTimestamp: conversation?.lastMessage?.timestamp || onlineUser.onlineSince || 0
       };
-    });
+    })
+    // Sắp xếp theo thời gian tin nhắn gần nhất: tin nhắn mới nhất ở dưới cùng
+    .sort((a, b) => {
+      // Ưu tiên sắp xếp theo sortTimestamp (lastMessage timestamp hoặc onlineSince)
+      // Timestamp lớn hơn (mới hơn) sẽ ở dưới cùng
+      if (a.sortTimestamp !== b.sortTimestamp) {
+        return b.sortTimestamp - a.sortTimestamp;
+      }
+      
+      // Nếu sortTimestamp bằng nhau, ưu tiên người có lastMessage
+      if (a.lastMessage && !b.lastMessage) {
+        return -1; // a xuống dưới
+      }
+      if (!a.lastMessage && b.lastMessage) {
+        return 1; // b xuống dưới
+      }
+      
+      // Nếu cả hai đều có hoặc không có lastMessage, giữ nguyên thứ tự
+      return 0;
+    })
+    .slice(0, 4); // Lấy tối đa 4 người sau khi sắp xếp
 
   // Nếu không có ai online hoặc đã bị ẩn thì không hiển thị
   if (displayUsers.length === 0 || !isVisible) {
