@@ -66,6 +66,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     getMessagesForUser,
     getTypingForUser,
     getMessageCountForUser,
+    getHasMoreForUser,
+    isLoadingMore,
+    loadMoreMessages,
     notifyTyping,
     setCurrentTargetUserId,
     setOpenConversation,
@@ -114,20 +117,91 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const [isFocused, setIsFocused] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
+  // Sticker preview state
+  const [selectedStickers, setSelectedStickers] = useState<string[]>([]); // 4 sticker được chọn để preview
+  const [selectedStickerIndex, setSelectedStickerIndex] = useState<number>(-1); // Index của sticker được chọn
+  const [isRecording, setIsRecording] = useState(false); // Đang ghi âm
+  const [recordingTime, setRecordingTime] = useState(0); // Thời gian ghi âm (giây)
+  const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null); // Audio đã ghi
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stickerPickerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<boolean>(false);
   const boxChatRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isLoadingMoreRef = useRef<boolean>(false);
   // Map để lưu mapping giữa blob URL và real URL (để có thể zoom ngay cả khi blob URL đã bị revoke)
   const blobUrlToRealUrlMapRef = useRef<Map<string, string>>(new Map());
+  // Refs cho ghi âm
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null); // Ref cho audio element để phát lại
 
   // Auto scroll to bottom khi có tin nhắn mới hoặc typing indicator
+  // Chỉ scroll nếu không đang load more (để giữ scroll position khi load more)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+    if (!isLoadingMoreRef.current && !isLoadingMore) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isTyping, isLoadingMore]);
+
+  // Scroll detection để load more khi scroll lên
+  useEffect(() => {
+    const messagesContainer = messagesContainerRef.current;
+    if (!messagesContainer) return;
+
+    const handleScroll = () => {
+      // Kiểm tra nếu scroll gần đầu danh sách (trong vòng 100px)
+      const scrollTop = messagesContainer.scrollTop;
+      const hasMore = getHasMoreForUser(targetUserId);
+      
+      if (scrollTop < 100 && hasMore && !isLoadingMore && !isLoadingMoreRef.current) {
+        isLoadingMoreRef.current = true;
+        loadMoreMessages(targetUserId).finally(() => {
+          isLoadingMoreRef.current = false;
+        });
+      }
+    };
+
+    messagesContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      messagesContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [targetUserId, getHasMoreForUser, isLoadingMore, loadMoreMessages]);
+
+  // Giữ nguyên scroll position khi load more (prepend messages)
+  // Lưu scroll position trước khi load và restore sau khi messages được prepend
+  const scrollHeightBeforeLoadRef = useRef<number>(0);
+  const scrollTopBeforeLoadRef = useRef<number>(0);
+  
+  useEffect(() => {
+    if (isLoadingMore && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      scrollHeightBeforeLoadRef.current = container.scrollHeight;
+      scrollTopBeforeLoadRef.current = container.scrollTop;
+    }
+  }, [isLoadingMore]);
+
+  useEffect(() => {
+    // Sau khi load more xong và messages đã được cập nhật
+    if (!isLoadingMore && scrollHeightBeforeLoadRef.current > 0 && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const newScrollHeight = container.scrollHeight;
+      const heightDiff = newScrollHeight - scrollHeightBeforeLoadRef.current;
+      
+      // Restore scroll position với offset bằng height diff
+      if (heightDiff > 0) {
+        container.scrollTop = scrollTopBeforeLoadRef.current + heightDiff;
+      }
+      
+      // Reset refs
+      scrollHeightBeforeLoadRef.current = 0;
+      scrollTopBeforeLoadRef.current = 0;
+    }
+  }, [messages, isLoadingMore]);
 
   // Đóng sticker picker khi click outside
   useEffect(() => {
@@ -308,10 +382,243 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     sendIcon(emoji, targetUserId);
   };
 
+  // Hàm lấy 4 sticker từ category để preview, đảm bảo sticker được chọn nằm trong đó
+  const getPreviewStickers = (stickerId: string): string[] => {
+    // stickerId format: "category/filename" (ví dụ: "bts/10.thumb128.webp")
+    const [category] = stickerId.split('/');
+    
+    // Hardcode một số stickers cho mỗi category (giống như trong StickerPicker)
+    const stickerMap: Record<string, string[]> = {
+      bts: Array.from({ length: 20 }, (_, i) => `bts/${i + 5}.thumb128.webp`),
+      cat: Array.from({ length: 24 }, (_, i) => `cat/${i}-1.thumb128.webp`),
+      wechat: Array.from({ length: 20 }, (_, i) => `wechat/${i + 5}.thumb128.webp`),
+      wonyoung: Array.from({ length: 34 }, (_, i) => `wonyoung/${i + 1}.thumb128.webp`),
+      xuka: Array.from({ length: 23 }, (_, i) => `xuka/${i + 1}.thumb128.webp`),
+    };
+    
+    const stickers = stickerMap[category] || [];
+    
+    // Tìm index của sticker được chọn trong danh sách
+    const selectedIndex = stickers.findIndex(s => s === stickerId);
+    
+    if (selectedIndex === -1) {
+      // Nếu không tìm thấy, trả về 4 sticker đầu tiên
+      return stickers.slice(0, 4);
+    }
+    
+    // Đảm bảo sticker được chọn nằm trong preview
+    // Nếu sticker ở đầu danh sách (index 0-2), lấy 4 sticker đầu tiên
+    // Nếu sticker ở giữa hoặc cuối, lấy 4 sticker với sticker được chọn ở vị trí thứ 2 (index 1)
+    if (selectedIndex <= 2) {
+      return stickers.slice(0, 4);
+    } else if (selectedIndex >= stickers.length - 2) {
+      // Nếu sticker ở cuối danh sách, lấy 4 sticker cuối cùng
+      return stickers.slice(-4);
+    } else {
+      // Lấy 4 sticker với sticker được chọn ở vị trí thứ 2 (index 1 trong preview)
+      const startIndex = selectedIndex - 1;
+      return stickers.slice(startIndex, startIndex + 4);
+    }
+  };
+
   const handleStickerClick = (stickerId: string) => {
-    sendSticker(stickerId, targetUserId);
+    // Hiển thị preview thay vì gửi ngay
+    const previewStickers = getPreviewStickers(stickerId);
+    setSelectedStickers(previewStickers);
+    // Tìm index của sticker được chọn trong preview
+    const index = previewStickers.findIndex(s => s === stickerId);
+    setSelectedStickerIndex(index >= 0 ? index : 0);
     setShowStickerPicker(false);
   };
+
+  // Hàm đóng preview sticker
+  const handleCloseStickerPreview = () => {
+    // Dừng recording nếu đang ghi âm
+    if (isRecording) {
+      stopRecording();
+    }
+    // Clear timeout nếu có
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+    }
+    // Reset tất cả state
+    setSelectedStickers([]);
+    setSelectedStickerIndex(-1);
+    setRecordedAudio(null);
+    setRecordingTime(0);
+    recordingStickerIdRef.current = null;
+    recordedAudioBlobRef.current = null;
+    mouseDownTimeRef.current = null;
+    hasClickedRef.current = false;
+    recordingStartTimeRef.current = null;
+    isWaitingForStopCallbackRef.current = false;
+  };
+
+  // Hàm gửi sticker (có thể có audio)
+  const handleSendSticker = async (stickerId: string, audioBlob?: Blob) => {
+    if (audioBlob) {
+      // Upload audio trước
+      try {
+        const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+        const response = await chatApiService.uploadAudio(audioFile);
+        const audioUrl = response.data.urlFile;
+        
+        // Gửi sticker với audio
+        sendStickerWithAudio(stickerId, audioUrl);
+      } catch (error) {
+        console.error('[Chat] Lỗi khi upload audio:', error);
+        // Gửi sticker không có audio nếu upload thất bại
+        sendSticker(stickerId, targetUserId);
+      }
+    } else {
+      // Gửi sticker không có audio
+      sendSticker(stickerId, targetUserId);
+    }
+    
+    // Reset preview
+    handleCloseStickerPreview();
+  };
+
+  // Hàm gửi sticker với audio
+  const sendStickerWithAudio = async (stickerId: string, audioUrl: string) => {
+    sendSticker(stickerId, targetUserId, audioUrl);
+  };
+
+  // Ref để lưu stickerId và audio blob khi recording
+  const recordingStickerIdRef = useRef<string | null>(null);
+  const recordedAudioBlobRef = useRef<Blob | null>(null);
+  const mouseDownTimeRef = useRef<number | null>(null); // Thời điểm bắt đầu mouseDown
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout để phân biệt click và hold
+  const hasClickedRef = useRef<boolean>(false); // Đánh dấu đã click để gửi sticker
+  const recordingStartTimeRef = useRef<number | null>(null); // Thời điểm bắt đầu recording
+  const isWaitingForStopCallbackRef = useRef<boolean>(false); // Đánh dấu đang chờ onstop callback hoàn thành
+
+  // Hàm bắt đầu ghi âm
+  const startRecording = async (stickerId: string) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus',
+      });
+      
+      const chunks: Blob[] = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+      
+      recordingStickerIdRef.current = stickerId;
+      recordingStartTimeRef.current = Date.now();
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        setRecordedAudio(audioBlob);
+        recordedAudioBlobRef.current = audioBlob;
+        stream.getTracks().forEach(track => track.stop());
+        
+        const currentStickerId = recordingStickerIdRef.current;
+        
+        // Luôn gửi sticker khi đã bắt đầu recording
+        // Nếu có audio (size > 0), gửi kèm audio
+        if (currentStickerId) {
+          setTimeout(() => {
+            if (recordedAudioBlobRef.current && recordedAudioBlobRef.current.size > 0) {
+              // Có audio được ghi → gửi kèm audio
+              handleSendSticker(currentStickerId, recordedAudioBlobRef.current);
+            } else {
+              // Không có audio hoặc size = 0 → gửi không có audio
+              handleSendSticker(currentStickerId);
+            }
+            recordedAudioBlobRef.current = null;
+            recordingStickerIdRef.current = null;
+            recordingStartTimeRef.current = null;
+            // Reset flag chờ onstop callback
+            isWaitingForStopCallbackRef.current = false;
+          }, 200);
+        } else {
+          // Reset state nếu không có stickerId
+          recordedAudioBlobRef.current = null;
+          recordingStickerIdRef.current = null;
+          recordingStartTimeRef.current = null;
+          // Reset flag chờ onstop callback
+          isWaitingForStopCallbackRef.current = false;
+        }
+      };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      // Sử dụng timeslice 100ms để đảm bảo data được thu thập ngay cả khi recording ngắn
+      mediaRecorder.start(100);
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Tự động dừng sau 60 giây
+      recordingTimeoutRef.current = setTimeout(() => {
+        stopRecording();
+      }, 60000);
+      
+      // Cập nhật thời gian ghi âm mỗi 100ms để progress chạy mượt
+      recordingIntervalRef.current = setInterval(() => {
+        const startTime = recordingStartTimeRef.current;
+        if (startTime) {
+          const elapsedMs = Date.now() - startTime;
+          const elapsedSeconds = elapsedMs / 1000;
+          if (elapsedSeconds >= 60) {
+            stopRecording();
+            setRecordingTime(60);
+          } else {
+            // Cập nhật với giá trị chính xác theo milliseconds để progress mượt
+            setRecordingTime(elapsedSeconds);
+          }
+        }
+      }, 100);
+    } catch (error) {
+      console.error('[Chat] Lỗi khi bắt đầu ghi âm:', error);
+      alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
+    }
+  };
+
+  // Hàm dừng ghi âm
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      // Đánh dấu đang chờ onstop callback
+      isWaitingForStopCallbackRef.current = true;
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+        recordingTimeoutRef.current = null;
+      }
+      
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+        recordingIntervalRef.current = null;
+      }
+      
+      // Reset recording time
+      setRecordingTime(0);
+    }
+  };
+
+  // Cleanup khi unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimeoutRef.current) {
+        clearTimeout(recordingTimeoutRef.current);
+      }
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+      if (mediaRecorderRef.current && isRecording) {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [isRecording]);
 
   // Hàm mở ảnh zoom và reset góc xoay
   const handleOpenZoom = (imageUrl: string, messageId?: string) => {
@@ -327,9 +634,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         let updatedMessage = messages.find(
           (msg) =>
             msg.type === 'image' &&
-            (messageId ? msg.id === messageId : msg.image === imageUrl) &&
-            msg.image &&
-            !msg.image.startsWith('blob:')
+            (messageId ? msg.id === messageId : msg.media === imageUrl) &&
+            msg.media &&
+            !msg.media.startsWith('blob:')
         );
         
         // 3. Nếu không tìm thấy trong local state, tìm trong useChat context
@@ -338,14 +645,14 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           updatedMessage = currentMessages.find(
             (msg) =>
               msg.type === 'image' &&
-              (messageId ? msg.id === messageId : msg.image === imageUrl) &&
-              msg.image &&
-              !msg.image.startsWith('blob:')
+              (messageId ? msg.id === messageId : msg.media === imageUrl) &&
+              msg.media &&
+              !msg.media.startsWith('blob:')
           );
         }
         
-        if (updatedMessage?.image) {
-          finalUrl = updatedMessage.image;
+        if (updatedMessage?.media) {
+          finalUrl = updatedMessage.media;
           // Lưu vào mapping để lần sau không cần tìm lại
           blobUrlToRealUrlMapRef.current.set(imageUrl, finalUrl);
         } else {
@@ -356,13 +663,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               (msg) =>
                 msg.type === 'image' &&
                 (messageId ? msg.id === messageId : true) &&
-                msg.image &&
-                !msg.image.startsWith('blob:') &&
+                msg.media &&
+                !msg.media.startsWith('blob:') &&
                 msg.userId === user?.userId
             );
-            if (retryMessage?.image) {
-              blobUrlToRealUrlMapRef.current.set(imageUrl, retryMessage.image);
-              setZoomedImage(retryMessage.image);
+            if (retryMessage?.media) {
+              blobUrlToRealUrlMapRef.current.set(imageUrl, retryMessage.media);
+              setZoomedImage(retryMessage.media);
               setImageRotation(0);
             } else {
               console.warn('[Chat] Không thể zoom ảnh: blob URL đã bị revoke và chưa có URL thật');
@@ -412,7 +719,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         const tempMessage = currentMessages.find(
           (msg) =>
             msg.type === 'image' &&
-            msg.image === previewUrl &&
+            msg.media === previewUrl &&
             msg.userId === user?.userId
         );
         tempMessageId = tempMessage?.id || null;
@@ -433,8 +740,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             message: '',
             timestamp: tempMessage.timestamp,
             type: 'image',
-            icon: null,
-            image: uploadedUrl,
+            media: uploadedUrl,
           });
 
           const finalImageId = sendResponse.data?.id || tempMessageId;
@@ -447,10 +753,10 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             const updated = prev.map((msg) => {
               if (
                 msg.type === 'image' &&
-                msg.image === previewUrl &&
+                msg.media === previewUrl &&
                 msg.userId === user?.userId
               ) {
-                return { ...msg, id: finalImageId, image: uploadedUrl };
+                return { ...msg, id: finalImageId, media: uploadedUrl };
               }
               return msg;
             });
@@ -482,8 +788,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                     message: '',
                     timestamp: tempMessage.timestamp,
                     type: 'image',
-                    icon: null,
-                    image: uploadedUrl,
+                    media: uploadedUrl,
                   },
                   channelName,
                   targetUserId: targetUserId,
@@ -503,7 +808,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           const stillHasBlobUrl = currentMessages.some(
             (msg) =>
               msg.type === 'image' &&
-              msg.image === previewUrl &&
+              msg.media === previewUrl &&
               msg.userId === user?.userId
           );
           
@@ -685,7 +990,16 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       {/* Chat Area */}
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto p-3 space-y-1"
+        >
+          {/* Loading indicator khi load more */}
+          {isLoadingMore && (
+            <div className="flex justify-center py-2">
+              <div className="text-xs text-gray-500 dark:text-gray-400">Đang tải thêm tin nhắn...</div>
+            </div>
+          )}
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-8">
               <p className="text-xs">Chưa có tin nhắn nào. Hãy bắt đầu chat!</p>
@@ -699,7 +1013,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                 const msgOpacity = opacity;
                 
                 const isMyMessage = msg.userId === user.userId;
-                const isSticker = msg.type === 'sticker' && (msg.sticker || (msg.icon && msg.icon.includes('/') && msg.icon.includes('.webp')));
+                const isSticker = msg.type === 'sticker' && msg.media && msg.media.includes('/') && msg.media.includes('.webp');
                 const isImage = msg.type === 'image';
                 const isTextMessage = msg.type !== 'icon' && !isSticker && !isImage;
                 
@@ -715,7 +1029,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (prevMsg.userId !== msg.userId) {
                         break;
                       }
-                      const prevIsSticker = prevMsg.type === 'sticker' && (prevMsg.sticker || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp')));
+                      const prevIsSticker = prevMsg.type === 'sticker' && prevMsg.media && prevMsg.media.includes('/') && prevMsg.media.includes('.webp');
                       const prevIsImage = prevMsg.type === 'image';
                       if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker || prevIsImage)) {
                         // Gặp sticker/emoji/ảnh thì dừng lại, không tiếp tục tìm
@@ -734,7 +1048,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (nextMsg.userId !== msg.userId) {
                         break;
                       }
-                      const nextIsSticker = nextMsg.type === 'sticker' && (nextMsg.sticker || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp')));
+                      const nextIsSticker = nextMsg.type === 'sticker' && nextMsg.media && nextMsg.media.includes('/') && nextMsg.media.includes('.webp');
                       const nextIsImage = nextMsg.type === 'image';
                       if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker || nextIsImage)) {
                         // Gặp sticker/emoji/ảnh thì dừng lại, không tiếp tục tìm
@@ -760,7 +1074,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (prevMsg.userId !== msg.userId) {
                         break;
                       }
-                      const prevIsSticker = prevMsg.type === 'sticker' && (prevMsg.sticker || (prevMsg.icon && prevMsg.icon.includes('/') && prevMsg.icon.includes('.webp')));
+                      const prevIsSticker = prevMsg.type === 'sticker' && prevMsg.media && prevMsg.media.includes('/') && prevMsg.media.includes('.webp');
                       const prevIsImage = prevMsg.type === 'image';
                       if (prevMsg.userId === msg.userId && (prevMsg.type === 'icon' || prevIsSticker || prevIsImage)) {
                         // Gặp sticker/emoji/ảnh thì dừng lại
@@ -780,7 +1094,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       if (nextMsg.userId !== msg.userId) {
                         break;
                       }
-                      const nextIsSticker = nextMsg.type === 'sticker' && (nextMsg.sticker || (nextMsg.icon && nextMsg.icon.includes('/') && nextMsg.icon.includes('.webp')));
+                      const nextIsSticker = nextMsg.type === 'sticker' && nextMsg.media && nextMsg.media.includes('/') && nextMsg.media.includes('.webp');
                       const nextIsImage = nextMsg.type === 'image';
                       if (nextMsg.userId === msg.userId && (nextMsg.type === 'icon' || nextIsSticker || nextIsImage)) {
                         // Gặp sticker/emoji/ảnh thì dừng lại
@@ -796,9 +1110,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                     // Đếm số lượng tin nhắn TEXT trong khoảng này
                     groupSize = 0;
                     for (let i = startIndex; i <= endIndex; i++) {
-                      const msgSticker = messages[i]?.sticker;
-                      const msgIcon = messages[i]?.icon;
-                      const msgIsSticker = messages[i]?.type === 'sticker' && (msgSticker || (msgIcon && typeof msgIcon === 'string' && msgIcon.includes('/') && msgIcon.includes('.webp')));
+                      const msgMedia = messages[i]?.media;
+                      const msgIsSticker = messages[i]?.type === 'sticker' && msgMedia && typeof msgMedia === 'string' && msgMedia.includes('/') && msgMedia.includes('.webp');
                       const msgIsImage = messages[i]?.type === 'image';
                       if (messages[i]?.userId === msg.userId && messages[i]?.type !== 'icon' && !msgIsSticker && !msgIsImage) {
                         groupSize++;
@@ -881,13 +1194,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       )}
                     >
                       {/* Kiểm tra ảnh trước */}
-                      {msg.type === 'image' && msg.image ? (
+                      {msg.type === 'image' && msg.media ? (
                         <div 
                           className="relative rounded-2xl overflow-hidden max-w-[200px] cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => handleOpenZoom(msg.image!, msg.id)}
+                          onClick={() => handleOpenZoom(msg.media!, msg.id)}
                         >
                           <Image
-                            src={msg.image}
+                            src={msg.media}
                             alt="Ảnh"
                             width={200}
                             height={200}
@@ -896,20 +1209,73 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                             unoptimized
                           />
                         </div>
-                      ) : msg.type === 'sticker' && (msg.sticker || msg.icon) ? (
-                        <div className="relative">
+                      ) : msg.type === 'sticker' && msg.media ? (
+                        <div className={cn(
+                          "relative flex items-center gap-2",
+                          isMyMessage ? "flex-row-reverse" : ""
+                        )}>
+                          {/* Thứ tự trong DOM: sticker trước, icon sau */}
+                          {/* Đối với người gửi (flex-row-reverse): icon ở bên trái sticker */}
+                          {/* Đối với người nhận (không flex-row-reverse): icon ở bên phải sticker */}
                           <Image
-                            src={getStickerUrl(msg.sticker || msg.icon || '')}
+                            src={getStickerUrl(msg.media)}
                             alt="Sticker"
                             width={120}
                             height={120}
                             className="w-[120px] h-[120px] object-contain"
                             unoptimized // Vì là animated webp
                           />
+                          {msg.audio && (
+                            <button
+                              onClick={() => {
+                                const audioUrl = msg.audio;
+                                if (!audioUrl) {
+                                  return;
+                                }
+                                
+                                if (audioRef.current) {
+                                  if (audioRef.current.paused) {
+                                    audioRef.current.src = audioUrl;
+                                    audioRef.current.play().catch(err => {
+                                      console.error('[Chat] Lỗi khi play audio:', err);
+                                    });
+                                  } else {
+                                    audioRef.current.pause();
+                                    audioRef.current.currentTime = 0;
+                                  }
+                                } else {
+                                  const audio = new Audio(audioUrl);
+                                  audioRef.current = audio;
+                                  audio.play().catch(err => {
+                                    console.error('[Chat] Lỗi khi play audio:', err);
+                                  });
+                                  audio.onended = () => {
+                                    audioRef.current = null;
+                                  };
+                                  audio.onerror = (err) => {
+                                    console.error('[Chat] Lỗi audio:', err);
+                                  };
+                                }
+                              }}
+                              className="flex-shrink-0 p-1.5 rounded-full bg-white hover:bg-gray-50 transition-colors"
+                              aria-label="Phát audio"
+                            >
+                              <Image
+                                src="/loa.svg"
+                                alt="Loa"
+                                width={16}
+                                height={16}
+                                className={cn(
+                                  "w-4 h-4",
+                                  isMyMessage && "rotate-180"
+                                )}
+                              />
+                            </button>
+                          )}
                         </div>
-                      ) : msg.type === 'icon' && msg.icon ? (
+                      ) : msg.type === 'icon' && msg.media ? (
                         <div className="text-3xl relative">
-                          {msg.icon}
+                          {msg.media}
                         </div>
                       ) : (
                         <div
@@ -960,6 +1326,209 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               />
             </div>
           )}
+          
+          {/* Sticker preview với audio recording */}
+          {selectedStickers.length > 0 && (
+            <div className="mb-3 relative">
+              {/* Nút đóng preview */}
+              <button
+                onClick={handleCloseStickerPreview}
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center justify-center transition-colors z-10"
+                aria-label="Đóng preview"
+              >
+                <X className="w-3 h-3 text-gray-600 dark:text-gray-300" />
+              </button>
+              
+              {/* Text hướng dẫn */}
+              <p className="text-xs text-center mb-2" style={{ color: '#8D7EF7' }}>
+                Giữ Sticker để thu âm
+              </p>
+              
+              {/* Hàng sticker preview */}
+              <div className="flex gap-2 justify-center items-center">
+                {selectedStickers.map((stickerId, index) => {
+                  const isSelected = index === selectedStickerIndex;
+                  const isCurrentRecording = isRecording && isSelected;
+                  
+                  return (
+                    <div
+                      key={stickerId}
+                      className={cn(
+                        "relative cursor-pointer transition-all",
+                        isSelected ? "scale-110" : "opacity-50"
+                      )}
+                      onClick={(e) => {
+                        // Click vào sticker → gửi ngay không có audio
+                        // Ngăn onClick khi đang recording hoặc đang chờ onstop callback
+                        if (!isRecording && !hasClickedRef.current && !isWaitingForStopCallbackRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          hasClickedRef.current = true;
+                          // Clear timeout nếu có để không bắt đầu recording
+                          if (clickTimeoutRef.current) {
+                            clearTimeout(clickTimeoutRef.current);
+                            clickTimeoutRef.current = null;
+                          }
+                          handleSendSticker(stickerId);
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        if (!isRecording && !hasClickedRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedStickerIndex(index);
+                          mouseDownTimeRef.current = Date.now();
+                          hasClickedRef.current = false; // Reset flag khi bắt đầu mouseDown
+                          
+                          // Đợi 150ms để phân biệt click và hold
+                          clickTimeoutRef.current = setTimeout(() => {
+                            // Nếu giữ lâu hơn 150ms và chưa click, bắt đầu ghi âm
+                            if (mouseDownTimeRef.current !== null && !hasClickedRef.current) {
+                              startRecording(stickerId);
+                            }
+                          }, 150);
+                        }
+                      }}
+                      onMouseUp={(e) => {
+                        mouseDownTimeRef.current = null;
+                        
+                        if (clickTimeoutRef.current) {
+                          clearTimeout(clickTimeoutRef.current);
+                          clickTimeoutRef.current = null;
+                        }
+                        
+                        // Nếu đang ghi âm, dừng lại và gửi
+                        if (isRecording && isSelected) {
+                          e.preventDefault();
+                          stopRecording();
+                        }
+                        // Reset flag sau một chút để tránh conflict
+                        setTimeout(() => {
+                          hasClickedRef.current = false;
+                        }, 100);
+                      }}
+                      onMouseLeave={(e) => {
+                        mouseDownTimeRef.current = null;
+                        hasClickedRef.current = false;
+                        if (clickTimeoutRef.current) {
+                          clearTimeout(clickTimeoutRef.current);
+                          clickTimeoutRef.current = null;
+                        }
+                        
+                        if (isRecording && isSelected) {
+                          e.preventDefault();
+                          stopRecording();
+                        }
+                      }}
+                      onTouchStart={(e) => {
+                        if (!isRecording && !hasClickedRef.current) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedStickerIndex(index);
+                          mouseDownTimeRef.current = Date.now();
+                          hasClickedRef.current = false; // Reset flag khi bắt đầu touchStart
+                          
+                          // Đợi 150ms để phân biệt tap và hold
+                          clickTimeoutRef.current = setTimeout(() => {
+                            if (mouseDownTimeRef.current !== null && !hasClickedRef.current) {
+                              startRecording(stickerId);
+                            }
+                          }, 150);
+                        }
+                      }}
+                      onTouchEnd={(e) => {
+                        mouseDownTimeRef.current = null;
+                        
+                        if (clickTimeoutRef.current) {
+                          clearTimeout(clickTimeoutRef.current);
+                          clickTimeoutRef.current = null;
+                        }
+                        
+                        if (isRecording && isSelected) {
+                          e.preventDefault();
+                          stopRecording();
+                        }
+                        // Reset flag sau một chút để tránh conflict
+                        setTimeout(() => {
+                          hasClickedRef.current = false;
+                        }, 100);
+                      }}
+                    >
+                      {/* Sticker image */}
+                      <div
+                        className={cn(
+                          "w-16 h-16 rounded-lg overflow-hidden",
+                          isSelected ? "" : "bg-white opacity-50"
+                        )}
+                      >
+                        <Image
+                          src={getStickerUrl(stickerId)}
+                          alt="Sticker"
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-contain"
+                          unoptimized
+                        />
+                      </div>
+                      
+                      {/* Loading overlay khi đang ghi âm - không có background, đè lên sticker */}
+                      {isCurrentRecording && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          {/* Circular progress với microphone icon */}
+                          <div className="relative w-12 h-12">
+                            <svg
+                              className="w-12 h-12 transform -rotate-90"
+                              viewBox="0 0 48 48"
+                            >
+                              {/* Background circle */}
+                              <circle
+                                cx="24"
+                                cy="24"
+                                r="20"
+                                fill="none"
+                                stroke="rgba(141, 126, 247, 0.2)"
+                                strokeWidth="3"
+                              />
+                              {/* Progress circle - màu tím */}
+                              <circle
+                                cx="24"
+                                cy="24"
+                                r="20"
+                                fill="none"
+                                stroke="#8D7EF7"
+                                strokeWidth="3"
+                                strokeDasharray={`${2 * Math.PI * 20}`}
+                                strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(recordingTime / 60, 1))}`}
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            {/* Microphone icon ở giữa */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <svg
+                                className="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                style={{ color: '#8D7EF7' }}
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
           <div className={cn(
             "w-full max-w-sm mx-auto rounded-3xl p-4 flex items-center transition-all duration-200",
             isFocused 

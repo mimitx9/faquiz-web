@@ -52,7 +52,7 @@ const BiodigitalCard: React.FC<BiodigitalCardProps> = ({ category, onClick }) =>
             fill
             className={`object-cover ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
             onError={handleImageError}
-            onLoadingComplete={handleImageLoad}
+            onLoad={handleImageLoad}
             referrerPolicy="no-referrer"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             quality={90}

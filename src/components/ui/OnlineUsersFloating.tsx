@@ -255,37 +255,39 @@ export default function OnlineUsersFloating() {
                 </div>
               )}
 
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleAvatarClick(onlineUser.userId, e);
-                }}
-                className="relative transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
-                title={onlineUser.fullName}
-                type="button"
-              >
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16">
-                  <div className="w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-800 shadow-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                    <div className="scale-[1.3] pointer-events-none">
-                      <div className="w-12 h-12 rounded-full overflow-hidden pointer-events-none">
-                        <Avatar
-                          src={onlineUser.avatar || undefined}
-                          name={onlineUser.fullName}
-                          size="lg"
-                        />
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAvatarClick(onlineUser.userId, e);
+                  }}
+                  className="relative transition-transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full"
+                  title={onlineUser.fullName}
+                  type="button"
+                >
+                  <div className="relative w-14 h-14 sm:w-16 sm:h-16">
+                    <div className="w-full h-full rounded-full overflow-hidden border-2 border-white dark:border-gray-800 shadow-lg flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                      <div className="scale-[1.3] pointer-events-none">
+                        <div className="w-12 h-12 rounded-full overflow-hidden pointer-events-none">
+                          <Avatar
+                            src={onlineUser.avatar || undefined}
+                            name={onlineUser.fullName}
+                            size="lg"
+                          />
+                        </div>
                       </div>
                     </div>
+                    {/* Online indicator dot - màu xanh */}
+                    <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                    {/* Badge số tin nhắn chưa đọc */}
+                    {onlineUser.unreadCount > 0 && (
+                      <div className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold px-1 border-2 border-white dark:border-gray-800">
+                        {onlineUser.unreadCount > 9 ? '9+' : onlineUser.unreadCount}
+                      </div>
+                    )}
                   </div>
-                  {/* Online indicator dot - màu xanh */}
-                  <div className="absolute bottom-0 right-0 w-3 h-3 sm:w-3.5 sm:h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
-                  {/* Badge số tin nhắn chưa đọc */}
-                  {onlineUser.unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold px-1 border-2 border-white dark:border-gray-800">
-                      {onlineUser.unreadCount > 9 ? '9+' : onlineUser.unreadCount}
-                    </div>
-                  )}
-                </div>
+                </button>
 
                 {/* Nút X khi hover vào icon */}
                 {isHovered && (
@@ -304,11 +306,12 @@ export default function OnlineUsersFloating() {
                       'z-10'
                     )}
                     title="Đóng"
+                    type="button"
                   >
                     <X className="w-3 h-3 text-gray-600 dark:text-gray-300" />
                   </button>
                 )}
-              </button>
+              </div>
             </div>
           );
         })}

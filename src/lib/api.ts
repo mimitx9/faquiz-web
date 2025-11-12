@@ -693,10 +693,8 @@ export interface ChatMessageRequest {
     message: string;
     timestamp: number;
     type: 'message' | 'icon' | 'sticker' | 'image';
-    icon: string | null;
-    sticker?: string | null;
-    stickerCode?: string | null;
-    image?: string | null;
+    media?: string | null; // Media URL/ID cho icon/sticker/image
+    audio?: string | null; // Audio URL nếu sticker có audio
 }
 
 export interface ChatMessageResponse {
@@ -719,9 +717,8 @@ export interface ChatMessage {
     message: string;
     timestamp: number;
     type: 'message' | 'icon' | 'sticker' | 'image';
-    icon: string | null;
-    sticker?: string | null;
-    image?: string | null;
+    media?: string | null; // Media URL/ID cho icon/sticker/image
+    audio?: string | null; // Audio URL nếu sticker có audio
 }
 
 export interface GetMessagesResponse {
@@ -838,6 +835,27 @@ export const chatApiService = {
         }
     },
 
+    // Upload audio (sử dụng endpoint riêng cho audio)
+    uploadAudio: async (file: File): Promise<UploadImageResponse> => {
+        try {
+            const formData = new FormData();
+            formData.append('files', file);
+
+            const response = await uploadImageApiInstance.post<UploadImageResponse>(
+                '/v1/file/upload-course-audio',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            throw error;
+        }
+    },
+
     // Gửi tin nhắn
     sendMessage: async (payload: ChatMessageRequest): Promise<ChatMessageResponse> => {
         try {
@@ -855,12 +873,16 @@ export const chatApiService = {
     getMessages: async (params: {
         targetUserId: number;
         limit?: number;
+        beforeTimestamp?: number;
     }): Promise<GetMessagesResponse> => {
         try {
             const queryParams = new URLSearchParams();
             queryParams.append('targetUserId', params.targetUserId.toString());
             if (params.limit !== undefined) {
                 queryParams.append('limit', params.limit.toString());
+            }
+            if (params.beforeTimestamp !== undefined) {
+                queryParams.append('beforeTimestamp', params.beforeTimestamp.toString());
             }
 
             const response = await chatApiInstance.get<GetMessagesResponse>(

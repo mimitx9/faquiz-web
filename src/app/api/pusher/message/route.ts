@@ -11,8 +11,8 @@ interface ChatMessage {
   message: string;
   timestamp: number;
   type: 'message' | 'icon' | 'sticker' | 'image';
-  icon?: string;
-  image?: string; // Image URL nếu type là 'image'
+  media?: string; // Media URL/ID cho icon/sticker/image
+  audio?: string; // Audio URL nếu sticker có audio
 }
 
 // Khởi tạo Pusher server instance
