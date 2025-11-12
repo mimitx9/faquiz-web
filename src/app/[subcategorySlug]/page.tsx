@@ -15,6 +15,7 @@ import PrintPanel from '@/components/panels/PrintPanel';
 import ThreeDPanel from '@/components/panels/ThreeDPanel';
 import KiemPanel from '@/components/panels/KiemPanel';
 import FixErrorPanel from '@/components/panels/FixErrorPanel';
+import DocumentsPanel from '@/components/panels/DocumentsPanel';
 import UpgradeOverlay from '@/components/ui/UpgradeOverlay';
 import { createTitleSlug } from '@/lib/utils';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -29,6 +30,7 @@ import {
   trackQuizPanelClose,
   trackQuizImageZoom,
   trackQuizFixErrorSubmit,
+  trackQuizTextHighlight,
   trackUpgradeOverlayShow,
 } from '@/lib/analytics';
 
@@ -313,7 +315,7 @@ const SubCategoryQuizPage: React.FC = () => {
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
   const [hoveredIcon, setHoveredIcon] = useState<string | null>(null); // Icon đang được hover
-  const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | 'fix-error' | null>(null); // Panel đang được mở
+  const [activePanel, setActivePanel] = useState<'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents' | null>(null); // Panel đang được mở
   const [fixErrorQuestion, setFixErrorQuestion] = useState<Question | null>(null); // Câu hỏi đang được sửa lỗi
   const [initialStarMessage, setInitialStarMessage] = useState<string | null>(null); // Tin nhắn ban đầu cho StarPanel
   const [splitPanelWidth, setSplitPanelWidth] = useState<number>(33.33); // Width của split panel (% màn hình), mặc định 1/3 (33.33%)
@@ -324,6 +326,9 @@ const SubCategoryQuizPage: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null); // Ref cho scroll container
   const [showUpgradeOverlay, setShowUpgradeOverlay] = useState(false); // Hiển thị overlay upgrade khi gặp câu hỏi rỗng
   const [showSuccessBadge, setShowSuccessBadge] = useState(false); // Hiển thị badge thành công
+  const [selectedText, setSelectedText] = useState<string>(''); // Text đã được chọn
+  const [selectionPosition, setSelectionPosition] = useState<{ top: number; left: number } | null>(null); // Vị trí của text được chọn
+  const [selectedTextForSearch, setSelectedTextForSearch] = useState<string>(''); // Text để truyền vào search panel
 
   const isEssay = (question: Question) => {
     if (!question) return false;
@@ -491,6 +496,319 @@ const SubCategoryQuizPage: React.FC = () => {
       setIsSidebarCollapsed(true);
     }
   }, [activePanel]);
+
+  // Xử lý text selection và highlight
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        setSelectedText('');
+        setSelectionPosition(null);
+        // Remove all highlight marks - khôi phục lại nội dung gốc với formatting
+        const marks = document.querySelectorAll('mark.text-selection-highlight');
+        marks.forEach(mark => {
+          const parent = mark.parentNode;
+          if (parent) {
+            // Tạo document fragment chứa tất cả nội dung của mark (bao gồm các element con)
+            const fragment = document.createDocumentFragment();
+            while (mark.firstChild) {
+              fragment.appendChild(mark.firstChild);
+            }
+            parent.replaceChild(fragment, mark);
+            parent.normalize();
+          }
+        });
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const selectedTextContent = selection.toString().trim();
+
+      // Chỉ xử lý nếu text được chọn có nội dung và nằm trong phần câu hỏi hoặc đáp án
+      if (selectedTextContent.length > 0) {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        // Kiểm tra xem selection có nằm trong container không
+        const containerRect = container.getBoundingClientRect();
+        const selectionRect = range.getBoundingClientRect();
+
+        // Kiểm tra xem selection có nằm trong button không - không cho highlight trong button
+        const commonAncestor = range.commonAncestorContainer;
+        let currentNode: Node | null = commonAncestor.nodeType === Node.TEXT_NODE 
+          ? commonAncestor.parentNode 
+          : commonAncestor as Node;
+        
+        while (currentNode && currentNode !== document.body) {
+          if (currentNode.nodeType === Node.ELEMENT_NODE) {
+            const element = currentNode as HTMLElement;
+            // Không cho highlight trong button, input, hoặc các interactive elements
+            if (element.tagName === 'BUTTON' || 
+                element.tagName === 'INPUT' || 
+                element.tagName === 'TEXTAREA' ||
+                element.closest('button') ||
+                element.closest('input') ||
+                element.closest('textarea')) {
+              setSelectedText('');
+              setSelectionPosition(null);
+              return;
+            }
+          }
+          currentNode = currentNode.parentNode;
+        }
+
+        // Kiểm tra xem selection có nằm trong phần câu hỏi hoặc đáp án không
+        const questionElements = container.querySelectorAll('[id^="question-"]');
+        let isInQuestionOrAnswer = false;
+        let currentQuestionId: number | null = null;
+        
+        questionElements.forEach((questionEl) => {
+          const questionRect = questionEl.getBoundingClientRect();
+          if (
+            selectionRect.top >= questionRect.top &&
+            selectionRect.bottom <= questionRect.bottom &&
+            selectionRect.left >= questionRect.left &&
+            selectionRect.right <= questionRect.right
+          ) {
+            isInQuestionOrAnswer = true;
+            // Lấy questionId từ id attribute (format: "question-{questionId}")
+            const questionIdMatch = questionEl.id.match(/^question-(\d+)$/);
+            if (questionIdMatch) {
+              currentQuestionId = parseInt(questionIdMatch[1], 10);
+            }
+          }
+        });
+
+        if (!isInQuestionOrAnswer) {
+          setSelectedText('');
+          setSelectionPosition(null);
+          return;
+        }
+
+        // Remove existing highlights - khôi phục lại nội dung gốc với formatting
+        const existingMarks = document.querySelectorAll('mark.text-selection-highlight');
+        existingMarks.forEach(mark => {
+          const parent = mark.parentNode;
+          if (parent) {
+            // Tạo document fragment chứa tất cả nội dung của mark (bao gồm các element con)
+            const fragment = document.createDocumentFragment();
+            while (mark.firstChild) {
+              fragment.appendChild(mark.firstChild);
+            }
+            parent.replaceChild(fragment, mark);
+            parent.normalize();
+          }
+        });
+
+        // Highlight selected text - sử dụng cách an toàn hơn để giữ nguyên cấu trúc DOM
+        try {
+          // Kiểm tra xem range có bị split ở giữa element không
+          const startContainer = range.startContainer;
+          const endContainer = range.endContainer;
+          
+          // Nếu range nằm trong cùng một text node, xử lý đơn giản
+          if (startContainer === endContainer && startContainer.nodeType === Node.TEXT_NODE) {
+            const textNode = startContainer as Text;
+            const text = textNode.textContent || '';
+            const startOffset = range.startOffset;
+            const endOffset = range.endOffset;
+            
+            // Tách text node thành 3 phần: trước, highlight, sau
+            const beforeText = text.substring(0, startOffset);
+            const highlightText = text.substring(startOffset, endOffset);
+            const afterText = text.substring(endOffset);
+            
+            const parent = textNode.parentNode;
+            if (!parent) return;
+            
+            // Tạo fragment chứa: text trước + mark + text sau
+            const fragment = document.createDocumentFragment();
+            if (beforeText) {
+              fragment.appendChild(document.createTextNode(beforeText));
+            }
+            
+            const mark = document.createElement('mark');
+            mark.className = 'text-selection-highlight';
+            mark.style.color = '#0099FF';
+            mark.style.backgroundColor = '#0099FF1A';
+            mark.textContent = highlightText;
+            fragment.appendChild(mark);
+            
+            if (afterText) {
+              fragment.appendChild(document.createTextNode(afterText));
+            }
+            
+            parent.replaceChild(fragment, textNode);
+            
+            // Update selection
+            selection.removeAllRanges();
+            const newRange = document.createRange();
+            newRange.selectNodeContents(mark);
+            selection.addRange(newRange);
+          } else {
+            // Range phức tạp hơn - wrap từng text node để giữ nguyên cấu trúc DOM và style
+            // Hàm helper để wrap một text node
+            const wrapTextNode = (textNode: Text, start: number, end: number) => {
+              const text = textNode.textContent || '';
+              const beforeText = text.substring(0, start);
+              const highlightText = text.substring(start, end);
+              const afterText = text.substring(end);
+              
+              const parent = textNode.parentNode;
+              if (!parent) return;
+              
+              // Tạo fragment chứa: text trước + mark + text sau
+              const fragment = document.createDocumentFragment();
+              if (beforeText) {
+                fragment.appendChild(document.createTextNode(beforeText));
+              }
+              
+              const mark = document.createElement('mark');
+              mark.className = 'text-selection-highlight';
+              mark.style.color = '#0099FF';
+              mark.style.backgroundColor = '#0099FF1A';
+              mark.textContent = highlightText;
+              fragment.appendChild(mark);
+              
+              if (afterText) {
+                fragment.appendChild(document.createTextNode(afterText));
+              }
+              
+              parent.replaceChild(fragment, textNode);
+            };
+            
+            // Tìm tất cả text nodes trong range
+            const clonedRange = range.cloneRange();
+            const textNodesToWrap: { node: Text; start: number; end: number }[] = [];
+            
+            // Duyệt qua tất cả text nodes trong common ancestor
+            const walker = document.createTreeWalker(
+              clonedRange.commonAncestorContainer,
+              NodeFilter.SHOW_TEXT,
+              null
+            );
+            
+            let node;
+            while (node = walker.nextNode()) {
+              const textNode = node as Text;
+              const nodeRange = document.createRange();
+              nodeRange.selectNodeContents(textNode);
+              
+              // Kiểm tra xem text node có nằm trong range không
+              const startComparison = clonedRange.compareBoundaryPoints(Range.START_TO_START, nodeRange);
+              const endComparison = clonedRange.compareBoundaryPoints(Range.END_TO_END, nodeRange);
+              
+              if (textNode === startContainer && startContainer.nodeType === Node.TEXT_NODE) {
+                // Text node chứa start của range
+                textNodesToWrap.push({ 
+                  node: textNode, 
+                  start: clonedRange.startOffset, 
+                  end: textNode.textContent?.length || 0 
+                });
+              } else if (textNode === endContainer && endContainer.nodeType === Node.TEXT_NODE) {
+                // Text node chứa end của range
+                textNodesToWrap.push({ 
+                  node: textNode, 
+                  start: 0, 
+                  end: clonedRange.endOffset 
+                });
+              } else if (startComparison > 0 && endComparison < 0) {
+                // Text node nằm hoàn toàn trong range
+                textNodesToWrap.push({ 
+                  node: textNode, 
+                  start: 0, 
+                  end: textNode.textContent?.length || 0 
+                });
+              }
+            }
+            
+            // Wrap từng text node (xử lý ngược để tránh ảnh hưởng đến index)
+            for (let i = textNodesToWrap.length - 1; i >= 0; i--) {
+              wrapTextNode(textNodesToWrap[i].node, textNodesToWrap[i].start, textNodesToWrap[i].end);
+            }
+            
+            // Update selection - chọn tất cả các mark vừa tạo
+            selection.removeAllRanges();
+            const marks = document.querySelectorAll('mark.text-selection-highlight');
+            if (marks.length > 0) {
+              const newRange = document.createRange();
+              newRange.setStartBefore(marks[0]);
+              newRange.setEndAfter(marks[marks.length - 1]);
+              selection.addRange(newRange);
+            }
+          }
+        } catch (e) {
+          // Ignore errors
+          console.warn('Error highlighting text:', e);
+        }
+
+        // Track text highlight nếu highlight thành công
+        if (currentQuestionId !== null && selectedTextContent.length > 0) {
+          trackQuizTextHighlight(
+            currentQuestionId,
+            selectedTextContent.length,
+            category?.code,
+            subCategory?.code
+          );
+        }
+
+        // Tính toán vị trí button (góc dưới bên phải của selection)
+        const buttonTop = selectionRect.bottom + 8; // 8px offset từ bottom
+        const buttonLeft = selectionRect.right - 32; // 32px từ right (width của button)
+
+        setSelectedText(selectedTextContent);
+        setSelectionPosition({
+          top: buttonTop,
+          left: buttonLeft,
+        });
+      } else {
+        setSelectedText('');
+        setSelectionPosition(null);
+      }
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      // Nếu click vào button search, không clear selection
+      const target = e.target as HTMLElement;
+      if (target.closest('.text-selection-search-button')) {
+        return;
+      }
+      
+      // Clear selection khi click vào nơi khác
+      setTimeout(() => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          if (range.collapsed) {
+            setSelectedText('');
+            setSelectionPosition(null);
+            // Remove all highlight marks - khôi phục lại nội dung gốc với formatting
+            const marks = document.querySelectorAll('mark.text-selection-highlight');
+            marks.forEach(mark => {
+              const parent = mark.parentNode;
+              if (parent) {
+                // Tạo document fragment chứa tất cả nội dung của mark (bao gồm các element con)
+                const fragment = document.createDocumentFragment();
+                while (mark.firstChild) {
+                  fragment.appendChild(mark.firstChild);
+                }
+                parent.replaceChild(fragment, mark);
+                parent.normalize();
+              }
+            });
+          }
+        }
+      }, 0);
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('click', handleClick);
+
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('click', handleClick);
+    };
+  }, [questions.length]);
 
   // Hàm mở ảnh zoom và reset góc xoay
   const handleOpenZoom = (imageUrl: string) => {
@@ -736,7 +1054,7 @@ const SubCategoryQuizPage: React.FC = () => {
   };
 
   // Handler mở/đóng split panel
-  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error', initialMessage?: string) => {
+  const toggleSplitPanel = (panelType?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents', initialMessage?: string) => {
     if (panelType) {
       // Nếu click vào icon, toggle panel đó
       const newPanel = activePanel === panelType ? null : panelType;
@@ -1769,25 +2087,18 @@ const SubCategoryQuizPage: React.FC = () => {
                   }}
                 />
               )}
+              {activePanel === 'documents' && (
+                <DocumentsPanel 
+                  onClose={() => {
+                    toggleSplitPanel();
+                    setSelectedTextForSearch('');
+                  }} 
+                  initialSearchQuery={selectedTextForSearch}
+                />
+              )}
             </div>
           )}
         </div>
-
-        {/* Nút nộp bài floating ở bottom center */}
-        {!activePanel && (
-          <button
-            onClick={handleSubmit}
-            aria-label="Nộp bài"
-            className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 px-8 py-4 rounded-full text-white shadow-2xl transition-all hover:scale-110 duration-300 z-50 tracking-wide ${
-              showSubmitButton 
-                ? 'opacity-100 translate-y-0' 
-                : 'opacity-0 translate-y-4 pointer-events-none'
-            }`}
-            style={{ backgroundColor: '#8D7EF7' }}
-          >
-            <span className="text-lg font-semibold">Nộp Bài</span>
-          </button>
-        )}
 
         {/* Modal zoom ảnh */}
         {zoomedImage && (
@@ -1867,129 +2178,253 @@ const SubCategoryQuizPage: React.FC = () => {
           </div>
         )}
 
-        {/* Sidebar nhỏ ở góc dưới bên phải */}
-        {!activePanel && user && (
-          <div className="fixed bottom-8 right-8 sm:right-4 flex flex-col gap-4 z-40 items-end">
-          {/* Icon Star 2.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'star' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Hỏi đáp Hack
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300 relative"
-              aria-label="Hỏi đáp Hack"
-              onMouseEnter={() => setHoveredIcon('star')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                if (user?.faQuizInfo?.isPaid === true) {
-                  toggleSplitPanel('star');
-                } else {
-                  trackUpgradeOverlayShow('star_panel');
-                  setShowUpgradeOverlay(true);
-                }
-              }}
-            >
-              <Image
-                src="/quiz/Star 2.svg"
-                alt="Hỏi đáp Hack"
-                width={30}
-                height={30}
-                className="w-[30px] h-[30px]"
-              />
-              {user?.faQuizInfo?.isPaid !== true && (
-                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
-                  PRO
+        {/* Container nút nộp bài và các icon ở bottom center */}
+        {!activePanel && (
+          <div 
+            className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-3 px-6 py-3 bg-white/50 dark:bg-black/50 rounded-full z-50 transition-all duration-300 backdrop-blur-md ${
+              showSubmitButton 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-10 pointer-events-none'
+            }`}
+            style={{boxShadow: '0 10px 20px rgba(141, 126, 247, 0.2), 0 0 0 1px rgba(141, 126, 247, 0.1)' }}
+          >
+            {/* Các icon bên trái nút Nộp bài */}
+            {user && (
+              <div className="flex items-center gap-4">
+               
+               
+
+                {/* Icon 3d.svg */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === '3d' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Giải phẫu 3D
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300"
+                    aria-label="Giải phẫu 3D"
+                    onMouseEnter={() => setHoveredIcon('3d')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => toggleSplitPanel('3d')}
+                  >
+                    <Image
+                      src="/quiz/3d.svg"
+                      alt="Giải phẫu 3D"
+                      width={28}
+                      height={30}
+                      className="w-[28px] h-[30px]"
+                    />
+                  </button>
+                </div>
+               
+               
+                {/* Icon Star 2.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'star' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Hỏi đáp Hack
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="Hỏi đáp Hack"
+                    onMouseEnter={() => setHoveredIcon('star')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        toggleSplitPanel('star');
+                      } else {
+                        trackUpgradeOverlayShow('star_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/Star 2.svg"
+                      alt="Hỏi đáp Hack"
+                      width={30}
+                      height={30}
+                      className="w-[30px] h-[30px]"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+
+
+            {/* Nút nộp bài ở giữa */}
+            <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+              {hoveredIcon === 'submit' && (
+                <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                  Nộp bài
                 </span>
               )}
-            </button>
-          </div>
+              <button
+                onClick={handleSubmit}
+                aria-label="Nộp bài"
+                className="w-10 h-10 mx-2 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:scale-110"
+                style={{ backgroundColor: '#8D7EF7' }}
+                onMouseEnter={() => setHoveredIcon('submit')}
+                onMouseLeave={() => setHoveredIcon(null)}
+              >
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20" stroke="currentColor" strokeWidth="2">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                </svg>
+              </button>
+            </div>
 
-          {/* Icon 3d.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === '3d' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Giải phẫu 3D
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300"
-              aria-label="Giải phẫu 3D"
-              onMouseEnter={() => setHoveredIcon('3d')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => toggleSplitPanel('3d')}
-            >
-              <Image
-                src="/quiz/3d.svg"
-                alt="Giải phẫu 3D"
-                width={28}
-                height={30}
-                className="w-[28px] h-[30px]"
-              />
-            </button>
-          </div>
 
-          {/* Icon print.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'print' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                In đề
-              </span>
+                {/* Icon search.svg */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'documents' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      Tìm tài liệu
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="Tìm kiếm tài liệu"
+                    onMouseEnter={() => setHoveredIcon('documents')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        toggleSplitPanel('documents');
+                      } else {
+                        trackUpgradeOverlayShow('documents_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/icon search.svg"
+                      alt="Tìm kiếm tài liệu"
+                      width={24}
+                      height={24}
+                      className="w-6 h-6"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                
+                {/* Icon print.svg - hiển thị cho tất cả user, chỉ user đã thanh toán mới click được */}
+                <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'print' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-gray-700 dark:text-white whitespace-nowrap bg-white dark:bg-black/90 py-1.5 px-3 shadow-md rounded-full">
+                      In đề
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300 relative"
+                    aria-label="In đề"
+                    onMouseEnter={() => setHoveredIcon('print')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => {
+                      if (user?.faQuizInfo?.isPaid === true) {
+                        window.print();
+                      } else {
+                        trackUpgradeOverlayShow('print_panel');
+                        setShowUpgradeOverlay(true);
+                      }
+                    }}
+                  >
+                    <Image
+                      src="/quiz/print.svg"
+                      alt="In đề"
+                      width={28}
+                      height={26}
+                      className="w-[28px] h-[26px]"
+                    />
+                    {user?.faQuizInfo?.isPaid !== true && (
+                      <span className="absolute -top-1 -right-1 bg-[#FFBB00] text-white text-[8px] font-semibold tracking-wider px-1 py-0.5 rounded-full leading-none">
+                        PRO
+                      </span>
+                    )}
+                  </button>
+                </div>
+                
+
+                {/* Icon kiem.svg */}
+                {/* <div className="relative flex flex-col items-center hover:scale-110 transition-all duration-300">
+                  {hoveredIcon === 'kiem' && (
+                    <span className="absolute bottom-full mb-2 text-sm font-medium text-white whitespace-nowrap bg-black/80 dark:bg-black/90 py-1.5 px-3 shadow-md rounded-lg">
+                      Đấu battle
+                    </span>
+                  )}
+                  <button
+                    className="p-2 transition-all duration-300"
+                    aria-label="Đấu battle"
+                    onMouseEnter={() => setHoveredIcon('kiem')}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    onClick={() => window.open('https://fabattle.com', '_blank')}
+                  >
+                    <Image
+                      src="/quiz/kiem.svg"
+                      alt="Đấu battle"
+                      width={30}
+                      height={30}
+                      className="w-[30px] h-[30px]"
+                    />
+                  </button>
+                </div> */}
+              </div>
+
+              
             )}
-            <button
-              className="p-3 transition-all duration-300 relative"
-              aria-label="In đề"
-              onMouseEnter={() => setHoveredIcon('print')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => {
-                if (user?.faQuizInfo?.isPaid === true) {
-                  window.print();
-                } else {
-                  trackUpgradeOverlayShow('print_panel');
-                  setShowUpgradeOverlay(true);
+          </div>
+        )}
+
+        {/* Button search icon khi text được highlight */}
+        {selectedText && selectionPosition && !activePanel && (
+          <button
+            className="text-selection-search-button fixed z-[60] p-2 rounded-xl transition-all duration-200 bg-[#0099FF] shadow-md hover:scale-110"
+            style={{
+              top: `${selectionPosition.top}px`,
+              left: `${selectionPosition.left}px`,
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (user?.faQuizInfo?.isPaid === true) {
+                setSelectedTextForSearch(selectedText);
+                toggleSplitPanel('documents');
+                // Clear selection after opening panel
+                const selection = window.getSelection();
+                if (selection) {
+                  selection.removeAllRanges();
                 }
-              }}
-            >
-              <Image
-                src="/quiz/print.svg"
-                alt="In đề"
-                width={28}
-                height={26}
-                className="w-[28px] h-[26px]"
-              />
-              {user?.faQuizInfo?.isPaid !== true && (
-                <span className="absolute bottom-0 transform -translate-x-1/2 bg-[#FFBB00] text-white text-[10px] font-semibold tracking-wider px-1.5 py-1 rounded-full leading-none">
-                  PRO
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Icon kiem.svg */}
-          <div className="relative flex items-center gap-2 hover:scale-110 transition-all duration-300">
-            {hoveredIcon === 'kiem' && (
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap bg-white dark:bg-black py-2 px-4 shadow-md rounded-full">
-                Đấu battle
-              </span>
-            )}
-            <button
-              className="p-3 transition-all duration-300"
-              aria-label="Đấu battle"
-              onMouseEnter={() => setHoveredIcon('kiem')}
-              onMouseLeave={() => setHoveredIcon(null)}
-              onClick={() => window.open('https://fabattle.com', '_blank')}
-            >
-              <Image
-                src="/quiz/kiem.svg"
-                alt="Đấu battle"
-                width={30}
-                height={30}
-                className="w-[30px] h-[30px]"
-              />
-            </button>
-          </div>
-        </div>
+                setSelectedText('');
+                setSelectionPosition(null);
+              } else {
+                trackUpgradeOverlayShow('documents_panel');
+                setShowUpgradeOverlay(true);
+                // Clear selection
+                const selection = window.getSelection();
+                if (selection) {
+                  selection.removeAllRanges();
+                }
+                setSelectedText('');
+                setSelectionPosition(null);
+              }
+            }}
+            aria-label="Tìm kiếm"
+          >
+            <Image
+              src="/quiz/icon search.svg"
+              alt="Tìm kiếm"
+              width={20}
+              height={20}
+              className="w-4 h-4 brightness-0 invert"
+            />
+          </button>
         )}
 
         {/* Upgrade Overlay - hiển thị khi gặp câu hỏi rỗng */}

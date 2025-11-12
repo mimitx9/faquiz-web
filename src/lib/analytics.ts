@@ -29,9 +29,11 @@ export type AnalyticsEvent =
   | 'quiz_panel_3d_open'
   | 'quiz_panel_kiem_open'
   | 'quiz_panel_fix_error_open'
+  | 'quiz_panel_documents_open'
   | 'quiz_panel_close'
   | 'quiz_image_zoom'
   | 'quiz_fix_error_submit'
+  | 'quiz_text_highlight'
   
   // Results events
   | 'results_retry_click'
@@ -71,7 +73,10 @@ interface AnalyticsProperties {
   quiz_duration?: number; // seconds
   
   // Panel tracking
-  panel_type?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error';
+  panel_type?: 'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents';
+  
+  // Text highlight tracking
+  highlight_text_length?: number;
   
   // Banner tracking
   banner_id?: string;
@@ -287,7 +292,7 @@ export const trackQuizTimerExpired = (
 };
 
 export const trackQuizPanelOpen = (
-  panelType: 'star' | 'print' | '3d' | 'kiem' | 'fix-error',
+  panelType: 'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents',
   categoryCode?: string,
   subcategoryCode?: string
 ) => {
@@ -298,7 +303,7 @@ export const trackQuizPanelOpen = (
   });
 };
 
-export const trackQuizPanelClose = (panelType: 'star' | 'print' | '3d' | 'kiem' | 'fix-error') => {
+export const trackQuizPanelClose = (panelType: 'star' | 'print' | '3d' | 'kiem' | 'fix-error' | 'documents') => {
   trackEvent('quiz_panel_close', {
     panel_type: panelType,
   });
@@ -318,6 +323,20 @@ export const trackQuizFixErrorSubmit = (
 ) => {
   trackEvent('quiz_fix_error_submit', {
     question_id: questionId,
+    category_code: categoryCode,
+    subcategory_code: subcategoryCode,
+  });
+};
+
+export const trackQuizTextHighlight = (
+  questionId: number,
+  textLength: number,
+  categoryCode?: string,
+  subcategoryCode?: string
+) => {
+  trackEvent('quiz_text_highlight', {
+    question_id: questionId,
+    highlight_text_length: textLength,
     category_code: categoryCode,
     subcategory_code: subcategoryCode,
   });
