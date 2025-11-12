@@ -94,9 +94,9 @@ const ThreeDPanel: React.FC<ThreeDPanelProps> = ({ onClose }) => {
         // 40-50%: 3 cột
         // 30-40%: 2 cột
         // < 30%: 1 cột
-        if (percentage >= 40 && percentage <= 50) {
+        if (percentage >= 45 && percentage <= 50) {
           setGridCols(3);
-        } else if (percentage >= 30 && percentage < 40) {
+        } else if (percentage >= 30 && percentage < 45) {
           setGridCols(2);
         } else {
           setGridCols(1);

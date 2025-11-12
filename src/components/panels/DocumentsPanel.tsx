@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 interface DocumentsPanelProps {
   onClose: () => void;
   initialSearchQuery?: string;
+  initialActiveTab?: ContentType;
 }
 
 type ContentType = 'sach' | 'web' | 'anh' | 'video';
@@ -34,14 +35,40 @@ const getColorPair = (index: number): { bg: string; text: string } => {
   };
 };
 
-const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQuery = '' }) => {
+// Hàm extract YouTube video ID từ URL
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+};
+
+// Hàm lấy YouTube thumbnail URL
+const getYouTubeThumbnail = (url: string): string | null => {
+  const videoId = getYouTubeVideoId(url);
+  if (!videoId) return null;
+  
+  // Thử maxresdefault trước, nếu không có thì fallback về hqdefault
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+};
+
+const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQuery = '', initialActiveTab = 'sach' }) => {
   const router = useRouter();
   const { user } = useAuth();
   const [groups, setGroups] = useState<DocumentGroup[]>([]);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ContentType>('sach');
+  const [activeTab, setActiveTab] = useState<ContentType>(initialActiveTab);
   const containerRef = useRef<HTMLDivElement>(null);
   const [gridCols, setGridCols] = useState(2);
 
@@ -61,6 +88,10 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
   const [selectedDocumentIndex, setSelectedDocumentIndex] = useState<{ groupIndex: number; docIndex: number } | null>(null);
   const [contentSearchQuery, setContentSearchQuery] = useState('');
   const [loadingContent, setLoadingContent] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [currentHighlightIndex, setCurrentHighlightIndex] = useState(0);
+  const markdownContentRef = useRef<HTMLDivElement>(null);
+  const searchResultsRef = useRef<HTMLDivElement>(null);
 
   // Google Search states
   const [googleSearchResults, setGoogleSearchResults] = useState<GoogleSearchResult[]>([]);
@@ -76,6 +107,13 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
       setSearchQuery(initialSearchQuery);
     }
   }, [initialSearchQuery]);
+
+  // Update activeTab when initialActiveTab changes
+  useEffect(() => {
+    if (initialActiveTab) {
+      setActiveTab(initialActiveTab);
+    }
+  }, [initialActiveTab]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,8 +181,14 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
           video: 'video',
         };
 
+        // Thêm site:youtube.com cho tab video
+        let keyword = searchQuery.trim();
+        if (activeTab === 'video') {
+          keyword = `${keyword} site:youtube.com`;
+        }
+
         const response = await googleSearchApiService.search({
-          keyword: searchQuery.trim(),
+          keyword: keyword,
           type: typeMap[activeTab as 'web' | 'anh' | 'video'],
           pageOffset: 0,
           pageSize: 10,
@@ -237,9 +281,9 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
         // 40-50%: 3 cột
         // 30-40%: 2 cột
         // < 30%: 1 cột
-        if (percentage >= 40 && percentage <= 50) {
+        if (percentage >= 45 && percentage <= 50) {
           setGridCols(3);
-        } else if (percentage >= 30 && percentage < 40) {
+        } else if (percentage >= 30 && percentage < 45) {
           setGridCols(2);
         } else {
           setGridCols(1);
@@ -405,6 +449,170 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
     return docs;
   }, [detailGroups]);
 
+  // Helper function to find snippets with highlight
+  const findSnippets = useCallback((content: string, query: string, maxSnippets: number = 2): Array<{ text: string; position: number }> => {
+    if (!query.trim() || !content) return [];
+    
+    const queryLower = query.toLowerCase().trim();
+    const queryNoDiacritics = removeVietnameseDiacritics(queryLower);
+    const contentLower = content.toLowerCase();
+    const contentNoDiacritics = removeVietnameseDiacritics(content);
+    
+    const snippets: Array<{ text: string; position: number }> = [];
+    const lines = content.split('\n');
+    
+    // Find all matches in content
+    const matches: Array<{ lineIndex: number; matchIndex: number; position: number }> = [];
+    let currentPosition = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const lineLower = line.toLowerCase();
+      const lineNoDiacritics = removeVietnameseDiacritics(line).toLowerCase();
+      
+      // Find match in this line
+      let matchIndex = lineLower.indexOf(queryLower);
+      if (matchIndex === -1) {
+        matchIndex = lineNoDiacritics.indexOf(queryNoDiacritics);
+      }
+      
+      if (matchIndex !== -1) {
+        matches.push({
+          lineIndex: i,
+          matchIndex: matchIndex,
+          position: currentPosition + matchIndex
+        });
+      }
+      
+      currentPosition += line.length + 1; // +1 for newline
+    }
+    
+    // Get snippets from matches (limit to maxSnippets)
+    for (let i = 0; i < Math.min(matches.length, maxSnippets); i++) {
+      const match = matches[i];
+      const lineIndex = match.lineIndex;
+      
+      // Get context: current line + next line if available (tối đa 2 dòng)
+      let snippetText = lines[lineIndex];
+      if (lineIndex + 1 < lines.length) {
+        snippetText += ' ' + lines[lineIndex + 1];
+      }
+      
+      // Limit to approximately 200 chars
+      if (snippetText.length > 200) {
+        // Try to center around the match
+        const matchPosInSnippet = match.matchIndex;
+        const start = Math.max(0, matchPosInSnippet - 80);
+        const end = Math.min(snippetText.length, matchPosInSnippet + query.length + 80);
+        snippetText = (start > 0 ? '...' : '') + snippetText.substring(start, end) + (end < snippetText.length ? '...' : '');
+      }
+      
+      snippets.push({
+        text: snippetText,
+        position: match.position
+      });
+    }
+    
+    return snippets;
+  }, []);
+
+  // Helper function to highlight keyword in text
+  const highlightKeyword = (text: string, keyword: string): string => {
+    if (!keyword.trim()) return text;
+    
+    const query = keyword.trim();
+    const queryLower = query.toLowerCase();
+    const queryNoDiacritics = removeVietnameseDiacritics(queryLower);
+    const textLower = text.toLowerCase();
+    const textNoDiacritics = removeVietnameseDiacritics(text).toLowerCase();
+    
+    // Find all match ranges (start, end)
+    const ranges: Array<{ start: number; end: number }> = [];
+    let searchIndex = 0;
+    
+    while (searchIndex < text.length) {
+      // Try to find match in lowercase
+      let matchIndex = textLower.indexOf(queryLower, searchIndex);
+      if (matchIndex === -1) {
+        // Try without diacritics
+        matchIndex = textNoDiacritics.indexOf(queryNoDiacritics, searchIndex);
+      }
+      
+      if (matchIndex === -1) break;
+      
+      ranges.push({ start: matchIndex, end: matchIndex + query.length });
+      searchIndex = matchIndex + query.length;
+    }
+    
+    if (ranges.length === 0) return text;
+    
+    // Build highlighted text by splitting and joining
+    const parts: string[] = [];
+    let lastIndex = 0;
+    
+    for (const range of ranges) {
+      // Add text before match
+      if (range.start > lastIndex) {
+        parts.push(text.substring(lastIndex, range.start));
+      }
+      // Add highlighted match
+      const matched = text.substring(range.start, range.end);
+      parts.push(`<mark class="bg-yellow-300 dark:bg-yellow-500/50">${matched}</mark>`);
+      lastIndex = range.end;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.join('');
+  };
+
+  // Search results with snippets
+  const searchResults = useMemo(() => {
+    if (!contentSearchQuery.trim() || !isSearchFocused) return [];
+    
+    const query = contentSearchQuery.trim();
+    const queryLower = query.toLowerCase();
+    const queryNoDiacritics = removeVietnameseDiacritics(queryLower);
+    
+    const results: Array<{
+      groupIndex: number;
+      docIndex: number;
+      document: DocumentWithContent;
+      group: DocumentGroupWithContent;
+      snippets: Array<{ text: string; position: number }>;
+    }> = [];
+    
+    allDocuments.forEach(({ groupIndex, docIndex, document, group }) => {
+      const chapter = document.chapter || '';
+      const content = document.content || '';
+      
+      const chapterLower = chapter.toLowerCase();
+      const contentLower = content.toLowerCase();
+      const chapterNoDiacritics = removeVietnameseDiacritics(chapter).toLowerCase();
+      const contentNoDiacritics = removeVietnameseDiacritics(content).toLowerCase();
+      
+      // Check if chapter or content matches
+      const chapterMatches = chapterLower.includes(queryLower) || chapterNoDiacritics.includes(queryNoDiacritics);
+      const contentMatches = contentLower.includes(queryLower) || contentNoDiacritics.includes(queryNoDiacritics);
+      
+      if (chapterMatches || contentMatches) {
+        const snippets = findSnippets(content, query, 2);
+        results.push({
+          groupIndex,
+          docIndex,
+          document,
+          group,
+          snippets
+        });
+      }
+    });
+    
+    return results;
+  }, [allDocuments, contentSearchQuery, isSearchFocused, findSnippets]);
+
   // Filter documents by search query
   const filteredDocuments = useMemo(() => {
     if (!contentSearchQuery.trim()) return allDocuments;
@@ -448,8 +656,14 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
         video: 'video',
       };
 
+      // Thêm site:youtube.com cho tab video
+      let keyword = searchQuery.trim();
+      if (activeTab === 'video') {
+        keyword = `${keyword} site:youtube.com`;
+      }
+
       const response = await googleSearchApiService.search({
-        keyword: searchQuery.trim(),
+        keyword: keyword,
         type: typeMap[activeTab as 'web' | 'anh' | 'video'],
         pageOffset: nextPageOffset,
         pageSize: 10,
@@ -493,6 +707,137 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
     };
   }, [loadMoreGoogleSearch, activeTab, googleSearchPagination]);
 
+  // Get total number of highlights
+  const getTotalHighlights = useCallback((): number => {
+    if (!markdownContentRef.current || !contentSearchQuery.trim()) return 0;
+    const marks = markdownContentRef.current.querySelectorAll('mark.highlight-search');
+    return marks.length;
+  }, [contentSearchQuery]);
+
+  // Scroll to highlight at specific index
+  const scrollToHighlight = useCallback((index: number) => {
+    if (!markdownContentRef.current) return;
+    
+    const container = markdownContentRef.current;
+    const marks = container.querySelectorAll('mark.highlight-search');
+    
+    if (marks.length === 0) return;
+    
+    // Clamp index to valid range
+    const clampedIndex = Math.max(0, Math.min(index, marks.length - 1));
+    const targetMark = marks[clampedIndex] as HTMLElement;
+    
+    if (targetMark) {
+      targetMark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setCurrentHighlightIndex(clampedIndex);
+    }
+  }, []);
+
+  // Navigate to next highlight
+  const goToNextHighlight = useCallback(() => {
+    const total = getTotalHighlights();
+    if (total === 0) return;
+    const nextIndex = (currentHighlightIndex + 1) % total;
+    scrollToHighlight(nextIndex);
+  }, [currentHighlightIndex, getTotalHighlights, scrollToHighlight]);
+
+  // Navigate to previous highlight
+  const goToPreviousHighlight = useCallback(() => {
+    const total = getTotalHighlights();
+    if (total === 0) return;
+    const prevIndex = currentHighlightIndex === 0 ? total - 1 : currentHighlightIndex - 1;
+    scrollToHighlight(prevIndex);
+  }, [currentHighlightIndex, getTotalHighlights, scrollToHighlight]);
+
+  // Reset highlight index when search query changes
+  useEffect(() => {
+    setCurrentHighlightIndex(0);
+  }, [contentSearchQuery]);
+
+  // Auto scroll to first highlight when highlights are created
+  useEffect(() => {
+    if (!contentSearchQuery.trim() || isSearchFocused) return;
+    
+    // Wait for highlights to be rendered
+    const timeout = setTimeout(() => {
+      const total = getTotalHighlights();
+      if (total > 0 && currentHighlightIndex === 0) {
+        scrollToHighlight(0);
+      }
+    }, 100);
+    
+    return () => clearTimeout(timeout);
+  }, [contentSearchQuery, currentDocument, isSearchFocused, getTotalHighlights, currentHighlightIndex, scrollToHighlight]);
+
+  // Scroll to keyword in markdown content
+  const scrollToKeyword = useCallback((keyword: string) => {
+    if (!markdownContentRef.current || !keyword.trim()) return;
+    
+    const container = markdownContentRef.current;
+    const query = keyword.trim();
+    const queryLower = query.toLowerCase();
+    const queryNoDiacritics = removeVietnameseDiacritics(queryLower);
+    
+    // Wait a bit for highlights to be rendered
+    setTimeout(() => {
+      // Try to find existing highlighted marks first
+      const existingMarks = container.querySelectorAll('mark.highlight-search');
+      if (existingMarks.length > 0) {
+        setCurrentHighlightIndex(0);
+        existingMarks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      
+      // Find all text nodes that contain the keyword
+      const walker = document.createTreeWalker(
+        container,
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      
+      let node;
+      while (node = walker.nextNode()) {
+        const text = node.textContent || '';
+        const textLower = text.toLowerCase();
+        const textNoDiacritics = removeVietnameseDiacritics(text).toLowerCase();
+        
+        if (textLower.includes(queryLower) || textNoDiacritics.includes(queryNoDiacritics)) {
+          // Find the first occurrence
+          let matchIndex = textLower.indexOf(queryLower);
+          if (matchIndex === -1) {
+            matchIndex = textNoDiacritics.indexOf(queryNoDiacritics);
+          }
+          
+          if (matchIndex !== -1) {
+            // Create a range to get the position
+            try {
+              const range = document.createRange();
+              range.setStart(node, matchIndex);
+              range.setEnd(node, Math.min(matchIndex + query.length, node.textContent?.length || 0));
+              
+              // Scroll to the range
+              const rect = range.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
+              const scrollTop = container.scrollTop + rect.top - containerRect.top - (containerRect.height / 2);
+              
+              container.scrollTo({
+                top: Math.max(0, scrollTop),
+                behavior: 'smooth'
+              });
+            } catch (e) {
+              // If range fails, try scrolling to parent element
+              const parent = node.parentElement;
+              if (parent) {
+                parent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+            break;
+          }
+        }
+      }
+    }, 300);
+  }, []);
+
   const SearchIcon = () => (
     <svg
       className="w-6 h-6 fill-gray-500 opacity-20 dark:fill-white dark:opacity-20"
@@ -506,12 +851,20 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
 
   // Render detail view
   if (viewMode === 'detail') {
-    const docsToShow = contentSearchQuery.trim() ? filteredDocuments : allDocuments;
+    // Filter chapters theo keyword khi focus vào search
+    const chaptersToShow = isSearchFocused 
+      ? (contentSearchQuery.trim() ? filteredDocuments : allDocuments)
+      : allDocuments;
+    
+    // Lấy placeholder dựa trên bookTitle hiện tại
+    const searchPlaceholder = currentDocument?.bookTitle 
+      ? `Tìm trong ${currentDocument.bookTitle}...`
+      : 'Tìm kiếm...';
     
     return (
       <div ref={containerRef} className="bg-gray-100/60 dark:bg-white/5 flex flex-col h-full">
         {/* Header với search bar */}
-        <div className="flex items-center gap-4 p-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-4 p-4">
           {/* Back button */}
           <button
             onClick={() => {
@@ -519,6 +872,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
               setDetailGroups([]);
               setSelectedDocumentIndex(null);
               setContentSearchQuery('');
+              setIsSearchFocused(false);
             }}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
             aria-label="Quay lại"
@@ -539,17 +893,103 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
           </button>
 
           {/* Search input */}
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={contentSearchQuery}
-              onChange={(e) => setContentSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm trong nội dung..."
-              className="w-full rounded-full bg-gray-100 dark:bg-white/5 px-8 py-3 pr-10 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-white/10 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:bg-white dark:focus:bg-white/10 focus:border-2 focus:border-gray-300 dark:focus:border-white/20 focus:outline-none"
-              autoComplete="off"
-            />
-            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-              <SearchIcon />
+          <div className="flex-1 flex justify-center">
+            <div className="relative max-w-sm w-full">
+              <input
+                type="text"
+                value={contentSearchQuery}
+                onChange={(e) => setContentSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={(e) => {
+                  // Check if blur is caused by clicking on chapter list or navigation buttons
+                  const relatedTarget = e.relatedTarget as HTMLElement;
+                  if (searchResultsRef.current && relatedTarget && searchResultsRef.current.contains(relatedTarget)) {
+                    return; // Don't blur if clicking on chapter list
+                  }
+                  // Don't blur if clicking on navigation buttons
+                  if (relatedTarget && (relatedTarget.closest('.nav-highlight-button') || relatedTarget.closest('.highlight-counter'))) {
+                    return;
+                  }
+                  setIsSearchFocused(false);
+                }}
+                placeholder={searchPlaceholder}
+                className={`w-full rounded-full bg-white dark:bg-white/5 py-4 text-gray-900 dark:text-white placeholder:text-gray-400 focus-within:bg-white dark:focus-within:bg-white/10 border-2 border-transparent focus-within:border-2 border-white/5 focus-within:border-white/10 focus:outline-none shadow-sm focus-within:shadow-none ${
+                  getTotalHighlights() > 0 ? 'pl-8 pr-32' : 'px-8 pr-16'
+                }`}
+                autoComplete="off"
+              />
+              {getTotalHighlights() > 0 && !isSearchFocused ? (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-auto">
+
+                  {/* Previous button */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      goToPreviousHighlight();
+                    }}
+                    className="nav-highlight-button flex-shrink-0"
+                    aria-label="Kết quả trước"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-600 dark:text-gray-300 opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Counter */}
+                  <span className="highlight-counter text-xs text-gray-400 dark:text-gray-200 px-2 select-none">
+                    {currentHighlightIndex + 1}/{getTotalHighlights()}
+                  </span>
+                  {/* Next button */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      goToNextHighlight();
+                    }}
+                    className="nav-highlight-button flex-shrink-0"
+                    aria-label="Kết quả tiếp theo"
+                  >
+                    <svg
+                      className="w-4 h-4 text-gray-600 dark:text-gray-300 opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-200"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none">
+                  <SearchIcon />
+                </div>
+              )}
             </div>
           </div>
 
@@ -575,48 +1015,92 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
           </button>
         </div>
 
-        {/* Content area với vertical tabs và markdown */}
-        <div className="flex-1 overflow-hidden flex">
-          {/* Vertical tabs */}
-          <div className="w-64 border-r border-gray-200 dark:border-gray-800 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
-            {loadingContent ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="text-gray-400 dark:text-gray-500">Đang tải...</div>
+        {/* Content area */}
+        {isSearchFocused ? (
+          /* Hiện search results với snippets khi có keyword, hoặc danh sách chapter khi không có keyword */
+          <div ref={searchResultsRef} className="flex-1 overflow-hidden">
+            {contentSearchQuery.trim() && searchResults.length > 0 ? (
+              /* Hiện search results với snippets khi có keyword */
+              <div className="h-full overflow-y-auto p-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
+                <div className="space-y-3">
+                  {searchResults.map((result, resultIndex) => (
+                    <div key={`${result.groupIndex}-${result.docIndex}-${resultIndex}`}>
+                      {result.snippets.map((snippet, snippetIndex) => (
+                        <button
+                          key={`${result.groupIndex}-${result.docIndex}-${snippetIndex}`}
+                          onClick={() => {
+                            setSelectedDocumentIndex({ groupIndex: result.groupIndex, docIndex: result.docIndex });
+                            setIsSearchFocused(false);
+                            // Wait for markdown to render then scroll
+                            setTimeout(() => {
+                              scrollToKeyword(contentSearchQuery);
+                            }, 300);
+                          }}
+                          className="w-full text-left p-6 rounded-2xl bg-white dark:bg-white/5 hover:cursor-pointer shadow-sm mb-4"
+                        >
+                          {/* Chapter title - tối đa 1 dòng */}
+                          <div className="font-medium text-gray-900 dark:text-white line-clamp-1 mb-2">
+                            {result.document.chapter || 'Không rõ'}
+                          </div>
+                          {/* Content snippet - tối đa 2 dòng, có highlight */}
+                          <div 
+                            className="text-gray-600 dark:text-gray-300 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: highlightKeyword(snippet.text, contentSearchQuery) }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ) : docsToShow.length > 0 ? (
-              <div className="p-2 space-y-1">
-                {docsToShow.map(({ groupIndex, docIndex, document, group }) => {
-                  const isSelected = selectedDocumentIndex?.groupIndex === groupIndex && 
-                                     selectedDocumentIndex?.docIndex === docIndex;
-                  return (
-                    <button
-                      key={`${groupIndex}-${docIndex}-${document.id}`}
-                      onClick={() => setSelectedDocumentIndex({ groupIndex, docIndex })}
-                      className={`w-full text-left p-3 rounded-lg transition-all ${
-                        isSelected
-                          ? 'bg-gray-200 dark:bg-white/10 text-gray-900 dark:text-white'
-                          : 'bg-gray-50 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/8'
-                      }`}
-                    >
-                      <div className="text-sm font-medium line-clamp-2 mb-1">
-                        {document.chapter || 'Không có tiêu đề'}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                        {group.bookTitle}
-                      </div>
-                    </button>
-                  );
-                })}
+            ) : contentSearchQuery.trim() ? (
+              /* Không tìm thấy kết quả */
+              <div className="h-full flex items-center justify-center">
+                <div className="text-gray-400 dark:text-gray-500">Không tìm thấy kết quả</div>
               </div>
             ) : (
-              <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-sm">
-                Không tìm thấy kết quả
+              /* Hiện danh sách chapter khi không có keyword */
+              <div className="h-full overflow-y-auto px-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
+                {loadingContent ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="text-gray-400 dark:text-gray-500">Đang tải...</div>
+                  </div>
+                ) : chaptersToShow.length > 0 ? (
+                  <div className="space-y-1">
+                    {chaptersToShow.map(({ groupIndex, docIndex, document, group }) => {
+                      const isSelected = selectedDocumentIndex?.groupIndex === groupIndex && 
+                                         selectedDocumentIndex?.docIndex === docIndex;
+                      return (
+                        <button
+                          key={`${groupIndex}-${docIndex}-${document.id}`}
+                          onClick={() => {
+                            setSelectedDocumentIndex({ groupIndex, docIndex });
+                            setIsSearchFocused(false);
+                          }}
+                          className={`w-full text-left px-6 py-4 rounded-2xl transition-all ${
+                            isSelected
+                              ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-sm'
+                              : 'text-gray-500 dark:text-gray-300 hover:cursor-pointer hover:text-gray-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <div className="line-clamp-2">
+                            {document.chapter || 'Không rõ'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-400 dark:text-gray-500 text-sm">
+                    Không có dữ liệu
+                  </div>
+                )}
               </div>
             )}
           </div>
-
-          {/* Markdown content */}
-          <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700">
+        ) : (
+          /* Hiện markdown content khi không focus vào search */
+          <div className="flex-1 overflow-y-auto p-6 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700" ref={markdownContentRef}>
             {loadingContent ? (
               <div className="flex items-center justify-center py-20">
                 <div className="text-gray-400 dark:text-gray-500">Đang tải nội dung...</div>
@@ -640,7 +1124,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -652,7 +1136,8 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
       <div className="flex items-center gap-4 p-4">
         {/* Menu icon - luôn hiện */}
         <button
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+          className="p-2 rounded transition-colors flex-shrink-0 hover:cursor-not-allowed opacity-20"
+          disabled
           aria-label="Menu"
         >
           <svg
@@ -679,7 +1164,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                 setSearchQuery(newValue);
               }}
               placeholder="Tìm kiếm..."
-              className="w-full rounded-full bg-white dark:bg-white/5 px-8 py-4 pr-10 text-gray-900 dark:text-white placeholder:text-gray-400 focus-within:bg-white dark:focus-within:bg-white/10 border-2 border-transparent focus-within:border-2 border-white/5 focus-within:border-white/10 focus:outline-none shadow-sm focus-within:shadow-none"
+              className="w-full rounded-full bg-white dark:bg-white/5 px-8 py-4 pr-16 text-gray-900 dark:text-white placeholder:text-gray-400 focus-within:bg-white dark:focus-within:bg-white/10 border-2 border-transparent focus-within:border-2 border-white/5 focus-within:border-white/10 focus:outline-none shadow-sm focus-within:shadow-none"
               autoComplete="off"
             />
             <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none">
@@ -854,25 +1339,30 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                   {/* Kết quả tìm kiếm */}
                   {activeTab === 'web' && (
                     <div className="space-y-3">
-                      {googleSearchResults.map((result, index) => (
+                      {googleSearchResults.map((result, index) => {
+                        const { text: displayLinkColor } = getColorPair(index);
+                        return (
                         <a
                           key={index}
                           href={result.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                          className="block p-6 rounded-2xl bg-white shadow-sm hover:cursor-pointer dark:hover:bg-white/5 hover:scale-105 transition-all duration-200"
                         >
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                          <div className="text-xs font-medium mb-2" style={{ color: displayLinkColor }}>
                             {result.displayLink}
                           </div>
-                          <h3 className="text-lg font-medium text-blue-600 dark:text-blue-400 mb-1 line-clamp-1">
-                            {result.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                            {result.snippet}
-                          </p>
+                          <h3 
+                            className="text-lg font-medium text-[#8D71FF] dark:text-blue-400 mb-1 line-clamp-1"
+                            dangerouslySetInnerHTML={{ __html: highlightKeyword(result.title || '', searchQuery) }}
+                          />
+                          <p 
+                            className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2"
+                            dangerouslySetInnerHTML={{ __html: highlightKeyword(result.snippet || '', searchQuery) }}
+                          />
                         </a>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
 
@@ -889,7 +1379,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                             className="group relative rounded-3xl w-full min-w-[200px] aspect-[200/280] cursor-pointer hover:scale-105 transition-all overflow-hidden flex flex-col"
                             style={{ backgroundColor: bg }}
                           >
-                            <div className="w-full h-full flex items-center justify-center">
+                            <div className="w-full h-full flex items-center justify-center shadow-sm">
                               {result.link ? (
                                 <img
                                   src={result.link}
@@ -905,8 +1395,8 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                             </div>
                             {/* Tooltip snippet khi hover */}
                             {result.snippet && (
-                              <div className="absolute inset-0 bg-black/70 dark:bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-4">
-                                <p className="text-white text-sm text-center line-clamp-4">
+                              <div className="absolute inset-0 bg-[#8D71FF]/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:cursor-pointer flex items-end justify-end p-6">
+                                <p className="text-2xl text-white font-semibold line-clamp-6">
                                   {result.snippet}
                                 </p>
                               </div>
@@ -918,26 +1408,48 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ onClose, initialSearchQ
                   )}
 
                   {activeTab === 'video' && (
-                    <div className="space-y-3">
-                      {googleSearchResults.map((result, index) => (
-                        <a
-                          key={index}
-                          href={result.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                        >
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                            {result.displayLink}
-                          </div>
-                          <h3 className="text-lg font-medium text-blue-600 dark:text-blue-400 mb-1 line-clamp-1">
-                            {result.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                            {result.snippet}
-                          </p>
-                        </a>
-                      ))}
+                    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(1, minmax(0, 1fr))' }}>
+                      {googleSearchResults.map((result, index) => {
+                        const { bg } = getColorPair(index);
+                        const thumbnailUrl = getYouTubeThumbnail(result.link) || result.image?.thumbnailLink || null;
+                        return (
+                          <a
+                            key={index}
+                            href={result.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group w-full cursor-pointer hover:scale-105 transition-all overflow-hidden flex flex-col rounded-3xl bg-white shadow-sm"
+                          >
+                            <div className="w-full aspect-video flex items-center justify-center">
+                              {thumbnailUrl ? (
+                                <img
+                                  src={thumbnailUrl}
+                                  alt={result.title}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    // Fallback về hqdefault nếu maxresdefault không có
+                                    const videoId = getYouTubeVideoId(result.link);
+                                    if (videoId) {
+                                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                  <span className="text-gray-400 dark:text-gray-500 text-xs">Không có ảnh</span>
+                                </div>
+                              )}
+                            </div>
+                            {/* Title nằm dưới thumbnail */}
+                            <div className="px-6 py-4">
+                              <h3 className="text-gray-700 dark:text-white line-clamp-3">
+                                {result.title}
+                              </h3>
+                            </div>
+                          </a>
+                        );
+                      })}
                     </div>
                   )}
 

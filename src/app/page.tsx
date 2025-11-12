@@ -706,7 +706,7 @@ const HomePage: React.FC = () => {
                 <>
                   {/* Hiển thị categories từ kết quả tìm kiếm - Grid view (card nhỏ hơn trong split-screen) */}
                   {filteredCategories.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                       {filteredCategories.map((category) => (
                         <CategoryCard
                           key={category.id}
@@ -724,7 +724,7 @@ const HomePage: React.FC = () => {
                   {filteredCategories.length > 0 && (
                     <div className="mb-6">
                 <h2 className="text-md text-gray-300 dark:text-gray-600 tracking-widest font-bold mb-4">{user ? 'MÔN HỌC GỢI Ý' : 'MÔN MỚI HÔM NAY'}</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {filteredCategories.map((category) => (
                           <CategoryCard
                             key={category.id}
@@ -755,7 +755,7 @@ const HomePage: React.FC = () => {
           <>
             {/* Hiển thị subcategories từ kết quả tìm kiếm */}
             {filteredSubCategories.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-6">
                 {filteredSubCategories.map((subCategory) => {
                   const iconFromMap = categoryColorMap.iconMap.get(subCategory.id);
                   const enrichedSub = {

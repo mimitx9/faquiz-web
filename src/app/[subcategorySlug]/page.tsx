@@ -2094,6 +2094,7 @@ const SubCategoryQuizPage: React.FC = () => {
                     setSelectedTextForSearch('');
                   }} 
                   initialSearchQuery={selectedTextForSearch}
+                  initialActiveTab={selectedTextForSearch ? "web" : "sach"}
                 />
               )}
             </div>
