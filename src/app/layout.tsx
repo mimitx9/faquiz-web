@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/hooks/useTheme';
 import { Analytics } from '@vercel/analytics/next';
 import ChatProvider from '@/components/chat/ChatProvider';
 import OnlineUsersFloating from '@/components/ui/OnlineUsersFloating';
+import DevToolsDetector from '@/components/common/DevToolsDetector';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <ChatProvider>
+              <DevToolsDetector />
               {children}
               <OnlineUsersFloating />
             </ChatProvider>
