@@ -113,6 +113,41 @@ export function matchesCategoryTitle(title: string, keyword: string): boolean {
 }
 
 /**
+ * Match title của category với logic gần đúng: kiểm tra xem title có chứa tất cả các từ trong keyword không
+ * Ví dụ: "module tim" sẽ match với "module hệ tim" vì có cả "module" và "tim"
+ * 
+ * Logic: Tách keyword thành các từ (trước khi normalize), sau đó kiểm tra xem title có chứa tất cả các từ đó không
+ */
+export function matchesCategoryTitleFuzzy(title: string, keyword: string): boolean {
+  if (!title || !keyword) return false;
+  
+  // Tách keyword thành các từ (giữ nguyên space để tách)
+  // Ví dụ: "module tim" -> ["module", "tim"]
+  const keywordWords = keyword.trim().split(/\s+/).filter(word => word.length > 0);
+  
+  // Nếu chỉ có 1 từ, sử dụng logic matching thông thường
+  if (keywordWords.length <= 1) {
+    return matchesCategoryTitle(title, keyword);
+  }
+  
+  // Normalize title một lần
+  const normalizedTitle = normalizeSearchKeyword(title);
+  
+  // Kiểm tra xem title có chứa tất cả các từ trong keyword không
+  // Mỗi từ được normalize riêng để kiểm tra
+  for (const word of keywordWords) {
+    const normalizedWord = normalizeSearchKeyword(word);
+    // Mỗi từ phải có độ dài >= 2 để tránh matching quá rộng
+    if (normalizedWord.length >= 2 && !normalizedTitle.includes(normalizedWord)) {
+      return false;
+    }
+  }
+  
+  // Tất cả các từ đều có trong title
+  return true;
+}
+
+/**
  * Convert hex color sang rgba với opacity
  */
 export function hexToRgba(hex: string, alpha: number = 1): string {

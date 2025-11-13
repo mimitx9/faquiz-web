@@ -10,7 +10,7 @@ import BannerSlide from '@/components/ui/BannerSlide';
 import { categoryApiService } from '@/lib/api';
 import { CategoriesSlide, SubCategoriesSlide } from '@/types';
 import { useRouter } from 'next/navigation';
-import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, hexToRgba } from '@/lib/utils';
+import { normalizeSearchKeyword, matchesCategoryCode, matchesCategoryTitle, matchesCategoryTitleFuzzy, hexToRgba } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/hooks/useTheme';
 import ProgressBar from '@/components/ui/ProgressBar';
@@ -169,6 +169,18 @@ const HomePage: React.FC = () => {
           }
         }
       });
+      
+      // Nếu searchByCodeOnly = true và không có kết quả từ code, fallback sang tìm theo title với logic gần đúng
+      if (searchByCodeOnly && baseCategories.length === 0) {
+        fullData.forEach((category) => {
+          // Chỉ kiểm tra title nếu chưa có trong baseCategories
+          const matchesTitleFuzzy = category.title && matchesCategoryTitleFuzzy(category.title, searchQuery);
+          
+          if (matchesTitleFuzzy) {
+            baseCategories.push(category);
+          }
+        });
+      }
     }
 
     // Nếu có cả searchQuery và subtitle filter, filter thêm theo searchQuery
@@ -193,6 +205,17 @@ const HomePage: React.FC = () => {
             }
           }
         });
+        
+        // Nếu searchByCodeOnly = true và không có kết quả từ code, fallback sang tìm theo title với logic gần đúng
+        if (searchByCodeOnly && filtered.length === 0) {
+          baseCategories.forEach((category) => {
+            const matchesTitleFuzzy = category.title && matchesCategoryTitleFuzzy(category.title, searchQuery);
+            
+            if (matchesTitleFuzzy) {
+              filtered.push(category);
+            }
+          });
+        }
         
         return filtered;
       }
