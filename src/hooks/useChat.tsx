@@ -637,14 +637,19 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           const messageCount = response.data.count ?? apiMessages.length;
           const hasMore = response.data.hasMore ?? false;
           
+          // Backend trả về từ mới nhất (index 0) đến cũ nhất (index cuối)
+          // Reverse để có thứ tự từ cũ nhất đến mới nhất, sau đó sort để đảm bảo đúng thứ tự
+          const reversedMessages = [...apiMessages].reverse();
+          const sortedMessages = reversedMessages.sort((a, b) => a.timestamp - b.timestamp);
+          
           // Lưu vào cache
-          messagesByConversationRef.current.set(currentTargetUserId, apiMessages);
+          messagesByConversationRef.current.set(currentTargetUserId, sortedMessages);
           messageCountByConversationRef.current.set(currentTargetUserId, messageCount);
           hasMoreByConversationRef.current.set(currentTargetUserId, hasMore);
           loadedConversationsRef.current.add(currentTargetUserId);
           
           // Hiển thị messages
-          setMessages(apiMessages);
+          setMessages(sortedMessages);
         }
       } catch (error) {
         console.error('[Chat] Lỗi khi load messages:', error);
@@ -1677,11 +1682,15 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       });
 
       if (response.data?.messages && response.data.messages.length > 0) {
-        const newMessages = response.data.messages;
+        const apiMessages = response.data.messages;
         const hasMore = response.data.hasMore ?? false;
 
+        // Backend trả về từ mới nhất (index 0) đến cũ nhất (index cuối)
+        // Reverse để có thứ tự từ cũ nhất đến mới nhất
+        const reversedMessages = [...apiMessages].reverse();
+        
         // Prepend messages mới vào đầu danh sách (messages cũ hơn)
-        const updatedMessages = [...newMessages, ...currentMessages].sort((a, b) => a.timestamp - b.timestamp);
+        const updatedMessages = [...reversedMessages, ...currentMessages].sort((a, b) => a.timestamp - b.timestamp);
         
         // Lưu vào cache
         messagesByConversationRef.current.set(targetUserId, updatedMessages);
