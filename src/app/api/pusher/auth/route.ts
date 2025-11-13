@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         // Lấy user info từ API backend
         const backendUrl = process.env.NODE_ENV === 'production' 
           ? 'https://api.facourse.com/fai' 
-          : 'http://localhost:7071/fai';
+          : 'https://api.facourse.com/fai';
         const profileResponse = await fetch(`${backendUrl}/v1/user/profile-quiz`, {
           headers: {
             'Authorization': `Bearer ${token}`,

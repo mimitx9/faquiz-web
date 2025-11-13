@@ -7,7 +7,7 @@ Backend API cho tính năng chat real-time 1-1 với Pusher, hỗ trợ:
 - **Admin Support**: Admin có thể chat với bất kỳ user nào
 
 **Base URL:** 
-- Development: `http://localhost:7071/fai`
+- Development: `https://api.facourse.com/fai`
 - Production: `https://api.facourse.com/fai`
 
 ---

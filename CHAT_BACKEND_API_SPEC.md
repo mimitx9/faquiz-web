@@ -257,7 +257,7 @@ if (response.ok) {
   // Lưu tin nhắn vào database qua backend API
   const backendUrl = process.env.NODE_ENV === 'production' 
     ? 'https://api.facourse.com/fai' 
-    : 'http://localhost:7071/fai';
+    : 'https://api.facourse.com/fai';
   
   await fetch(`${backendUrl}/v1/chat/messages`, {
     method: 'POST',
@@ -290,7 +290,7 @@ channel.bind('pusher:subscription_succeeded', async () => {
   try {
     const BASE_URL = process.env.NODE_ENV === 'production' 
       ? 'https://api.facourse.com/fai' 
-      : 'http://localhost:7071/fai';
+      : 'https://api.facourse.com/fai';
     
     const token = localStorage.getItem('auth_token');
     const response = await fetch(
