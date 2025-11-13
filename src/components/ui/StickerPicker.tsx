@@ -16,6 +16,8 @@ interface StickerPickerProps {
   emojiList?: string[];
   onClose: () => void;
   className?: string;
+  position?: { top?: number; bottom?: number; left?: number; right?: number };
+  style?: React.CSSProperties;
 }
 
 // Helper function để parse sticker ID thành path
@@ -33,11 +35,14 @@ export function getStickerUrl(stickerId: string | null | undefined): string {
   return `/stickers/${stickerId}`;
 }
 
-export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiList = [], onClose, className }: StickerPickerProps) {
+export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiList = [], onClose, className, position, style }: StickerPickerProps) {
   const [categories, setCategories] = useState<StickerCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const isScrollingRef = useRef(false);
 
   // Load danh sách stickers từ public/stickers/
   useEffect(() => {
@@ -61,16 +66,8 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
         // Load stickers từ mỗi category
         for (const categoryId of categoryFolders) {
           try {
-            // Fetch danh sách files từ folder (sử dụng Next.js API route hoặc static list)
-            // Vì không thể list files trực tiếp từ client, ta sẽ hardcode hoặc dùng API
-            // Tạm thời dùng cách đơn giản: hardcode một số stickers phổ biến hoặc fetch từ config
-            
-            // Option: Tạo API route để list files, hoặc hardcode list
-            // Ở đây ta sẽ dùng cách đơn giản: giả sử có config hoặc hardcode
             const stickers: string[] = [];
             
-            // Với mỗi category, ta sẽ cần list files
-            // Tạm thời để empty array, sẽ populate sau khi có cách list files
             loadedCategories.push({
               id: categoryId,
               name: categoryNames[categoryId] || categoryId,
@@ -81,11 +78,8 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
           }
         }
 
-        // Nếu không có cách list files tự động, ta sẽ hardcode một số stickers
-        // Hoặc tạo API endpoint để list files từ public/stickers/
-        // Tạm thời dùng cách đơn giản: hardcode một số stickers
+        // Hardcode stickers cho mỗi category
         if (loadedCategories.length > 0 && loadedCategories[0].stickers.length === 0) {
-          // Hardcode một số stickers cho mỗi category để demo
           loadedCategories[0] = {
             id: 'bts',
             name: 'BTS',
@@ -114,11 +108,11 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
         }
 
         setCategories(loadedCategories);
-        // Chọn category đầu tiên hoặc "emoji" nếu có
+        // Set active category đầu tiên
         if (loadedCategories.length > 0) {
-          setSelectedCategory(loadedCategories[0].id);
+          setActiveCategory(loadedCategories[0].id);
         } else if (emojiList.length > 0) {
-          setSelectedCategory('emoji');
+          setActiveCategory('emoji');
         }
       } catch (error) {
         console.error('Error loading stickers:', error);
@@ -129,6 +123,80 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
 
     loadStickers();
   }, []);
+
+  // Detect active section khi scroll
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (isScrollingRef.current) return;
+
+      const scrollTop = scrollContainer.scrollTop;
+      const viewportHeight = scrollContainer.clientHeight;
+      const threshold = 100; // Offset từ top của viewport
+
+      // Tìm section nào đang hiển thị trong viewport
+      let activeId = '';
+      let bestMatchId: string | null = null;
+      let bestMatchDistance = Infinity;
+
+      Object.entries(sectionRefs.current).forEach(([id, element]) => {
+        if (!element) return;
+        
+        const rect = element.getBoundingClientRect();
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const sectionTop = rect.top - containerRect.top + scrollContainer.scrollTop;
+        const sectionBottom = sectionTop + rect.height;
+
+        // Kiểm tra nếu section đang trong viewport
+        const isVisible = sectionTop < scrollTop + viewportHeight && sectionBottom > scrollTop;
+        
+        if (isVisible) {
+          // Tính khoảng cách từ top của viewport đến top của section
+          const distance = Math.abs(sectionTop - (scrollTop + threshold));
+          
+          if (distance < bestMatchDistance) {
+            bestMatchDistance = distance;
+            bestMatchId = id;
+          }
+        }
+      });
+
+      // Nếu có section visible, dùng nó; nếu không, tìm section gần nhất
+      if (bestMatchId !== null) {
+        activeId = bestMatchId;
+      } else {
+        // Tìm section gần nhất với top của viewport
+        let minDistance = Infinity;
+        Object.entries(sectionRefs.current).forEach(([id, element]) => {
+          if (!element) return;
+          
+          const rect = element.getBoundingClientRect();
+          const containerRect = scrollContainer.getBoundingClientRect();
+          const sectionTop = rect.top - containerRect.top + scrollContainer.scrollTop;
+          const distance = Math.abs(sectionTop - scrollTop);
+
+          if (distance < minDistance) {
+            minDistance = distance;
+            activeId = id;
+          }
+        });
+      }
+
+      if (activeId && activeId !== activeCategory) {
+        setActiveCategory(activeId);
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    // Check initial position
+    handleScroll();
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [categories, emojiList.length, activeCategory]);
 
   const handleStickerClick = (categoryId: string, filename: string) => {
     const stickerId = `${categoryId}/${filename}`;
@@ -143,22 +211,62 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
     }
   };
 
-  const selectedCategoryData = categories.find((cat) => cat.id === selectedCategory);
-  const isEmojiCategory = selectedCategory === 'emoji';
+  const handleMenuClick = (categoryId: string) => {
+    const sectionElement = sectionRefs.current[categoryId];
+    if (sectionElement && scrollContainerRef.current) {
+      isScrollingRef.current = true;
+      setActiveCategory(categoryId);
+      
+      const containerRect = scrollContainerRef.current.getBoundingClientRect();
+      const sectionRect = sectionElement.getBoundingClientRect();
+      const scrollTop = scrollContainerRef.current.scrollTop;
+      const sectionTop = sectionRect.top - containerRect.top + scrollTop;
+
+      scrollContainerRef.current.scrollTo({
+        top: sectionTop - 8, // Offset nhỏ để không sát mép
+        behavior: 'smooth'
+      });
+
+      // Reset flag sau khi scroll xong
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 500);
+    }
+  };
+
+  // Tính toán position style
+  const positionStyle = position 
+    ? {
+        position: 'fixed' as const,
+        ...(position.top !== undefined && { top: `${position.top}px` }),
+        ...(position.bottom !== undefined && { bottom: `${position.bottom}px` }),
+        ...(position.left !== undefined && { left: `${position.left}px` }),
+        ...(position.right !== undefined && { right: `${position.right}px` }),
+      }
+    : {
+        position: 'absolute' as const,
+        bottom: '100%',
+        left: '1rem',
+        right: '1rem',
+        marginBottom: '0.5rem',
+      };
 
   if (isLoading) {
     return (
-      <div className="relative">
+      <div className="relative z-[50]">
         <div
           ref={pickerRef}
           className={cn(
-            'absolute bottom-full left-4 right-4 mb-2 p-4',
+            'p-4',
             'bg-white dark:bg-gray-800',
-            'rounded-lg',
-            'max-h-64 overflow-hidden flex items-center justify-center',
+            'rounded-2xl',
+            'h-[480px] w-[340px] overflow-hidden flex items-center justify-center',
             className
           )}
-          style={{ border: '1px solid #8D7EF740' }}
+          style={{ 
+            ...positionStyle,
+            ...style,
+          }}
         >
           <div className="text-sm text-gray-500 dark:text-gray-400">Đang tải stickers...</div>
         </div>
@@ -166,114 +274,123 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
     );
   }
 
+  const allItems = [
+    ...categories.map(cat => ({ type: 'category' as const, id: cat.id, name: cat.name, data: cat })),
+    ...(emojiList.length > 0 ? [{ type: 'emoji' as const, id: 'emoji', name: 'Emoji', data: emojiList }] : [])
+  ];
+
   return (
-    <div className="relative">
+    <div className="relative z-[50]">
       <div
         ref={pickerRef}
         className={cn(
-          'absolute bottom-full left-4 right-4 mb-2',
           'bg-white dark:bg-gray-800',
-          'rounded-lg shadow-xl',
-          'max-h-64 flex flex-col overflow-hidden',
+          'rounded-2xl shadow-xl',
+          'h-[480px] w-[340px] flex flex-col overflow-hidden',
           className
         )}
-        style={{ border: '1px solid #8D7EF740' }}
+        style={{ 
+          ...positionStyle,
+          ...style,
+        }}
       >
         {/* Arrow bo tròn ở đỉnh */}
         <div 
-          className="absolute -bottom-2 left-8 w-3 h-3 bg-white dark:bg-gray-800 transform rotate-45 rounded-tl-sm"
+          className="absolute -bottom-2 left-8 w-3 h-3 bg-white dark:bg-gray-800 transform rotate-45 rounded-tl-sm z-10"
           style={{ borderRight: '1px solid #8D7EF740', borderBottom: '1px solid #8D7EF740' }}
         />
-        {/* Category tabs */}
-        <div className="flex gap-1 p-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
-          {categories.map((category) => (
+        
+        {/* Phần 1: Menu sticker */}
+        <div className="flex gap-1 p-2 overflow-x-auto shrink-0 hide-scrollbar">
+          {allItems.map((item) => (
             <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
+              key={item.id}
+              onClick={() => handleMenuClick(item.id)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
-                selectedCategory === category.id
-                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
+                activeCategory === item.id
+                  ? 'bg-[#8D7EF7]/20 text-[#8D7EF7]'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-[#8D7EF7]/20 hover:text-[#8D7EF7]'
               )}
             >
-              {category.name}
+              {item.name}
             </button>
           ))}
-          {/* Tab Emoji ở cuối */}
-          {emojiList.length > 0 && (
-            <button
-              onClick={() => setSelectedCategory('emoji')}
-              className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
-                selectedCategory === 'emoji'
-                  ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              )}
-            >
-              Emoji
-            </button>
-          )}
         </div>
 
-        {/* Stickers grid hoặc Emoji grid */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {isEmojiCategory ? (
-            emojiList.length > 0 ? (
-              <div className="grid grid-cols-8 gap-1">
-                {emojiList.map((emoji, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleEmojiClick(emoji)}
-                    className="text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded p-0.5 transition-colors"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
-                Không có emoji nào
-              </div>
-            )
-          ) : selectedCategoryData && selectedCategoryData.stickers.length > 0 ? (
-            <div className="grid grid-cols-4 gap-2">
-              {selectedCategoryData.stickers.map((filename, index) => {
-                const stickerId = `${selectedCategory}/${filename}`;
-                const stickerUrl = getStickerUrl(stickerId);
-                
-                return (
-                  <button
-                    key={`${selectedCategory}-${filename}-${index}`}
-                    onClick={() => handleStickerClick(selectedCategory, filename)}
-                    className={cn(
-                      'aspect-square rounded-lg overflow-hidden',
-                      'hover:bg-gray-100 dark:hover:bg-gray-700',
-                      'transition-colors p-1',
-                      'flex items-center justify-center'
-                    )}
-                    title={filename}
-                  >
-                    <Image
-                      src={stickerUrl}
-                      alt={filename}
-                      width={64}
-                      height={64}
-                      className="w-full h-full object-contain"
-                      unoptimized // Vì là animated webp
-                    />
-                  </button>
-                );
-              })}
+        {/* Phần 2: Danh sách sticker - scrollable với scrollbar ẩn */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto p-2 hide-scrollbar"
+        >
+          
+          {allItems.map((item) => (
+            <div
+              key={item.id}
+              ref={(el) => {
+                sectionRefs.current[item.id] = el;
+              }}
+              className="mb-6 last:mb-0"
+            >
+              {item.type === 'emoji' ? (
+                item.data.length > 0 ? (
+                  <div className="grid grid-cols-8 gap-1">
+                    {(item.data as string[]).map((emoji, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleEmojiClick(emoji)}
+                        className="text-xl hover:bg-gray-100 dark:hover:bg-gray-700 rounded p-0.5 transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
+                    Không có emoji nào
+                  </div>
+                )
+              ) : (
+                (item.data as StickerCategory).stickers.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {(item.data as StickerCategory).stickers.map((filename, index) => {
+                      const stickerId = `${item.id}/${filename}`;
+                      const stickerUrl = getStickerUrl(stickerId);
+                      
+                      return (
+                        <button
+                          key={`${item.id}-${filename}-${index}`}
+                          onClick={() => handleStickerClick(item.id, filename)}
+                          className={cn(
+                            'aspect-square rounded-lg overflow-hidden',
+                            'hover:bg-gray-100 dark:hover:bg-gray-700',
+                            'transition-colors p-1',
+                            'flex items-center justify-center'
+                          )}
+                          title={filename}
+                        >
+                          <Image
+                            src={stickerUrl}
+                            alt={filename}
+                            width={64}
+                            height={64}
+                            className="w-full h-full object-contain"
+                            unoptimized // Vì là animated webp
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
+                    Không có sticker nào
+                  </div>
+                )
+              )}
             </div>
-          ) : (
-            <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-8">
-              Không có sticker nào
-            </div>
-          )}
+          ))}
         </div>
       </div>
     </div>
   );
 }
-

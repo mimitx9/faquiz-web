@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useChatContext } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/hooks/useAuth';
 import Avatar from '@/components/common/Avatar';
@@ -127,11 +128,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const stickerPickerRef = useRef<HTMLDivElement>(null);
+  const stickerButtonRef = useRef<HTMLButtonElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingSentRef = useRef<boolean>(false);
   const boxChatRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isLoadingMoreRef = useRef<boolean>(false);
+  const [stickerPickerPosition, setStickerPickerPosition] = useState<{ bottom: number; left: number; width: number } | null>(null);
   // Map để lưu mapping giữa blob URL và real URL (để có thể zoom ngay cả khi blob URL đã bị revoke)
   const blobUrlToRealUrlMapRef = useRef<Map<string, string>>(new Map());
   // Refs cho ghi âm
@@ -202,6 +205,42 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       scrollTopBeforeLoadRef.current = 0;
     }
   }, [messages, isLoadingMore]);
+
+  // Tính toán vị trí của StickerPicker dựa trên button sticker
+  useEffect(() => {
+    if (showStickerPicker && stickerButtonRef.current) {
+      const updatePosition = () => {
+        if (stickerButtonRef.current) {
+          const rect = stickerButtonRef.current.getBoundingClientRect();
+          const pickerHeight = 480; // Chiều cao cố định 480px
+          const pickerWidth = 340; // Chiều rộng cố định 340px
+          const margin = 8; // mb-2 = 0.5rem = 8px
+          
+          // Tính toán left để lệch về bên trái của button sticker
+          // Đặt StickerPicker sao cho cạnh phải của nó gần với cạnh trái của button
+          const offset = 16; // Khoảng cách từ button
+          const leftPosition = Math.max(16, rect.left - pickerWidth + offset);
+          
+          setStickerPickerPosition({
+            bottom: window.innerHeight - rect.top + margin,
+            left: leftPosition,
+            width: pickerWidth,
+          });
+        }
+      };
+
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+      };
+    } else {
+      setStickerPickerPosition(null);
+    }
+  }, [showStickerPicker]);
 
   // Đóng sticker picker khi click outside
   useEffect(() => {
@@ -892,7 +931,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   // Các box sẽ được đặt cạnh nhau từ phải sang trái
   // Kích thước box chat: 320px width (giống Facebook Messenger)
   // Khoảng cách giữa các box: 340px (320px width + 20px gap)
-  const boxWidth = 320;
+  const boxWidth = 340;
   const boxGap = 20;
   const rightOffset = `calc(1rem + 80px + ${(totalBoxes - 1 - index) * (boxWidth + boxGap)}px)`;
   
@@ -957,25 +996,25 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => router.push(`/messages?userId=${targetUserId}`)}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            className="transition-colors"
             title="Mở rộng chat"
           >
             <Image
               src="/expand.svg"
               alt="Expand"
-              width={17}
-              height={17}
+              width={12}
+              height={12}
               className="dark:invert"
             />
           </button>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+            className="ransition-colors"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
       </div>
@@ -997,12 +1036,12 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           {/* Loading indicator khi load more */}
           {isLoadingMore && (
             <div className="flex justify-center py-2">
-              <div className="text-xs text-gray-500 dark:text-gray-400">Đang tải thêm tin nhắn...</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Đang tải...</div>
             </div>
           )}
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-              <p className="text-xs">Chưa có tin nhắn nào. Hãy bắt đầu chat!</p>
+              <p className="text-sm">Chat càng nhiều, info càng rõ</p>
             </div>
           ) : (
             <>
@@ -1316,16 +1355,6 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
 
         {/* Input area */}
         <div className="p-4 relative flex-shrink-0">
-          {showStickerPicker && (
-            <div ref={stickerPickerRef}>
-              <StickerPicker
-                onSelectSticker={handleStickerClick}
-                onSelectEmoji={handleEmojiClick}
-                emojiList={EMOJI_ICONS}
-                onClose={() => setShowStickerPicker(false)}
-              />
-            </div>
-          )}
           
           {/* Sticker preview với audio recording */}
           {selectedStickers.length > 0 && (
@@ -1530,10 +1559,10 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           )}
           
           <div className={cn(
-            "w-full max-w-sm mx-auto rounded-3xl p-4 flex items-center transition-all duration-200",
+            "w-full max-w-sm mx-auto rounded-3xl px-4 py-3 flex items-center transition-all duration-200 border-2 border-gray-100 dark:border-white/10",
             isFocused 
-              ? "bg-gray-100 dark:bg-gray-100 border-2 border-gray-100 dark:border-gray-100" 
-              : "bg-gray-200 dark:bg-gray-700"
+              ? "bg-transparent dark:bg-gray-100" 
+              : "bg-gray-100 dark:bg-gray-700"
           )}>
             <input
               ref={fileInputRef}
@@ -1546,7 +1575,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={!isConnected}
-              className="mr-3 p-1 opacity-50 hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="mr-3 p-1 opacity-50 hover:opacity-100 hover:scale-110 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Chọn ảnh"
             >
               <svg
@@ -1577,27 +1606,28 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               value={inputMessage}
               onChange={handleInputChange}
               onKeyPress={handleKeyPress}
-              placeholder="Nhập tin nhắn..."
+              placeholder="Chat đi..."
               disabled={!isConnected}
+              autoFocus
               rows={1}
-              className="flex-1 bg-transparent text-lg text-gray-800 dark:text-gray-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto max-h-[3rem] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-              style={{ minHeight: '1.5rem', lineHeight: '1.5rem' }}
+              className="flex-1 bg-transparent text-md text-gray-800 dark:text-gray-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto max-h-[3rem] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              style={{ minHeight: '1.5rem', lineHeight: '1.5rem', fontFamily: 'Roboto, sans-serif' }}
             />
             <button
+              ref={stickerButtonRef}
               data-sticker-button
               onClick={() => {
                 setShowStickerPicker(!showStickerPicker);
               }}
               disabled={!isConnected}
-              className="mr-2 p-1 opacity-50 hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="hover:scale-110 opacity-50 hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Chọn sticker"
             >
               <Image
                 src="/sticker.svg"
                 alt="Sticker"
-                width={16}
-                height={16}
-                className="w-4 h-4 opacity-50 dark:opacity-30"
+                width={17}
+                height={17}
               />
             </button>
             <button
@@ -1701,6 +1731,22 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             </div>
           </div>
         </div>
+      )}
+      {/* Render StickerPicker qua Portal để nằm ngoài ChatBoxInstance */}
+      {showStickerPicker && stickerPickerPosition && typeof window !== 'undefined' && createPortal(
+        <div ref={stickerPickerRef}>
+          <StickerPicker
+            onSelectSticker={handleStickerClick}
+            onSelectEmoji={handleEmojiClick}
+            emojiList={EMOJI_ICONS}
+            onClose={() => setShowStickerPicker(false)}
+            position={{
+              bottom: stickerPickerPosition.bottom,
+              left: stickerPickerPosition.left,
+            }}
+          />
+        </div>,
+        document.body
       )}
     </div>
   );
