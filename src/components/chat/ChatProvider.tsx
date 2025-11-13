@@ -3,6 +3,7 @@
 import React, { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useChat, UseChatReturn } from '@/hooks/useChat';
 import ChatBox from '@/components/ui/ChatBox';
+import DocumentTitle from './DocumentTitle';
 
 interface ChatContextType extends UseChatReturn {
   openChatUserIds: number[];
@@ -66,6 +67,7 @@ export default function ChatProvider({ children }: ChatProviderProps) {
 
   return (
     <ChatContext.Provider value={contextValue}>
+      <DocumentTitle />
       {children}
       <ChatBox />
     </ChatContext.Provider>
