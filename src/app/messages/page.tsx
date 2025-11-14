@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useChatContext } from '@/components/chat/ChatProvider';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,10 +44,27 @@ const EMOJI_ICONS = [
   '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🔢',
 ];
 
+// Component con để xử lý searchParams
+function MessagesContent({ setSelectedUserIdFromUrl }: { setSelectedUserIdFromUrl: (userId: number | null) => void }) {
+  const searchParams = useSearchParams();
+
+  // Lấy userId từ URL query params
+  useEffect(() => {
+    const userIdParam = searchParams.get('userId');
+    if (userIdParam) {
+      const userId = parseInt(userIdParam, 10);
+      if (!isNaN(userId)) {
+        setSelectedUserIdFromUrl(userId);
+      }
+    }
+  }, [searchParams, setSelectedUserIdFromUrl]);
+
+  return null;
+}
+
 export default function MessagesPage() {
   const { user, isInitialized } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const {
     conversations,
     onlineUsersList,
@@ -84,17 +101,6 @@ export default function MessagesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousSelectedUserIdRef = useRef<number | null>(null);
-
-  // Lấy userId từ URL query params
-  useEffect(() => {
-    const userIdParam = searchParams.get('userId');
-    if (userIdParam) {
-      const userId = parseInt(userIdParam, 10);
-      if (!isNaN(userId)) {
-        setSelectedUserId(userId);
-      }
-    }
-  }, [searchParams]);
 
   // Cập nhật messages khi chọn user khác
   useEffect(() => {
@@ -171,7 +177,7 @@ export default function MessagesPage() {
     // Nếu input trống, tắt typing ngay lập tức
     if (!value.trim()) {
       if (lastTypingSentRef.current) {
-        notifyTyping(false, selectedUserId);
+        notifyTyping(false, selectedUserId ?? undefined);
         lastTypingSentRef.current = false;
       }
       return;
@@ -179,14 +185,14 @@ export default function MessagesPage() {
 
     // Nếu có text, gửi typing start
     if (!lastTypingSentRef.current) {
-      notifyTyping(true, selectedUserId);
+      notifyTyping(true, selectedUserId ?? undefined);
       lastTypingSentRef.current = true;
     }
 
     // Gửi typing stop sau 2 giây không gõ
     typingTimeoutRef.current = setTimeout(() => {
       if (lastTypingSentRef.current) {
-        notifyTyping(false, selectedUserId);
+        notifyTyping(false, selectedUserId ?? undefined);
         lastTypingSentRef.current = false;
       }
     }, 2000);
@@ -200,7 +206,7 @@ export default function MessagesPage() {
       
       // Gửi typing stop trước khi gửi ảnh
       if (lastTypingSentRef.current) {
-        notifyTyping(false, selectedUserId);
+        notifyTyping(false, selectedUserId ?? undefined);
         lastTypingSentRef.current = false;
       }
       
@@ -216,7 +222,7 @@ export default function MessagesPage() {
         const uploadedUrl = response.data.urlFile;
         
         // Gửi ảnh qua chat
-        await sendImage(uploadedUrl, selectedUserId);
+        await sendImage(uploadedUrl, selectedUserId ?? undefined);
         
         // Xóa preview và revoke blob URL
         setSelectedImage(null);
@@ -233,7 +239,7 @@ export default function MessagesPage() {
     
     // Gửi typing stop trước khi gửi tin nhắn
     if (lastTypingSentRef.current) {
-      notifyTyping(false, selectedUserId);
+      notifyTyping(false, selectedUserId ?? undefined);
       lastTypingSentRef.current = false;
     }
     
@@ -243,7 +249,7 @@ export default function MessagesPage() {
       typingTimeoutRef.current = null;
     }
     
-    await sendMessage(inputMessage.trim(), selectedUserId);
+    await sendMessage(inputMessage.trim(), selectedUserId ?? undefined);
     setInputMessage('');
     setShowStickerPicker(false);
     
@@ -259,14 +265,14 @@ export default function MessagesPage() {
   // Gửi emoji
   const handleSelectEmoji = (emoji: string) => {
     if (!selectedUserId) return;
-    sendIcon(emoji, selectedUserId);
+    sendIcon(emoji, selectedUserId ?? undefined);
     setShowStickerPicker(false);
   };
 
   // Gửi sticker
   const handleSelectSticker = (stickerId: string) => {
     if (!selectedUserId) return;
-    sendSticker(stickerId, selectedUserId);
+    sendSticker(stickerId, selectedUserId ?? undefined);
     setShowStickerPicker(false);
   };
 
@@ -338,6 +344,9 @@ export default function MessagesPage() {
 
   return (
     <div className="h-screen bg-white dark:bg-gray-900 overflow-hidden">
+      <Suspense fallback={null}>
+        <MessagesContent setSelectedUserIdFromUrl={setSelectedUserId} />
+      </Suspense>
       <QuizHeader />
       <div className="h-[calc(100vh-5rem)] flex mt-20">
         {/* Sidebar - Danh sách conversations */}
