@@ -358,13 +358,20 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     const messageKey = `${targetId}-${message.id}`;
     const alreadyProcessed = processedUnreadMessagesRef.current.has(messageKey);
     
+    // Kiểm tra xem message có phải từ chính user không
+    // Nếu message từ chính user, không bao giờ tăng unreadCount
+    const isFromCurrentUser = message.userId === user.userId;
+    
     
     setConversations((prev) => {
       const existing = prev.find((conv) => conv.targetUserId === targetId);
       if (existing) {
-        // Chỉ tăng unreadCount nếu conversation chưa mở và message chưa được xử lý
+        // Chỉ tăng unreadCount nếu:
+        // 1. Message KHÔNG phải từ chính user (isFromCurrentUser === false)
+        // 2. Conversation chưa mở
+        // 3. Message chưa được xử lý
         let newUnreadCount = existing.unreadCount;
-        if (!isConversationOpen && !alreadyProcessed) {
+        if (!isFromCurrentUser && !isConversationOpen && !alreadyProcessed) {
           newUnreadCount = existing.unreadCount + 1;
           // Đánh dấu message đã được xử lý
           processedUnreadMessagesRef.current.add(messageKey);
@@ -405,8 +412,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         );
       } else {
         // Tạo conversation mới - cần lấy thông tin target user
+        // Chỉ tăng unreadCount nếu message KHÔNG phải từ chính user
         let newUnreadCount = 0;
-        if (!isConversationOpen && !alreadyProcessed) {
+        if (!isFromCurrentUser && !isConversationOpen && !alreadyProcessed) {
           newUnreadCount = 1;
           // Đánh dấu message đã được xử lý
           processedUnreadMessagesRef.current.add(messageKey);
@@ -511,7 +519,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     
     const isDuplicate = isDuplicateById || isDuplicateByTempId || hasSimilarMessage;
     
-    // Tin nhắn từ user khác - cập nhật activity và conversation
+    // Cập nhật activity và conversation cho cả tin nhắn từ user khác và từ chính mình
+    // (cần cập nhật conversation để cập nhật lastMessage, nhưng chỉ tăng unreadCount cho tin nhắn từ user khác)
     if (data.userId !== user.userId) {
       // Thêm user vào onlineUsersList với thông tin từ message
       updateUserActivity(data.userId, {
@@ -519,8 +528,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         fullName: data.fullName,
         avatar: data.avatar ?? null,
       });
-      updateConversationInternal(data);
     }
+    // Cập nhật conversation cho cả tin nhắn từ chính mình và từ user khác
+    // (để cập nhật lastMessage, nhưng unreadCount chỉ tăng cho tin nhắn từ user khác)
+    updateConversationInternal(data);
     
     // Cập nhật messages
     if (currentTargetUserIdRef.current === targetId) {
@@ -1029,16 +1040,19 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
       // Optimistic update: thêm tin nhắn vào messages ngay lập tức (KHÔNG CHỜ API)
       // Không tăng count ở đây vì sẽ tăng khi nhận được từ WebSocket
+      // Luôn cập nhật cache để các component khác (như messenger page) có thể lấy được tin nhắn mới
+      const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+      const updatedCachedMessages = [...cachedMessages, messageData].sort((a, b) => a.timestamp - b.timestamp);
+      messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+      
+      // Chỉ cập nhật state nếu đây là conversation hiện tại
       if (currentTargetUserId === targetId) {
         setMessages((prev) => {
           // Tránh duplicate
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          const updated = [...prev, messageData].sort((a, b) => a.timestamp - b.timestamp);
-          // Lưu vào cache
-          messagesByConversationRef.current.set(targetId, updated);
-          return updated;
+          return updatedCachedMessages;
         });
       }
 
@@ -1072,31 +1086,23 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             const finalMessageId = response.data?.id || tempId;
             const finalMessageData = { ...messageData, id: finalMessageId };
 
-            // Cập nhật ID thật từ server (thay thế temp ID)
-            if (currentTargetUserId === targetId) {
-              setMessages((prev) => {
-                if (prev.some((msg) => msg.id === tempId)) {
-                  const updated = prev.map((msg) =>
-                    msg.id === tempId ? finalMessageData : msg
-                  ).sort((a, b) => a.timestamp - b.timestamp);
-                  messagesByConversationRef.current.set(targetId, updated);
-                  return updated;
-                }
-                // Nếu không tìm thấy temp message, thêm message mới
-                const updated = [...prev, finalMessageData].sort((a, b) => a.timestamp - b.timestamp);
-                messagesByConversationRef.current.set(targetId, updated);
-                return updated;
-              });
-            } else {
-              // Cập nhật cache ngay cả khi không phải conversation hiện tại
-              const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
-              const updated = cachedMessages.map((msg) =>
+            // Cập nhật cache trước (luôn cập nhật cache để các component khác có thể lấy được)
+            const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+            let updatedCachedMessages: ChatMessage[];
+            if (cachedMessages.some((msg) => msg.id === tempId)) {
+              // Thay thế temp message bằng message thật
+              updatedCachedMessages = cachedMessages.map((msg) =>
                 msg.id === tempId ? finalMessageData : msg
-              );
-              if (!updated.some((msg) => msg.id === finalMessageId)) {
-                updated.push(finalMessageData);
-              }
-              messagesByConversationRef.current.set(targetId, updated.sort((a, b) => a.timestamp - b.timestamp));
+              ).sort((a, b) => a.timestamp - b.timestamp);
+            } else {
+              // Nếu không tìm thấy temp message, thêm message mới
+              updatedCachedMessages = [...cachedMessages, finalMessageData].sort((a, b) => a.timestamp - b.timestamp);
+            }
+            messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+
+            // Cập nhật state nếu đây là conversation hiện tại
+            if (currentTargetUserId === targetId) {
+              setMessages(updatedCachedMessages);
             }
 
             // Cập nhật lại conversation với ID thật từ server
@@ -1153,16 +1159,19 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
       // Optimistic update: thêm icon vào messages ngay lập tức (KHÔNG CHỜ API)
       // Không tăng count ở đây vì sẽ tăng khi nhận được từ Pusher
+      // Luôn cập nhật cache để các component khác (như messenger page) có thể lấy được tin nhắn mới
+      const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+      const updatedCachedMessages = [...cachedMessages, iconData].sort((a, b) => a.timestamp - b.timestamp);
+      messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+      
+      // Chỉ cập nhật state nếu đây là conversation hiện tại
       if (currentTargetUserId === targetId) {
         setMessages((prev) => {
           // Tránh duplicate
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          const updated = [...prev, iconData].sort((a, b) => a.timestamp - b.timestamp);
-          // Lưu vào cache
-          messagesByConversationRef.current.set(targetId, updated);
-          return updated;
+          return updatedCachedMessages;
         });
       }
 
@@ -1197,30 +1206,23 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             const finalIconId = response.data?.id || tempId;
             const finalIconData = { ...iconData, id: finalIconId };
 
-            if (currentTargetUserId === targetId) {
-              setMessages((prev) => {
-                if (prev.some((msg) => msg.id === tempId)) {
-                  const updated = prev.map((msg) =>
-                    msg.id === tempId ? finalIconData : msg
-                  ).sort((a, b) => a.timestamp - b.timestamp);
-                  messagesByConversationRef.current.set(targetId, updated);
-                  return updated;
-                }
-                // Nếu không tìm thấy temp message, thêm message mới
-                const updated = [...prev, finalIconData].sort((a, b) => a.timestamp - b.timestamp);
-                messagesByConversationRef.current.set(targetId, updated);
-                return updated;
-              });
-            } else {
-              // Cập nhật cache ngay cả khi không phải conversation hiện tại
-              const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
-              const updated = cachedMessages.map((msg) =>
+            // Cập nhật cache trước (luôn cập nhật cache để các component khác có thể lấy được)
+            const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+            let updatedCachedMessages: ChatMessage[];
+            if (cachedMessages.some((msg) => msg.id === tempId)) {
+              // Thay thế temp message bằng message thật
+              updatedCachedMessages = cachedMessages.map((msg) =>
                 msg.id === tempId ? finalIconData : msg
-              );
-              if (!updated.some((msg) => msg.id === finalIconId)) {
-                updated.push(finalIconData);
-              }
-              messagesByConversationRef.current.set(targetId, updated.sort((a, b) => a.timestamp - b.timestamp));
+              ).sort((a, b) => a.timestamp - b.timestamp);
+            } else {
+              // Nếu không tìm thấy temp message, thêm message mới
+              updatedCachedMessages = [...cachedMessages, finalIconData].sort((a, b) => a.timestamp - b.timestamp);
+            }
+            messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+
+            // Cập nhật state nếu đây là conversation hiện tại
+            if (currentTargetUserId === targetId) {
+              setMessages(updatedCachedMessages);
             }
 
             updateConversationInternal(finalIconData, false, targetId);
@@ -1275,16 +1277,19 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
       // Optimistic update: thêm sticker vào messages ngay lập tức (KHÔNG CHỜ API)
       // Không tăng count ở đây vì sẽ tăng khi nhận được từ Pusher
+      // Luôn cập nhật cache để các component khác (như messenger page) có thể lấy được tin nhắn mới
+      const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+      const updatedCachedMessages = [...cachedMessages, stickerData].sort((a, b) => a.timestamp - b.timestamp);
+      messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+      
+      // Chỉ cập nhật state nếu đây là conversation hiện tại
       if (currentTargetUserId === targetId) {
         setMessages((prev) => {
           // Tránh duplicate
           if (prev.some((msg) => msg.id === tempId)) {
             return prev;
           }
-          const updated = [...prev, stickerData].sort((a, b) => a.timestamp - b.timestamp);
-          // Lưu vào cache
-          messagesByConversationRef.current.set(targetId, updated);
-          return updated;
+          return updatedCachedMessages;
         });
       }
 
@@ -1320,30 +1325,23 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             const finalStickerId = response.data?.id || tempId;
             const finalStickerData = { ...stickerData, id: finalStickerId };
 
-            if (currentTargetUserId === targetId) {
-              setMessages((prev) => {
-                if (prev.some((msg) => msg.id === tempId)) {
-                  const updated = prev.map((msg) =>
-                    msg.id === tempId ? finalStickerData : msg
-                  ).sort((a, b) => a.timestamp - b.timestamp);
-                  messagesByConversationRef.current.set(targetId, updated);
-                  return updated;
-                }
-                // Nếu không tìm thấy temp message, thêm message mới
-                const updated = [...prev, finalStickerData].sort((a, b) => a.timestamp - b.timestamp);
-                messagesByConversationRef.current.set(targetId, updated);
-                return updated;
-              });
-            } else {
-              // Cập nhật cache ngay cả khi không phải conversation hiện tại
-              const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
-              const updated = cachedMessages.map((msg) =>
+            // Cập nhật cache trước (luôn cập nhật cache để các component khác có thể lấy được)
+            const cachedMessages = messagesByConversationRef.current.get(targetId) || [];
+            let updatedCachedMessages: ChatMessage[];
+            if (cachedMessages.some((msg) => msg.id === tempId)) {
+              // Thay thế temp message bằng message thật
+              updatedCachedMessages = cachedMessages.map((msg) =>
                 msg.id === tempId ? finalStickerData : msg
-              );
-              if (!updated.some((msg) => msg.id === finalStickerId)) {
-                updated.push(finalStickerData);
-              }
-              messagesByConversationRef.current.set(targetId, updated.sort((a, b) => a.timestamp - b.timestamp));
+              ).sort((a, b) => a.timestamp - b.timestamp);
+            } else {
+              // Nếu không tìm thấy temp message, thêm message mới
+              updatedCachedMessages = [...cachedMessages, finalStickerData].sort((a, b) => a.timestamp - b.timestamp);
+            }
+            messagesByConversationRef.current.set(targetId, updatedCachedMessages);
+
+            // Cập nhật state nếu đây là conversation hiện tại
+            if (currentTargetUserId === targetId) {
+              setMessages(updatedCachedMessages);
             }
 
             updateConversationInternal(finalStickerData, false, targetId);
