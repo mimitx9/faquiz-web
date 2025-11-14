@@ -59,10 +59,14 @@ export class ChatWebSocket {
   private reconnectDelay = 1000; // 1 giây
   private reconnectTimeout: NodeJS.Timeout | null = null;
   private pingInterval: NodeJS.Timeout | null = null;
+  private pongTimeout: NodeJS.Timeout | null = null; // Timeout để kiểm tra pong response
+  private lastPongTime: number = 0; // Timestamp của pong cuối cùng
   private isManualClose = false;
   private joinedRooms = new Set<string>();
   private protoRoot: any = null; // Protobuf root definition (any để tránh type error khi protobuf chưa load)
   private protoLoadPromise: Promise<void> | null = null; // Promise để đảm bảo chỉ load proto một lần
+  private readonly PING_INTERVAL = 20000; // 20 giây - giảm từ 30 giây để tránh timeout
+  private readonly PONG_TIMEOUT = 10000; // 10 giây - nếu không nhận pong trong 10 giây thì reconnect
 
   constructor(baseUrl: string, token: string) {
     this.baseUrl = baseUrl;
@@ -151,9 +155,10 @@ export class ChatWebSocket {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0;
+        this.lastPongTime = Date.now();
         this.handlers.onConnected?.();
         
-        // Bắt đầu ping interval (mỗi 30 giây)
+        // Bắt đầu ping interval (mỗi 20 giây)
         this.startPingInterval();
         
         // Join presence room để nhận danh sách users online
@@ -176,13 +181,20 @@ export class ChatWebSocket {
         }
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
         this.handlers.onError?.({ message: 'WebSocket connection error' });
+        // Nếu kết nối đang mở nhưng có lỗi, thử đóng và reconnect
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          // Đóng kết nối để trigger onclose và reconnect
+          this.ws.close();
+        }
       };
 
       this.ws.onclose = () => {
         this.handlers.onDisconnected?.();
         this.stopPingInterval();
+        this.stopPongTimeout();
         
         // Tự động reconnect nếu không phải manual close
         if (!this.isManualClose) {
@@ -204,11 +216,19 @@ export class ChatWebSocket {
 
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
       this.handlers.onError?.({ message: 'Không thể kết nối. Vui lòng thử lại sau.' });
+      // Reset reconnect attempts sau một thời gian để cho phép thử lại
+      setTimeout(() => {
+        this.reconnectAttempts = 0;
+      }, 60000); // Reset sau 60 giây
       return;
     }
 
     this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+    // Exponential backoff với giới hạn tối đa 30 giây
+    const delay = Math.min(
+      this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1),
+      30000
+    );
     
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null;
@@ -220,7 +240,7 @@ export class ChatWebSocket {
     this.stopPingInterval();
     this.pingInterval = setInterval(() => {
       this.ping();
-    }, 30000); // Ping mỗi 30 giây
+    }, this.PING_INTERVAL);
   }
 
   private stopPingInterval() {
@@ -230,13 +250,43 @@ export class ChatWebSocket {
     }
   }
 
+  private stopPongTimeout() {
+    if (this.pongTimeout) {
+      clearTimeout(this.pongTimeout);
+      this.pongTimeout = null;
+    }
+  }
+
   private ping() {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      // Kiểm tra xem có nhận được pong trong thời gian gần đây không
+      const timeSinceLastPong = Date.now() - this.lastPongTime;
+      if (timeSinceLastPong > this.PONG_TIMEOUT * 2) {
+        // Nếu không nhận được pong trong thời gian dài, kết nối có thể bị "zombie"
+        // Đóng kết nối và reconnect
+        console.warn('WebSocket: Không nhận được pong response, đóng kết nối và reconnect');
+        this.ws.close();
+        return;
+      }
+
       this.send({
         type: 'ping',
         roomId: null,
         data: null,
       });
+
+      // Bắt đầu timeout để kiểm tra pong response
+      this.stopPongTimeout();
+      this.pongTimeout = setTimeout(() => {
+        // Nếu không nhận được pong trong PONG_TIMEOUT, kết nối có vấn đề
+        const timeSincePing = Date.now() - this.lastPongTime;
+        if (timeSincePing > this.PONG_TIMEOUT) {
+          console.warn('WebSocket: Timeout chờ pong response, đóng kết nối và reconnect');
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.close();
+          }
+        }
+      }, this.PONG_TIMEOUT);
     }
   }
 
@@ -577,6 +627,10 @@ export class ChatWebSocket {
         this.handlers.onError?.(message.data);
         break;
       case 'pong':
+        // Cập nhật thời gian nhận pong cuối cùng
+        this.lastPongTime = Date.now();
+        // Dừng pong timeout vì đã nhận được pong
+        this.stopPongTimeout();
         this.handlers.onPong?.(message.data);
         break;
       case 'new-message-notification':
@@ -785,6 +839,7 @@ export class ChatWebSocket {
   disconnect() {
     this.isManualClose = true;
     this.stopPingInterval();
+    this.stopPongTimeout();
     
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
