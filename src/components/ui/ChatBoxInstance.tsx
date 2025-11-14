@@ -984,24 +984,6 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     return onlineUser?.avatar || null;
   };
 
-  // Tính opacity và blur dựa trên số tin nhắn
-  // Blur: chia thành 5 mốc từ 0 đến 5 dựa trên 50 tin nhắn
-  // - 0 tin nhắn: blur = 5
-  // - 50 tin nhắn: blur = 0
-  // - Mỗi mốc = 10 tin nhắn (50/5 = 10)
-  // Opacity: chia thành mốc từ 50% đến 100% dựa trên 50 tin nhắn
-  // - 0 tin nhắn: opacity = 50% (0.5)
-  // - 50 tin nhắn: opacity = 100% (1.0)
-  // - Mỗi 1 tin nhắn tăng 1% opacity (50% / 50 = 1% mỗi tin nhắn)
-  const messageCount = getMessageCountForUser(targetUserId);
-  
-  // Tính blur: từ 5 (0 tin nhắn) xuống 0 (50 tin nhắn)
-  // Mỗi 10 tin nhắn giảm 1 mốc blur
-  const blurAmount = Math.max(5 - Math.floor(messageCount / 10), 0);
-  
-  // Tính opacity: từ 50% (0 tin nhắn) lên 100% (50 tin nhắn)
-  // Mỗi 1 tin nhắn tăng 1% opacity
-  const opacity = Math.min(0.5 + (messageCount * 0.01), 1.0);
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -1066,30 +1048,15 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                 isConnected ? 'bg-green-500' : 'bg-red-500'
               )}
             />
-            <div 
-              style={{
-                opacity: opacity,
-                filter: `blur(${blurAmount}px)`,
-                transition: 'opacity 0.3s ease, filter 0.3s ease',
-              }}
-            >
-              <Avatar
-                src={getTargetAvatar() || undefined}
-                name={getTargetName()}
-                size="sm"
-                className="w-8 h-8"
-              />
-            </div>
+            <Avatar
+              src={getTargetAvatar() || undefined}
+              name={getTargetName()}
+              size="sm"
+              className="w-8 h-8"
+            />
           </div>
           <div className="flex-1 min-w-0">
-            <div 
-              className="text-xs font-semibold text-gray-900 dark:text-white truncate"
-              style={{
-                opacity: opacity,
-                filter: `blur(${blurAmount}px)`,
-                transition: 'opacity 0.3s ease, filter 0.3s ease',
-              }}
-            >
+            <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">
               {getTargetName()}
             </div>
           </div>
@@ -1144,11 +1111,6 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           ) : (
             <>
               {messages.map((msg, index) => {
-                // Áp dụng blur/opacity cho avatar trong messages dựa trên tổng số tin nhắn hiện tại
-                // Giống như header, tất cả avatars sẽ có cùng blur/opacity dựa trên tổng số tin nhắn
-                const msgBlurAmount = blurAmount;
-                const msgOpacity = opacity;
-                
                 const isMyMessage = msg.userId === user.userId;
                 const isSticker = msg.type === 'sticker' && msg.media && msg.media.includes('/') && msg.media.includes('.webp');
                 const isImage = msg.type === 'image';
@@ -1309,20 +1271,12 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                   >
                     {/* Chỉ hiển thị avatar cho tin nhắn của người khác */}
                     {!isMyMessage && (
-                      <div
-                        style={{
-                          opacity: msgOpacity,
-                          filter: `blur(${msgBlurAmount}px)`,
-                          transition: 'opacity 0.3s ease, filter 0.3s ease',
-                        }}
-                      >
-                        <Avatar
-                          src={msg.avatar || undefined}
-                          name={msg.fullName}
-                          size="sm"
-                          className="flex-shrink-0 w-6 h-6"
-                        />
-                      </div>
+                      <Avatar
+                        src={msg.avatar || undefined}
+                        name={msg.fullName}
+                        size="sm"
+                        className="flex-shrink-0 w-6 h-6"
+                      />
                     )}
                     <div
                       className={cn(

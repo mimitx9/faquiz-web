@@ -342,8 +342,11 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     
     // Kiểm tra xem conversation này có đang mở không
     // Dùng ref để luôn có giá trị mới nhất, đặc biệt quan trọng khi nhận notification
+    // Chỉ đánh dấu là "đang mở" nếu currentTargetUserId trùng với targetId
+    // hoặc conversation được đánh dấu là "đang mở" trong openConversationsRef
     const currentTargetId = currentTargetUserIdRef.current;
-    const isConversationOpen = openConversationsRef.current.has(targetId) || currentTargetId === targetId;
+    // Ưu tiên kiểm tra currentTargetId trước (chính xác hơn)
+    const isConversationOpen = currentTargetId === targetId || openConversationsRef.current.has(targetId);
     
     // Kiểm tra xem message này đã được xử lý để tăng unreadCount chưa
     // Tránh tăng trùng khi nhận từ nhiều nguồn (channel + notification)
