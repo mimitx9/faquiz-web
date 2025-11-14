@@ -96,6 +96,10 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   const loadedConversationsRef = useRef<Set<number>>(new Set());
   // Lưu trạng thái đang gửi message để tránh duplicate
   const sendingMessagesRef = useRef<Set<string>>(new Set());
+  // Lưu các message ID đã được xử lý từ WebSocket để tránh xử lý lại từ notification
+  const processedMessageIdsRef = useRef<Set<string>>(new Set());
+  // Lưu các message đang được xử lý (theo content + timestamp) để tránh xử lý đồng thời
+  const processingMessagesRef = useRef<Set<string>>(new Set());
   // Typing indicator timeout - lưu theo từng conversation
   const typingTimeoutByConversationRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const typingSentRef = useRef<boolean>(false);
@@ -468,6 +472,12 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   const handleNewMessageFromWebSocket = useCallback((data: ChatMessage) => {
     if (!user) return;
 
+    // Kiểm tra xem message đã được xử lý chưa (tránh xử lý lại từ notification)
+    const messageKey = `${data.id}-${data.timestamp}`;
+    if (processedMessageIdsRef.current.has(messageKey)) {
+      return; // Đã xử lý rồi, bỏ qua
+    }
+
     // Xác định targetUserId từ message
     // Nếu message từ user khác, targetUserId là userId của message
     // Nếu message từ chính mình, targetUserId là currentTargetUserId
@@ -477,6 +487,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     
     // Bỏ qua nếu target là chính mình
     if (targetId === user.userId) return;
+    
+    // Đánh dấu message đã được xử lý
+    processedMessageIdsRef.current.add(messageKey);
 
     // Kiểm tra xem tin nhắn đã tồn tại chưa
     const conversationMessages = messagesByConversationRef.current.get(targetId) || [];
@@ -502,16 +515,34 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     // Kiểm tra xem có tin nhắn với cùng userId và timestamp gần giống không (để tránh duplicate từ nhiều nguồn)
     // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
     // Nếu một trong hai message có blob URL, không kiểm tra timestamp (có thể upload mất nhiều thời gian)
+    // QUAN TRỌNG: Nếu có message với cùng timestamp (chính xác) và cùng userId, đây có thể là duplicate từ backend
+    // Chỉ giữ lại message có content dài hơn hoặc message đầu tiên
     const hasSimilarMessage = conversationMessages.some((msg) => {
       const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
       const isSameMessage = msg.message === data.message;
       const isSameMedia = data.type === 'image' || msg.media === data.media; // Đối với image, không so sánh media URL
       const hasBlobUrl = data.type === 'image' && (msg.media?.startsWith('blob:') || data.media?.startsWith('blob:'));
       const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000; // Trong vòng 3 giây
+      const isExactTimestamp = msg.timestamp === data.timestamp; // Cùng timestamp chính xác
       
       // Nếu là image và có blob URL, không kiểm tra timestamp
       if (data.type === 'image' && hasBlobUrl) {
         return isSameUserAndType && isSameMessage;
+      }
+      
+      // Nếu cùng timestamp chính xác và cùng user, kiểm tra xem có phải duplicate không
+      // Nếu message mới có content ngắn hơn và message cũ có content dài hơn, có thể là duplicate
+      if (isExactTimestamp && isSameUserAndType && msg.message && data.message) {
+        // Nếu message cũ chứa message mới (hoặc ngược lại), đây có thể là duplicate
+        const oldContainsNew = msg.message.includes(data.message);
+        const newContainsOld = data.message.includes(msg.message);
+        if (oldContainsNew || newContainsOld) {
+          // Giữ lại message dài hơn
+          if (msg.message.length >= data.message.length) {
+            return true; // Message cũ dài hơn, bỏ qua message mới
+          }
+          // Message mới dài hơn, sẽ thay thế message cũ (xử lý ở dưới)
+        }
       }
       
       return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
@@ -599,11 +630,33 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         }
         
         // Message từ user khác, kiểm tra duplicate trước khi thêm
+        let shouldReplace = false;
+        let messageToReplace: ChatMessage | null = null;
         const hasSimilarMessage = prev.some((msg) => {
           const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
           const isSameMessage = msg.message === data.message;
           const isSameMedia = data.type === 'image' || msg.media === data.media;
           const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+          const isExactTimestamp = msg.timestamp === data.timestamp;
+          
+          // Nếu cùng timestamp chính xác và cùng user, kiểm tra xem có phải duplicate không
+          if (isExactTimestamp && isSameUserAndType && msg.message && data.message) {
+            // Nếu message cũ chứa message mới (hoặc ngược lại), đây có thể là duplicate
+            const oldContainsNew = msg.message.includes(data.message);
+            const newContainsOld = data.message.includes(msg.message);
+            if (oldContainsNew || newContainsOld) {
+              // Giữ lại message dài hơn
+              if (data.message.length > msg.message.length) {
+                // Message mới dài hơn, sẽ thay thế message cũ
+                shouldReplace = true;
+                messageToReplace = msg;
+                return false; // Không phải duplicate, nhưng sẽ thay thế
+              } else {
+                // Message cũ dài hơn, bỏ qua message mới
+                return true;
+              }
+            }
+          }
           
           return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
         });
@@ -611,6 +664,15 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         if (hasSimilarMessage) {
           // Có message tương tự, không thêm nữa
           return prev;
+        }
+        
+        // Nếu cần thay thế message cũ bằng message mới (message mới dài hơn)
+        if (shouldReplace && messageToReplace) {
+          const updated = prev.map((msg) => 
+            msg.id === messageToReplace!.id ? data : msg
+          ).sort((a, b) => a.timestamp - b.timestamp);
+          messagesByConversationRef.current.set(targetId, updated);
+          return updated;
         }
         
         const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
@@ -804,6 +866,15 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
     // Bỏ qua nếu notification từ chính mình
     if (fromUserId === user.userId) return;
+    
+    // Kiểm tra xem message đã được xử lý từ onNewMessage chưa
+    const messageKey = `${message.id}-${message.timestamp}`;
+    if (processedMessageIdsRef.current.has(messageKey)) {
+      return; // Đã xử lý từ onNewMessage rồi, bỏ qua notification
+    }
+    
+    // Đánh dấu message đã được xử lý
+    processedMessageIdsRef.current.add(messageKey);
 
     if (channelName && !joinedRoomsRef.current.has(channelName)) {
       subscribeToRoom(fromUserId);
@@ -1109,6 +1180,24 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         return;
       }
 
+      // Tạo key để kiểm tra duplicate dựa trên content và targetId
+      // Tránh gửi cùng một message nhiều lần trong thời gian ngắn
+      const messageKey = `${targetId}-${message.trim()}-${Date.now()}`;
+      const processingKey = `${targetId}-${message.trim()}`;
+      
+      // Kiểm tra xem có đang xử lý message tương tự không (trong vòng 2 giây)
+      if (processingMessagesRef.current.has(processingKey)) {
+        return; // Đang xử lý message tương tự, bỏ qua
+      }
+      
+      // Đánh dấu đang xử lý
+      processingMessagesRef.current.add(processingKey);
+      
+      // Tự động xóa sau 2 giây để cho phép gửi lại message tương tự sau đó
+      setTimeout(() => {
+        processingMessagesRef.current.delete(processingKey);
+      }, 2000);
+
       const tempId = `temp-${Date.now()}-${Math.random()}`;
       const messageData: ChatMessage = {
         id: tempId,
@@ -1127,8 +1216,9 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Thêm targetUserId vào messageData để backend biết
       (messageData as any).targetUserId = targetId;
 
-      // Tránh gửi duplicate
+      // Tránh gửi duplicate theo tempId
       if (sendingMessagesRef.current.has(tempId)) {
+        processingMessagesRef.current.delete(processingKey);
         return;
       }
       sendingMessagesRef.current.add(tempId);
@@ -1155,18 +1245,28 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
       updateConversationInternal(messageData, false, targetId);
 
+      // Đánh dấu message đã được gửi để tránh gửi lại
+      const sentMessageKey = `${targetId}-${message.trim()}-${messageData.timestamp}`;
+      
       // Chỉ gửi qua WebSocket nếu available
       // Backend sẽ tự động lưu vào DB khi nhận WebSocket message
       if (wsRef.current && wsRef.current.isConnected()) {
         const roomID = getChatRoomID(user.userId, targetId);
         wsRef.current.sendMessage(roomID, targetId, messageData);
-        // Xóa temp ID sau khi gửi thành công qua WebSocket
+        // Xóa temp ID và processing key sau khi gửi thành công qua WebSocket
         sendingMessagesRef.current.delete(tempId);
+        processingMessagesRef.current.delete(processingKey);
       } else {
         // Fallback: gửi qua REST API nếu WebSocket không available
         // Đảm bảo message được gửi ngay cả khi WebSocket disconnect
         (async () => {
           try {
+            // Kiểm tra lại xem message đã được gửi chưa (tránh race condition)
+            if (!sendingMessagesRef.current.has(tempId)) {
+              processingMessagesRef.current.delete(processingKey);
+              return;
+            }
+            
             const response = await chatApiService.sendMessage({
               targetUserId: targetId,
               username: user.username,
@@ -1208,6 +1308,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             // Không rollback để giữ UX mượt mà
           } finally {
             sendingMessagesRef.current.delete(tempId);
+            processingMessagesRef.current.delete(processingKey);
           }
         })();
       }

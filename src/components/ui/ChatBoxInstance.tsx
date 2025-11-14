@@ -415,7 +415,15 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     return null;
   }
 
+  // Ref để ngăn gửi message nhiều lần
+  const isSendingRef = useRef<boolean>(false);
+  
   const handleSendMessage = () => {
+    // Ngăn gửi nhiều lần
+    if (isSendingRef.current) {
+      return;
+    }
+    
     // Gửi ảnh nếu có
     if (selectedImage) {
       handleSendImagePreview();
@@ -423,6 +431,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     }
     
     if (inputMessage.trim()) {
+      // Đánh dấu đang gửi
+      isSendingRef.current = true;
+      
       // Gửi typing stop trước khi gửi tin nhắn
       if (lastTypingSentRef.current) {
         notifyTyping(false);
@@ -435,8 +446,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         typingTimeoutRef.current = null;
       }
       
-      sendMessage(inputMessage, targetUserId);
-      setInputMessage('');
+      const messageToSend = inputMessage.trim();
+      setInputMessage(''); // Clear input ngay để tránh gửi lại
       setShowStickerPicker(false);
       
       // Reset textarea height về 1 dòng
@@ -446,6 +457,14 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         inputRef.current.style.height = `${lineHeight}px`;
         inputRef.current.style.overflowY = 'hidden';
       }
+      
+      // Gửi message
+      sendMessage(messageToSend, targetUserId);
+      
+      // Reset flag sau khi gửi xong (đợi một chút để tránh race condition)
+      setTimeout(() => {
+        isSendingRef.current = false;
+      }, 500);
     }
   };
 
