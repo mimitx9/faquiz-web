@@ -63,6 +63,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     sendIcon,
     sendSticker,
     sendImage,
+    updateImageMessageWithRealUrl,
     error,
     getMessagesForUser,
     getTypingForUser,
@@ -118,6 +119,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const [isFocused, setIsFocused] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null); // URL ảnh đang được zoom
   const [imageRotation, setImageRotation] = useState<number>(0); // Góc xoay của ảnh (độ)
+  // Image preview state (giống Facebook Messenger)
+  const [selectedImage, setSelectedImage] = useState<{ file: File; previewUrl: string } | null>(null);
   // Sticker preview state
   const [selectedStickers, setSelectedStickers] = useState<string[]>([]); // 4 sticker được chọn để preview
   const [selectedStickerIndex, setSelectedStickerIndex] = useState<number>(-1); // Index của sticker được chọn
@@ -360,12 +363,65 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     };
   }, []);
 
+  // Xử lý paste ảnh từ clipboard (Ctrl+V / Cmd+V)
+  useEffect(() => {
+    const handlePasteEvent = (e: ClipboardEvent) => {
+      // Chỉ xử lý khi boxchat đang focus (isFocused = true)
+      if (!isFocused && document.activeElement !== inputRef.current) {
+        return;
+      }
+
+      // Kiểm tra xem có ảnh trong clipboard không
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // Tìm item là ảnh
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') !== -1) {
+          e.preventDefault(); // Ngăn paste text vào textarea
+          
+          const blob = item.getAsFile();
+          if (!blob) return;
+
+          // Tạo File object từ blob
+          const file = new File([blob], `pasted-image-${Date.now()}.png`, { type: blob.type || 'image/png' });
+
+          // Cleanup ảnh preview cũ nếu có (sử dụng setSelectedImage callback để lấy giá trị mới nhất)
+          setSelectedImage((prev) => {
+            if (prev) {
+              URL.revokeObjectURL(prev.previewUrl);
+            }
+            // Tạo preview URL để hiển thị ở input area
+            const previewUrl = URL.createObjectURL(file);
+            return { file, previewUrl };
+          });
+          
+          break; // Chỉ xử lý ảnh đầu tiên
+        }
+      }
+    };
+
+    // Lắng nghe paste event trên document để bắt được khi user paste vào bất kỳ đâu trong boxchat
+    document.addEventListener('paste', handlePasteEvent);
+
+    return () => {
+      document.removeEventListener('paste', handlePasteEvent);
+    };
+  }, [isFocused]); // Chỉ cần isFocused trong dependency
+
   // Chỉ hiển thị cho user đã đăng nhập
   if (!isInitialized || !user) {
     return null;
   }
 
   const handleSendMessage = () => {
+    // Gửi ảnh nếu có
+    if (selectedImage) {
+      handleSendImagePreview();
+      return;
+    }
+    
     if (inputMessage.trim()) {
       // Gửi typing stop trước khi gửi tin nhắn
       if (lastTypingSentRef.current) {
@@ -393,7 +449,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -530,6 +586,18 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     recordingStartTimeRef.current = null;
     isWaitingForStopCallbackRef.current = false;
   };
+
+  // Ref để lưu blob URL đã được gửi (để không revoke trong cleanup)
+  const sentBlobUrlsRef = useRef<Set<string>>(new Set());
+  
+  // Cleanup khi unmount: chỉ revoke blob URL nếu chưa được gửi
+  useEffect(() => {
+    return () => {
+      if (selectedImage && !sentBlobUrlsRef.current.has(selectedImage.previewUrl)) {
+        URL.revokeObjectURL(selectedImage.previewUrl);
+      }
+    };
+  }, [selectedImage]);
 
   // Hàm gửi sticker (có thể có audio)
   const handleSendSticker = async (stickerId: string, audioBlob?: Blob) => {
@@ -775,97 +843,104 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       return;
     }
 
-    // Tạo preview URL để hiển thị ngay lập tức (giống Facebook Messenger)
+    // Cleanup ảnh preview cũ nếu có
+    if (selectedImage) {
+      URL.revokeObjectURL(selectedImage.previewUrl);
+    }
+
+    // Tạo preview URL để hiển thị ở input area (giống Facebook Messenger)
     const previewUrl = URL.createObjectURL(file);
+    
+    // Lưu vào state để hiển thị preview, không gửi ngay
+    setSelectedImage({ file, previewUrl });
+    
+    // Reset input để có thể chọn lại cùng file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
-    // Hiển thị ảnh ngay lập tức với temp URL
+
+  // Hàm hủy ảnh preview
+  const handleCancelImage = () => {
+    if (selectedImage) {
+      URL.revokeObjectURL(selectedImage.previewUrl);
+      setSelectedImage(null);
+    }
+  };
+
+  // Hàm gửi ảnh từ preview
+  const handleSendImagePreview = async () => {
+    if (!selectedImage) return;
+
+    const { file, previewUrl } = selectedImage;
+
+    // Gửi typing stop trước khi gửi ảnh
+    if (lastTypingSentRef.current) {
+      notifyTyping(false);
+      lastTypingSentRef.current = false;
+    }
+    
+    // Clear typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
+    // Lưu text message để gửi sau
+    const textToSend = inputMessage.trim();
+
+    // Đánh dấu blob URL đã được gửi TRƯỚC KHI clear selectedImage
+    // Để cleanup effect không revoke blob URL
+    sentBlobUrlsRef.current.add(previewUrl);
+    
+    // Optimistic update: hiển thị ảnh ngay với blob URL, upload trong background
+    // Đảm bảo currentTargetUserId được set để optimistic update hoạt động
+    setCurrentTargetUserId(targetUserId);
+    
+    // Hiển thị ảnh ngay lập tức với blob URL (optimistic update)
+    // sendImage với blob URL sẽ chỉ hiển thị optimistic update, không gửi qua WebSocket
     sendImage(previewUrl, targetUserId);
+    
+    // Đợi một chút để message được thêm vào cache và sync vào local state
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Force sync messages ngay lập tức để đảm bảo hiển thị
+    const newMessages = getMessagesForUser(targetUserId);
+    setMessages(newMessages);
+    
+    // Clear state SAU KHI đã gửi và sync (blob URL đã được đánh dấu nên không bị revoke)
+    setSelectedImage(null);
+    setInputMessage('');
+    setShowStickerPicker(false);
+    
+    // Reset textarea height về 1 dòng
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const lineHeight = parseInt(getComputedStyle(inputRef.current).lineHeight) || 24;
+      inputRef.current.style.height = `${lineHeight}px`;
+      inputRef.current.style.overflowY = 'hidden';
+    }
 
-    // Upload ảnh lên server trong background
+    // Upload ảnh lên server trong background và cập nhật với URL thật sau
     (async () => {
-      let tempMessageId: string | null = null;
       try {
-        // Tìm temp message ID từ messages hiện tại
-        const currentMessages = getMessagesForUser(targetUserId);
-        const tempMessage = currentMessages.find(
-          (msg) =>
-            msg.type === 'image' &&
-            msg.media === previewUrl &&
-            msg.userId === user?.userId
-        );
-        tempMessageId = tempMessage?.id || null;
-
+        // Upload ảnh lên server
         const response = await chatApiService.uploadImage(file);
         const uploadedUrl = response.data.urlFile;
 
+        // Lưu mapping blob URL -> real URL để có thể zoom ngay cả khi blob URL đã bị revoke
+        blobUrlToRealUrlMapRef.current.set(previewUrl, uploadedUrl);
+
         // Đợi một chút để message được thêm vào state
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-        // Sau khi upload xong, cập nhật message với URL thật
-        // Backend đã nhận message qua WebSocket với blob URL và sẽ tự động cập nhật khi có URL thật
-        // Chỉ gọi REST API nếu WebSocket không available để đảm bảo message được lưu vào DB
-        if (tempMessageId && tempMessage && user) {
-          // Lưu mapping blob URL -> real URL để có thể zoom ngay cả khi blob URL đã bị revoke
-          blobUrlToRealUrlMapRef.current.set(previewUrl, uploadedUrl);
+        // Cập nhật message với blob URL thành URL thật và gửi qua WebSocket
+        // Hàm này sẽ tìm message với blob URL, cập nhật thành URL thật, và gửi qua WebSocket với cùng temp ID
+        await updateImageMessageWithRealUrl(previewUrl, uploadedUrl, targetUserId);
 
-          // Chỉ gọi REST API nếu WebSocket không available
-          // Nếu WebSocket available, backend đã nhận message và sẽ tự động cập nhật với URL thật
-          if (!isConnected) {
-            try {
-              const sendResponse = await chatApiService.sendMessage({
-                targetUserId: targetUserId,
-                username: user.username,
-                fullName: user.fullName || user.username,
-                avatar: user.avatar || null,
-                message: '',
-                timestamp: tempMessage.timestamp,
-                type: 'image',
-                media: uploadedUrl,
-              });
-
-              const finalImageId = sendResponse.data?.id || tempMessageId;
-
-              // Cập nhật message với URL thật và ID mới từ server
-              setMessages((prev) => {
-                const updated = prev.map((msg) => {
-                  if (
-                    msg.type === 'image' &&
-                    msg.media === previewUrl &&
-                    msg.userId === user?.userId
-                  ) {
-                    return { ...msg, id: finalImageId, media: uploadedUrl };
-                  }
-                  return msg;
-                });
-                return updated;
-              });
-            } catch {
-              // Silent fail
-            }
-          } else {
-            // Nếu WebSocket available, backend đã nhận message với blob URL
-            // Backend sẽ tự động cập nhật với URL thật khi broadcast lại
-            // Chỉ cần cập nhật local state với URL thật để hiển thị ngay
-            setMessages((prev) => {
-              const updated = prev.map((msg) => {
-                if (
-                  msg.type === 'image' &&
-                  msg.media === previewUrl &&
-                  msg.userId === user?.userId
-                ) {
-                  return { ...msg, media: uploadedUrl };
-                }
-                return msg;
-              });
-              return updated;
-            });
-          }
-        }
-
-        // Revoke preview URL sau khi đã cập nhật message (đợi lâu hơn để đảm bảo message đã được cập nhật trong cả local state và useChat context)
-        // Delay 2 giây để đảm bảo message đã được sync từ useChat context
+        // Revoke preview URL sau khi đã cập nhật message (đợi lâu hơn để đảm bảo)
         setTimeout(() => {
-          // Kiểm tra xem message đã được cập nhật với URL thật chưa trước khi revoke
           const currentMessages = getMessagesForUser(targetUserId);
           const stillHasBlobUrl = currentMessages.some(
             (msg) =>
@@ -875,21 +950,22 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           );
           
           // Chỉ revoke nếu không còn message nào dùng blob URL này
-          // Mapping sẽ được giữ lại để có thể zoom ngay cả sau khi revoke
           if (!stillHasBlobUrl) {
             URL.revokeObjectURL(previewUrl);
-            // Không xóa mapping vì có thể cần dùng để zoom sau này
+            sentBlobUrlsRef.current.delete(previewUrl);
           }
-        }, 2000);
-      } catch {
-        // Giữ preview URL nếu upload thất bại
-      } finally {
-        // Reset input để có thể chọn lại cùng file
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        }, 5000); // Tăng thời gian chờ lên 5 giây để đảm bảo message đã được cập nhật và render xong
+      } catch (error) {
+        // Nếu upload thất bại, giữ lại blob URL để hiển thị
+        console.error('Failed to upload image:', error);
+        // Không revoke blob URL để user vẫn thấy ảnh
       }
     })();
+
+    // Gửi text message nếu có (gửi riêng sau ảnh)
+    if (textToSend) {
+      sendMessage(textToSend, targetUserId);
+    }
   };
 
   const getTargetName = () => {
@@ -1617,11 +1693,50 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                 />
               </svg>
             </button>
+            
+            {/* Image preview trong input box (giống Facebook Messenger) */}
+            {selectedImage && (
+              <div className="relative mr-2 flex-shrink-0">
+                <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600">
+                  <Image
+                    src={selectedImage.previewUrl}
+                    alt="Preview"
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                    unoptimized
+                  />
+                </div>
+                {/* Nút đóng preview */}
+                <button
+                  onClick={handleCancelImage}
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 dark:hover:bg-gray-600 flex items-center justify-center transition-colors z-10 border border-white dark:border-gray-800"
+                  aria-label="Hủy ảnh"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              </div>
+            )}
+            
             <textarea
               ref={inputRef}
               value={inputMessage}
               onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
+              onPaste={(e) => {
+                // Xử lý paste trong textarea
+                // Nếu là ảnh, ngăn paste text vào textarea (sẽ được xử lý bởi useEffect paste handler)
+                const items = e.clipboardData?.items;
+                if (items) {
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                      e.preventDefault();
+                      // Logic xử lý ảnh sẽ được thực hiện trong useEffect paste handler
+                      return;
+                    }
+                  }
+                }
+              }}
               placeholder="Chat đi..."
               disabled={!isConnected}
               autoFocus
@@ -1648,7 +1763,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             </button>
             <button
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || !isConnected}
+              disabled={(!inputMessage.trim() && !selectedImage) || !isConnected}
               className="ml-2 p-1 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               aria-label="Gửi"
             >

@@ -42,6 +42,7 @@ export interface UseChatReturn {
   sendIcon: (icon: string, targetUserId?: number) => void;
   sendSticker: (stickerId: string, targetUserId?: number, audioUrl?: string | null) => void;
   sendImage: (imageUrl: string, targetUserId?: number) => void;
+  updateImageMessageWithRealUrl: (blobUrl: string, realUrl: string, targetUserId: number) => Promise<void>;
   error: string | null;
   currentTargetUserId: number | null;
   setCurrentTargetUserId: (userId: number | null) => void;
@@ -431,13 +432,22 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     });
     
     // Kiểm tra xem có tin nhắn với cùng userId và timestamp gần giống không (để tránh duplicate từ nhiều nguồn)
-    const hasSimilarMessage = conversationMessages.some((msg) => 
-      msg.userId === data.userId && 
-      msg.type === data.type &&
-      msg.message === data.message &&
-      msg.media === data.media &&
-      Math.abs(msg.timestamp - data.timestamp) < 3000 // Trong vòng 3 giây
-    );
+    // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
+    // Nếu một trong hai message có blob URL, không kiểm tra timestamp (có thể upload mất nhiều thời gian)
+    const hasSimilarMessage = conversationMessages.some((msg) => {
+      const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+      const isSameMessage = msg.message === data.message;
+      const isSameMedia = data.type === 'image' || msg.media === data.media; // Đối với image, không so sánh media URL
+      const hasBlobUrl = data.type === 'image' && (msg.media?.startsWith('blob:') || data.media?.startsWith('blob:'));
+      const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000; // Trong vòng 3 giây
+      
+      // Nếu là image và có blob URL, không kiểm tra timestamp
+      if (data.type === 'image' && hasBlobUrl) {
+        return isSameUserAndType && isSameMessage;
+      }
+      
+      return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+    });
     
     const isDuplicate = isDuplicateById || isDuplicateByTempId || hasSimilarMessage;
     
@@ -470,17 +480,18 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         });
         
         if (isDuplicateInState) {
-          // Nếu là duplicate nhưng có temp ID, thay thế temp message bằng message thật từ server
+          // Nếu là duplicate nhưng có temp ID hoặc blob URL, thay thế bằng message thật từ server
           if (data.userId === user.userId) {
             const updated = prev.map((msg) => {
-              // Tìm temp message tương ứng và thay thế bằng message thật
-              if (msg.id.startsWith('temp-') && msg.userId === data.userId) {
+              // Tìm temp message hoặc message với blob URL tương ứng và thay thế bằng message thật
+              if ((msg.id.startsWith('temp-') || msg.media?.startsWith('blob:')) && msg.userId === data.userId) {
                 const isSameContent = msg.type === data.type && 
-                  msg.message === data.message && 
-                  msg.media === data.media;
+                  msg.message === data.message;
+                // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
+                const isSameMedia = data.type === 'image' || msg.media === data.media;
                 const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
-                if (isSameContent && isSameTimestamp) {
-                  return data; // Thay thế temp message bằng message thật
+                if (isSameContent && isSameMedia && isSameTimestamp) {
+                  return data; // Thay thế temp/blob message bằng message thật
                 }
               }
               return msg;
@@ -1253,6 +1264,88 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     [user, currentTargetUserId, updateConversationInternal]
   );
 
+  // Hàm helper để cập nhật message với blob URL thành URL thật và gửi qua WebSocket
+  const updateImageMessageWithRealUrl = useCallback(
+    async (blobUrl: string, realUrl: string, targetUserId: number) => {
+      if (!user) return;
+
+      // Tìm message với blob URL trong cache
+      const conversationMessages = messagesByConversationRef.current.get(targetUserId) || [];
+      const blobMessage = conversationMessages.find(
+        (msg) =>
+          msg.type === 'image' &&
+          msg.media === blobUrl &&
+          msg.userId === user.userId
+      );
+
+      if (!blobMessage) return;
+
+      // Tạo message mới với URL thật và cùng temp ID
+      const updatedMessage: ChatMessage = {
+        ...blobMessage,
+        media: realUrl,
+      };
+
+      // Cập nhật cache
+      const updatedCache = conversationMessages.map((msg) =>
+        msg.id === blobMessage.id ? updatedMessage : msg
+      );
+      messagesByConversationRef.current.set(targetUserId, updatedCache);
+
+      // Cập nhật state nếu đang ở conversation này
+      if (currentTargetUserId === targetUserId) {
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === blobMessage.id ? updatedMessage : msg))
+        );
+      }
+
+      // Cập nhật conversation
+      updateConversationInternal(updatedMessage, false, targetUserId);
+
+      // Gửi qua WebSocket với cùng temp ID
+      (updatedMessage as any).targetUserId = targetUserId;
+      if (wsRef.current && wsRef.current.isConnected()) {
+        const roomID = getChatRoomID(user.userId, targetUserId);
+        wsRef.current.sendMessage(roomID, targetUserId, updatedMessage);
+      } else {
+        // Fallback: gửi qua REST API nếu WebSocket không available
+        try {
+          const response = await chatApiService.sendMessage({
+            targetUserId: targetUserId,
+            username: user.username,
+            fullName: user.fullName || user.username,
+            avatar: user.avatar || null,
+            message: '',
+            timestamp: updatedMessage.timestamp,
+            type: 'image',
+            media: realUrl,
+          });
+
+          const finalImageId = response.data?.id || blobMessage.id;
+          const finalImageData = { ...updatedMessage, id: finalImageId };
+
+          // Cập nhật cache với ID thật từ server
+          const finalCache = updatedCache.map((msg) =>
+            msg.id === blobMessage.id ? finalImageData : msg
+          );
+          messagesByConversationRef.current.set(targetUserId, finalCache);
+
+          // Cập nhật state nếu đang ở conversation này
+          if (currentTargetUserId === targetUserId) {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === blobMessage.id ? finalImageData : msg))
+            );
+          }
+
+          updateConversationInternal(finalImageData, false, targetUserId);
+        } catch {
+          // Silent fail
+        }
+      }
+    },
+    [user, currentTargetUserId, updateConversationInternal]
+  );
+
   // Gửi ảnh
   const sendImage = useCallback(
     async (imageUrl: string, targetUserIdParam?: number) => {
@@ -1286,7 +1379,16 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       sendingMessagesRef.current.add(tempId);
 
       // Optimistic update: thêm ảnh vào messages ngay lập tức (KHÔNG CHỜ API)
-      // Không tăng count ở đây vì sẽ tăng khi nhận được từ Pusher
+      // Luôn lưu vào cache để ChatBoxInstance có thể lấy được ngay
+      const conversationMessages = messagesByConversationRef.current.get(targetId) || [];
+      const isDuplicateInCache = conversationMessages.some((msg) => msg.id === tempId);
+      
+      if (!isDuplicateInCache) {
+        const updatedCache = [...conversationMessages, imageData].sort((a, b) => a.timestamp - b.timestamp);
+        messagesByConversationRef.current.set(targetId, updatedCache);
+      }
+      
+      // Cập nhật state nếu đang ở conversation này
       if (currentTargetUserId === targetId) {
         setMessages((prev) => {
           // Tránh duplicate
@@ -1294,8 +1396,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
             return prev;
           }
           const updated = [...prev, imageData].sort((a, b) => a.timestamp - b.timestamp);
-          // Lưu vào cache
-          messagesByConversationRef.current.set(targetId, updated);
           return updated;
         });
       }
@@ -1554,6 +1654,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     sendIcon,
     sendSticker,
     sendImage,
+    updateImageMessageWithRealUrl,
     error,
     currentTargetUserId,
     setCurrentTargetUserId,
