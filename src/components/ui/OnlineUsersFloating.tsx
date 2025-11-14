@@ -12,6 +12,7 @@ export default function OnlineUsersFloating() {
   const { user, isInitialized } = useAuth();
   const pathname = usePathname();
   const { onlineUsersList, openChat, closeAllChats, conversations, openChatUserIds } = useChatContext();
+  // Chỉ dùng conversations để lấy unreadCount và lastMessage (optional), không phụ thuộc vào nó
   const [isVisible, setIsVisible] = useState(true);
   const [hoveredUserId, setHoveredUserId] = useState<number | null>(null);
   const [hiddenUserIds, setHiddenUserIds] = useState<Set<number>>(new Set());
@@ -47,37 +48,32 @@ export default function OnlineUsersFloating() {
   }
 
   // Lọc ra các user chưa bị ẩn và lấy tối đa 4 người đang online
-  // Không cần bỏ user đang được chọn vì giờ có thể mở nhiều box chat cùng lúc
-  // Nếu user có trong onlineUsersList thì họ đang online (đã được sync với WebSocket)
+  // Chỉ dựa vào onlineUsersList từ WebSocket, không phụ thuộc vào API conversations
+  // Chỉ dùng conversations để lấy unreadCount và lastMessage (optional) nếu có
   const displayUsers = onlineUsersList
     .filter(onlineUser => 
       !hiddenUserIds.has(onlineUser.userId)
     )
     .map(onlineUser => {
+      // Chỉ lấy unreadCount và lastMessage từ conversations nếu có (optional)
+      // Không fallback về conversations cho username/fullName vì onlineUsersList đã có đầy đủ
       const conversation = conversations.find(conv => conv.targetUserId === onlineUser.userId);
       return {
         ...onlineUser,
-        // Avatar từ onlineUser là nguồn chính, không phụ thuộc vào conversation
-        // onlineUser.avatar sẽ được cập nhật từ message khi user gửi tin nhắn
+        // Dùng thông tin từ onlineUsersList làm nguồn chính
         avatar: onlineUser.avatar || undefined,
-        // Cập nhật thông tin từ conversation nếu thiếu
-        username: onlineUser.username || conversation?.targetUsername || onlineUser.username,
-        fullName: onlineUser.fullName || conversation?.targetFullName || onlineUser.fullName,
+        username: onlineUser.username,
+        fullName: onlineUser.fullName,
+        // Chỉ lấy unreadCount và lastMessage từ conversations nếu có (không bắt buộc)
         unreadCount: conversation?.unreadCount || 0,
         lastMessage: conversation?.lastMessage,
-        // Thêm timestamp để sắp xếp: ưu tiên lastMessage timestamp, nếu không có thì dùng onlineSince
+        // Sắp xếp theo onlineSince (thời gian user online) hoặc lastMessage timestamp nếu có
         sortTimestamp: conversation?.lastMessage?.timestamp || onlineUser.onlineSince || 0
       };
     })
-    // Sắp xếp theo thời gian tin nhắn gần nhất: tin nhắn mới nhất ở dưới cùng
+    // Sắp xếp: ưu tiên có lastMessage (tin nhắn mới nhất), sau đó theo onlineSince
     .sort((a, b) => {
-      // Ưu tiên sắp xếp theo sortTimestamp (lastMessage timestamp hoặc onlineSince)
-      // Timestamp lớn hơn (mới hơn) sẽ ở dưới cùng
-      if (a.sortTimestamp !== b.sortTimestamp) {
-        return b.sortTimestamp - a.sortTimestamp;
-      }
-      
-      // Nếu sortTimestamp bằng nhau, ưu tiên người có lastMessage
+      // Ưu tiên người có lastMessage
       if (a.lastMessage && !b.lastMessage) {
         return -1; // a xuống dưới
       }
@@ -85,7 +81,12 @@ export default function OnlineUsersFloating() {
         return 1; // b xuống dưới
       }
       
-      // Nếu cả hai đều có hoặc không có lastMessage, giữ nguyên thứ tự
+      // Nếu cả hai đều có hoặc không có lastMessage, sắp xếp theo sortTimestamp
+      if (a.sortTimestamp !== b.sortTimestamp) {
+        return b.sortTimestamp - a.sortTimestamp; // Mới hơn ở dưới
+      }
+      
+      // Nếu sortTimestamp bằng nhau, giữ nguyên thứ tự
       return 0;
     })
     .slice(0, 4); // Lấy tối đa 4 người sau khi sắp xếp

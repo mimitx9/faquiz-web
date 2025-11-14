@@ -970,7 +970,21 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
 
   const getTargetName = () => {
     const conv = conversations.find((c) => c.targetUserId === targetUserId);
-    return conv ? conv.targetFullName : `User ${targetUserId}`;
+    // Nếu có conversation và targetFullName không phải là placeholder
+    if (conv && conv.targetFullName && conv.targetFullName !== `User ${targetUserId}` && !conv.targetFullName.startsWith('User ')) {
+      return conv.targetFullName;
+    }
+    // Nếu không có conversation hoặc có placeholder name, tìm trong onlineUsersList
+    const onlineUser = onlineUsersList.find((u) => u.userId === targetUserId);
+    if (onlineUser?.fullName) {
+      return onlineUser.fullName;
+    }
+    // Fallback về conversation nếu có
+    if (conv?.targetFullName) {
+      return conv.targetFullName;
+    }
+    // Cuối cùng fallback về User ${targetUserId}
+    return `User ${targetUserId}`;
   };
 
   const getTargetAvatar = () => {

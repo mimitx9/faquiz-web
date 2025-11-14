@@ -109,6 +109,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
   const processedUnreadMessagesRef = useRef<Set<string>>(new Set());
   // Lưu trạng thái đã reconnect để force reload messages khi reconnect
   const wasDisconnectedRef = useRef<boolean>(false);
+  // Ref để lưu onlineUsersList để truy cập trong callback
+  const onlineUsersListRef = useRef<OnlineUser[]>([]);
 
   // Khởi tạo WebSocket connection
   useEffect(() => {
@@ -122,9 +124,12 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       return;
     }
 
+    // const baseUrl = process.env.NODE_ENV === 'production'
+    //   ? 'https://api.facourse.com/fai'
+    //   : 'http://localhost:7071/fai';
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://api.facourse.com/fai'
-      : 'http://localhost:7071/fai';
+      : 'https://api.facourse.com/fai';
 
     const ws = new ChatWebSocket(baseUrl, token);
     wsRef.current = ws;
@@ -365,10 +370,34 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           processedUnreadMessagesRef.current.add(messageKey);
         }
         
+        // Kiểm tra và cập nhật targetFullName nếu đang là "User ${targetId}"
+        const needsUpdate = existing.targetFullName === `User ${targetId}` || existing.targetFullName.startsWith('User ');
+        let updatedTargetFullName = existing.targetFullName;
+        let updatedTargetUsername = existing.targetUsername;
+        let updatedTargetAvatar = existing.targetAvatar;
+        
+        if (needsUpdate) {
+          // Tìm thông tin từ onlineUsersList
+          const targetUser = onlineUsersListRef.current.find(u => u.userId === targetId);
+          if (targetUser) {
+            updatedTargetFullName = targetUser.fullName;
+            updatedTargetUsername = targetUser.username;
+            updatedTargetAvatar = targetUser.avatar ?? undefined;
+          } else if (message.userId !== user.userId) {
+            // Nếu message từ user khác, dùng thông tin từ message
+            updatedTargetFullName = message.fullName;
+            updatedTargetUsername = message.username;
+            updatedTargetAvatar = message.avatar ?? undefined;
+          }
+        }
+        
         return prev.map((conv) =>
           conv.targetUserId === targetId
             ? {
                 ...conv,
+                targetFullName: updatedTargetFullName,
+                targetUsername: updatedTargetUsername,
+                targetAvatar: updatedTargetAvatar,
                 lastMessage: message,
                 unreadCount: newUnreadCount,
               }
@@ -376,7 +405,6 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         );
       } else {
         // Tạo conversation mới - cần lấy thông tin target user
-        // Tạm thời dùng thông tin từ message, sau này có thể fetch từ API
         let newUnreadCount = 0;
         if (!isConversationOpen && !alreadyProcessed) {
           newUnreadCount = 1;
@@ -384,13 +412,42 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
           processedUnreadMessagesRef.current.add(messageKey);
         }
         
+        // Lấy thông tin target user từ onlineUsersList hoặc conversations hiện có
+        let targetUsername = `User ${targetId}`;
+        let targetFullName = `User ${targetId}`;
+        let targetAvatar: string | null | undefined = undefined;
+        
+        if (message.userId === user.userId) {
+          // Tin nhắn từ user hiện tại - tìm thông tin target user
+          // Ưu tiên tìm trong onlineUsersList trước
+          const targetUser = onlineUsersListRef.current.find(u => u.userId === targetId);
+          if (targetUser) {
+            targetUsername = targetUser.username;
+            targetFullName = targetUser.fullName;
+            targetAvatar = targetUser.avatar ?? undefined;
+          } else {
+            // Nếu không có trong onlineUsersList, tìm trong conversations hiện có
+            const existingConv = prev.find(conv => conv.targetUserId === targetId);
+            if (existingConv) {
+              targetUsername = existingConv.targetUsername;
+              targetFullName = existingConv.targetFullName;
+              targetAvatar = existingConv.targetAvatar ?? undefined;
+            }
+          }
+        } else {
+          // Tin nhắn từ user khác - dùng thông tin từ message
+          targetUsername = message.username;
+          targetFullName = message.fullName;
+          targetAvatar = message.avatar ?? undefined;
+        }
+        
         return [
           ...prev,
           {
             targetUserId: targetId,
-            targetUsername: message.userId === user.userId ? `User ${targetId}` : message.username,
-            targetFullName: message.userId === user.userId ? `User ${targetId}` : message.fullName,
-            targetAvatar: message.userId === user.userId ? undefined : message.avatar,
+            targetUsername,
+            targetFullName,
+            targetAvatar,
             lastMessage: message,
             unreadCount: newUnreadCount,
           },
@@ -822,10 +879,18 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
                 const existingLastMsgTime = existingConv.lastMessage?.timestamp || 0;
                 const apiLastMsgTime = apiConv.lastMessage?.timestamp || 0;
                 
+                // Kiểm tra nếu existingConv có targetFullName là "User ${targetId}" và apiConv có fullName hợp lệ
+                const existingHasPlaceholder = existingConv.targetFullName === `User ${existingConv.targetUserId}` || existingConv.targetFullName.startsWith('User ');
+                const apiHasValidName = apiConv.targetFullName && apiConv.targetFullName !== `User ${apiConv.targetUserId}` && !apiConv.targetFullName.startsWith('User ');
+                
                 // Nếu lastMessage từ state mới hơn, giữ lại unreadCount và lastMessage từ state
                 if (existingLastMsgTime > apiLastMsgTime) {
                   merged.set(existingConv.targetUserId, {
                     ...apiConv,
+                    // Ưu tiên dùng targetFullName từ API nếu nó hợp lệ và existing đang là placeholder
+                    targetFullName: (existingHasPlaceholder && apiHasValidName) ? apiConv.targetFullName : existingConv.targetFullName,
+                    targetUsername: (existingHasPlaceholder && apiHasValidName) ? apiConv.targetUsername : existingConv.targetUsername,
+                    targetAvatar: (existingHasPlaceholder && apiHasValidName) ? apiConv.targetAvatar : existingConv.targetAvatar,
                     lastMessage: existingConv.lastMessage,
                     unreadCount: existingConv.unreadCount,
                   });
@@ -862,6 +927,37 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
     loadConversations();
   }, [user, isInitialized]);
+
+  // Cập nhật ref mỗi khi onlineUsersList thay đổi
+  useEffect(() => {
+    onlineUsersListRef.current = onlineUsersList;
+  }, [onlineUsersList]);
+
+  // Tự động cập nhật conversations khi onlineUsersList thay đổi (để cập nhật fullName)
+  useEffect(() => {
+    setConversations((prev) => {
+      let hasChanges = false;
+      const updated = prev.map((conv) => {
+        // Kiểm tra nếu conversation đang có targetFullName là "User ${targetId}"
+        const needsUpdate = conv.targetFullName === `User ${conv.targetUserId}` || conv.targetFullName.startsWith('User ');
+        if (needsUpdate) {
+          const targetUser = onlineUsersList.find(u => u.userId === conv.targetUserId);
+          if (targetUser) {
+            hasChanges = true;
+            return {
+              ...conv,
+              targetFullName: targetUser.fullName,
+              targetUsername: targetUser.username,
+              targetAvatar: targetUser.avatar ?? conv.targetAvatar,
+            };
+          }
+        }
+        return conv;
+      });
+      
+      return hasChanges ? updated : prev;
+    });
+  }, [onlineUsersList]);
 
   // Tự động subscribe vào rooms của các conversations đã có
   useEffect(() => {
