@@ -15,7 +15,7 @@ import {handle401Error} from './authUtils';
 // Base URL configuration
 const BASE_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.facourse.com/fai'
-    : 'https://api.facourse.com/fai';
+    : 'http://localhost:7071/fai';
 
 const API_BASE_URL = `${BASE_URL}/api`;
 const AUTH_API_BASE_URL = `${BASE_URL}/v1/account`;

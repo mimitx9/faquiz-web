@@ -801,41 +801,65 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         // Đợi một chút để message được thêm vào state
         await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Gọi API sendMessage trực tiếp để lưu vào database (không qua sendImage để tránh tạo message mới)
+        // Sau khi upload xong, cập nhật message với URL thật
+        // Backend đã nhận message qua WebSocket với blob URL và sẽ tự động cập nhật khi có URL thật
+        // Chỉ gọi REST API nếu WebSocket không available để đảm bảo message được lưu vào DB
         if (tempMessageId && tempMessage && user) {
-          const sendResponse = await chatApiService.sendMessage({
-            targetUserId: targetUserId,
-            username: user.username,
-            fullName: user.fullName || user.username,
-            avatar: user.avatar || null,
-            message: '',
-            timestamp: tempMessage.timestamp,
-            type: 'image',
-            media: uploadedUrl,
-          });
-
-          const finalImageId = sendResponse.data?.id || tempMessageId;
-
           // Lưu mapping blob URL -> real URL để có thể zoom ngay cả khi blob URL đã bị revoke
           blobUrlToRealUrlMapRef.current.set(previewUrl, uploadedUrl);
 
-          // Cập nhật message với URL thật và ID mới từ server
-          setMessages((prev) => {
-            const updated = prev.map((msg) => {
-              if (
-                msg.type === 'image' &&
-                msg.media === previewUrl &&
-                msg.userId === user?.userId
-              ) {
-                return { ...msg, id: finalImageId, media: uploadedUrl };
-              }
-              return msg;
-            });
-            return updated;
-          });
+          // Chỉ gọi REST API nếu WebSocket không available
+          // Nếu WebSocket available, backend đã nhận message và sẽ tự động cập nhật với URL thật
+          if (!isConnected) {
+            try {
+              const sendResponse = await chatApiService.sendMessage({
+                targetUserId: targetUserId,
+                username: user.username,
+                fullName: user.fullName || user.username,
+                avatar: user.avatar || null,
+                message: '',
+                timestamp: tempMessage.timestamp,
+                type: 'image',
+                media: uploadedUrl,
+              });
 
-          // Backend sẽ tự động broadcast qua WebSocket khi lưu message vào database
-          // Không cần gọi thêm API nào
+              const finalImageId = sendResponse.data?.id || tempMessageId;
+
+              // Cập nhật message với URL thật và ID mới từ server
+              setMessages((prev) => {
+                const updated = prev.map((msg) => {
+                  if (
+                    msg.type === 'image' &&
+                    msg.media === previewUrl &&
+                    msg.userId === user?.userId
+                  ) {
+                    return { ...msg, id: finalImageId, media: uploadedUrl };
+                  }
+                  return msg;
+                });
+                return updated;
+              });
+            } catch {
+              // Silent fail
+            }
+          } else {
+            // Nếu WebSocket available, backend đã nhận message với blob URL
+            // Backend sẽ tự động cập nhật với URL thật khi broadcast lại
+            // Chỉ cần cập nhật local state với URL thật để hiển thị ngay
+            setMessages((prev) => {
+              const updated = prev.map((msg) => {
+                if (
+                  msg.type === 'image' &&
+                  msg.media === previewUrl &&
+                  msg.userId === user?.userId
+                ) {
+                  return { ...msg, media: uploadedUrl };
+                }
+                return msg;
+              });
+              return updated;
+            });
+          }
         }
 
         // Revoke preview URL sau khi đã cập nhật message (đợi lâu hơn để đảm bảo message đã được cập nhật trong cả local state và useChat context)

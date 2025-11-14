@@ -121,7 +121,7 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
     const baseUrl = process.env.NODE_ENV === 'production'
       ? 'https://api.facourse.com/fai'
-      : 'https://api.facourse.com/fai';
+      : 'http://localhost:7071/fai';
 
     const ws = new ChatWebSocket(baseUrl, token);
     wsRef.current = ws;
@@ -236,13 +236,14 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
         // Cập nhật onlineSince và thông tin user nếu có
         return prev.map((u) => {
           if (u.userId === userId) {
-            // Cập nhật avatar nếu chưa có và userInfo có avatar
-            const newAvatar = (!u.avatar && userInfo?.avatar) 
-              ? (userInfo.avatar && userInfo.avatar.trim() !== '' ? userInfo.avatar : undefined)
+            // Cập nhật avatar: luôn ưu tiên userInfo.avatar nếu có và không rỗng
+            // Nếu userInfo.avatar không có hoặc rỗng, giữ nguyên avatar hiện tại
+            const newAvatar = (userInfo?.avatar && userInfo.avatar.trim() !== '') 
+              ? userInfo.avatar 
               : u.avatar;
-            // Cập nhật username và fullName nếu thiếu
-            const newUsername = u.username || userInfo?.username || u.username;
-            const newFullName = u.fullName || userInfo?.fullName || u.fullName;
+            // Cập nhật username và fullName: ưu tiên userInfo nếu có, nếu không thì giữ nguyên
+            const newUsername = userInfo?.username || u.username;
+            const newFullName = userInfo?.fullName || u.fullName;
             return { 
               ...u, 
               onlineSince: Date.now(),
@@ -358,13 +359,35 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
 
     // Kiểm tra xem tin nhắn đã tồn tại chưa
     const conversationMessages = messagesByConversationRef.current.get(targetId) || [];
-    const isDuplicate = conversationMessages.some((msg) => msg.id === data.id);
     
-    // Kiểm tra xem có tin nhắn với cùng userId và timestamp gần giống không
+    // Kiểm tra duplicate theo ID
+    const isDuplicateById = conversationMessages.some((msg) => msg.id === data.id);
+    
+    // Kiểm tra duplicate theo temp ID (khi gửi tin nhắn lần đầu, có temp ID từ optimistic update)
+    // Nếu message từ chính mình và có temp message với cùng content/timestamp, đây là duplicate
+    const isDuplicateByTempId = data.userId === user.userId && conversationMessages.some((msg) => {
+      // Kiểm tra nếu có temp message (ID bắt đầu bằng "temp-") với cùng userId, content và timestamp gần giống
+      if (msg.id.startsWith('temp-') && msg.userId === data.userId) {
+        // So sánh content/timestamp để xác định đây là cùng một message
+        const isSameContent = msg.type === data.type && 
+          msg.message === data.message && 
+          msg.media === data.media;
+        const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000; // Trong vòng 3 giây
+        return isSameContent && isSameTimestamp;
+      }
+      return false;
+    });
+    
+    // Kiểm tra xem có tin nhắn với cùng userId và timestamp gần giống không (để tránh duplicate từ nhiều nguồn)
     const hasSimilarMessage = conversationMessages.some((msg) => 
       msg.userId === data.userId && 
-      Math.abs(msg.timestamp - data.timestamp) < 5000
+      msg.type === data.type &&
+      msg.message === data.message &&
+      msg.media === data.media &&
+      Math.abs(msg.timestamp - data.timestamp) < 3000 // Trong vòng 3 giây
     );
+    
+    const isDuplicate = isDuplicateById || isDuplicateByTempId || hasSimilarMessage;
     
     // Tin nhắn từ user khác - cập nhật activity và conversation
     if (data.userId !== user.userId) {
@@ -380,13 +403,46 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     // Cập nhật messages
     if (currentTargetUserIdRef.current === targetId) {
       setMessages((prev) => {
-        if (prev.some((msg) => msg.id === data.id)) {
+        // Kiểm tra duplicate trong state hiện tại
+        const isDuplicateInState = prev.some((msg) => {
+          if (msg.id === data.id) return true;
+          // Kiểm tra temp ID duplicate
+          if (msg.id.startsWith('temp-') && data.userId === user.userId) {
+            const isSameContent = msg.type === data.type && 
+              msg.message === data.message && 
+              msg.media === data.media;
+            const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
+            return isSameContent && isSameTimestamp;
+          }
+          return false;
+        });
+        
+        if (isDuplicateInState) {
+          // Nếu là duplicate nhưng có temp ID, thay thế temp message bằng message thật từ server
+          if (data.userId === user.userId) {
+            const updated = prev.map((msg) => {
+              // Tìm temp message tương ứng và thay thế bằng message thật
+              if (msg.id.startsWith('temp-') && msg.userId === data.userId) {
+                const isSameContent = msg.type === data.type && 
+                  msg.message === data.message && 
+                  msg.media === data.media;
+                const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
+                if (isSameContent && isSameTimestamp) {
+                  return data; // Thay thế temp message bằng message thật
+                }
+              }
+              return msg;
+            }).sort((a, b) => a.timestamp - b.timestamp);
+            messagesByConversationRef.current.set(targetId, updated);
+            return updated;
+          }
           return prev;
         }
+        
         const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
         messagesByConversationRef.current.set(targetId, updated);
         // Tăng count nếu tin nhắn mới và chưa có tin nhắn tương tự
-        if (!isDuplicate && !hasSimilarMessage) {
+        if (!isDuplicate) {
           const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
           messageCountByConversationRef.current.set(targetId, currentCount + 1);
         }
@@ -395,7 +451,30 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     } else {
       // Vẫn lưu vào cache để khi mở conversation sẽ có tin nhắn
       if (!isDuplicate) {
-        const updated = [...conversationMessages, data].sort((a, b) => a.timestamp - b.timestamp);
+        // Nếu có temp message, thay thế bằng message thật
+        let updatedMessages = conversationMessages;
+        if (data.userId === user.userId) {
+          updatedMessages = conversationMessages.map((msg) => {
+            if (msg.id.startsWith('temp-') && msg.userId === data.userId) {
+              const isSameContent = msg.type === data.type && 
+                msg.message === data.message && 
+                msg.media === data.media;
+              const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
+              if (isSameContent && isSameTimestamp) {
+                return data; // Thay thế temp message bằng message thật
+              }
+            }
+            return msg;
+          });
+          // Nếu không tìm thấy temp message để thay thế, thêm message mới
+          if (updatedMessages.length === conversationMessages.length) {
+            updatedMessages = [...conversationMessages, data];
+          }
+        } else {
+          updatedMessages = [...conversationMessages, data];
+        }
+        
+        const updated = updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
         messagesByConversationRef.current.set(targetId, updated);
         // Tăng count nếu chưa có tin nhắn tương tự
         if (!hasSimilarMessage) {
@@ -805,59 +884,59 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Để floating button cập nhật ngay và sắp xếp lại theo tin nhắn mới nhất
       updateConversationInternal(messageData, false, targetId);
 
+      // Chỉ gửi qua WebSocket nếu available
+      // Backend sẽ tự động lưu vào DB khi nhận WebSocket message
       if (wsRef.current && wsRef.current.isConnected()) {
         const roomID = getChatRoomID(user.userId, targetId);
         wsRef.current.sendMessage(roomID, targetId, messageData);
-      }
-
-      // Gửi API trong background để đảm bảo persistence (fallback nếu WebSocket fail)
-      // Backend sẽ nhận WebSocket event và lưu vào DB, nhưng vẫn gọi API để đảm bảo
-      (async () => {
-        try {
-          // Gọi API để lưu message vào database (fallback)
-          const response = await chatApiService.sendMessage({
-            targetUserId: targetId,
-            username: user.username,
-            fullName: user.fullName || user.username,
-            avatar: user.avatar || null,
-            message: message.trim(),
-            timestamp: messageData.timestamp,
-            type: 'message',
-            media: null,
-          });
-
-          const finalMessageId = response.data?.id || tempId;
-          const finalMessageData = { ...messageData, id: finalMessageId };
-
-          // Cập nhật ID thật từ server (thay thế temp ID)
-          // Nếu đã nhận được từ WebSocket với ID thật thì không cần update lại
-          if (currentTargetUserId === targetId) {
-            setMessages((prev) => {
-              // Chỉ update nếu vẫn còn temp ID
-              if (prev.some((msg) => msg.id === tempId)) {
-                const updated = prev.map((msg) =>
-                  msg.id === tempId ? finalMessageData : msg
-                );
-                messagesByConversationRef.current.set(targetId, updated);
-                return updated;
-              }
-              return prev;
+        // Xóa temp ID sau khi gửi thành công qua WebSocket
+        sendingMessagesRef.current.delete(tempId);
+      } else {
+        // Fallback: chỉ gửi qua REST API nếu WebSocket không available
+        (async () => {
+          try {
+            const response = await chatApiService.sendMessage({
+              targetUserId: targetId,
+              username: user.username,
+              fullName: user.fullName || user.username,
+              avatar: user.avatar || null,
+              message: message.trim(),
+              timestamp: messageData.timestamp,
+              type: 'message',
+              media: null,
             });
-          }
 
-          // Cập nhật lại conversation với ID thật từ server (nếu chưa được update từ WebSocket)
-          updateConversationInternal(finalMessageData, false, targetId);
-          
-          // Tự động tắt typing indicator sau khi gửi tin nhắn
-          if (typingSentRef.current) {
-            typingSentRef.current = false;
+            const finalMessageId = response.data?.id || tempId;
+            const finalMessageData = { ...messageData, id: finalMessageId };
+
+            // Cập nhật ID thật từ server (thay thế temp ID)
+            if (currentTargetUserId === targetId) {
+              setMessages((prev) => {
+                if (prev.some((msg) => msg.id === tempId)) {
+                  const updated = prev.map((msg) =>
+                    msg.id === tempId ? finalMessageData : msg
+                  );
+                  messagesByConversationRef.current.set(targetId, updated);
+                  return updated;
+                }
+                return prev;
+              });
+            }
+
+            // Cập nhật lại conversation với ID thật từ server
+            updateConversationInternal(finalMessageData, false, targetId);
+          } catch {
+            // Không rollback để giữ UX mượt mà
+          } finally {
+            sendingMessagesRef.current.delete(tempId);
           }
-        } catch {
-          // Không rollback để giữ UX mượt mà
-        } finally {
-          sendingMessagesRef.current.delete(tempId);
-        }
-      })();
+        })();
+      }
+      
+      // Tự động tắt typing indicator sau khi gửi tin nhắn
+      if (typingSentRef.current) {
+        typingSentRef.current = false;
+      }
     },
     [user, currentTargetUserId, updateConversationInternal]
   );
@@ -916,59 +995,53 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Thêm targetUserId vào iconData để backend biết
       (iconData as any).targetUserId = targetId;
 
+      // Chỉ gửi qua WebSocket nếu available
+      // Backend sẽ tự động lưu vào DB khi nhận WebSocket message
       if (wsRef.current && wsRef.current.isConnected()) {
         const roomID = getChatRoomID(user.userId, targetId);
         wsRef.current.sendMessage(roomID, targetId, iconData);
-      }
-
-      // Gửi API trong background để đảm bảo persistence (fallback nếu WebSocket fail)
-      // Backend sẽ nhận WebSocket event và lưu vào DB, nhưng vẫn gọi API để đảm bảo
-      (async () => {
-        try {
-          // Gọi API để lưu icon vào database
-          const response = await chatApiService.sendMessage({
-            targetUserId: targetId,
-            username: user.username,
-            fullName: user.fullName || user.username,
-            avatar: user.avatar || null,
-            message: '',
-            timestamp: iconData.timestamp,
-            type: 'icon',
-            media: icon,
-          });
-
-          const finalIconId = response.data?.id || tempId;
-          const finalIconData = { ...iconData, id: finalIconId };
-
-          // Cập nhật ID thật từ server (thay thế temp ID)
-          if (currentTargetUserId === targetId) {
-            setMessages((prev) => {
-              const updated = prev.map((msg) =>
-                msg.id === tempId ? finalIconData : msg
-              );
-              messagesByConversationRef.current.set(targetId, updated);
-              return updated;
+        sendingMessagesRef.current.delete(tempId);
+      } else {
+        // Fallback: chỉ gửi qua REST API nếu WebSocket không available
+        (async () => {
+          try {
+            const response = await chatApiService.sendMessage({
+              targetUserId: targetId,
+              username: user.username,
+              fullName: user.fullName || user.username,
+              avatar: user.avatar || null,
+              message: '',
+              timestamp: iconData.timestamp,
+              type: 'icon',
+              media: icon,
             });
-          }
-          // Tăng count khi icon đã được lưu thành công
-          // Backend sẽ tự động broadcast qua WebSocket, không cần gọi thêm API
-          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
-          messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
-          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
-          updateConversationInternal(finalIconData, false, targetId);
-          
-          // Tự động tắt typing indicator sau khi gửi icon
-          if (typingSentRef.current) {
-            typingSentRef.current = false;
+            const finalIconId = response.data?.id || tempId;
+            const finalIconData = { ...iconData, id: finalIconId };
+
+            if (currentTargetUserId === targetId) {
+              setMessages((prev) => {
+                const updated = prev.map((msg) =>
+                  msg.id === tempId ? finalIconData : msg
+                );
+                messagesByConversationRef.current.set(targetId, updated);
+                return updated;
+              });
+            }
+
+            updateConversationInternal(finalIconData, false, targetId);
+          } catch {
+            // Không rollback để giữ UX mượt mà
+          } finally {
+            sendingMessagesRef.current.delete(tempId);
           }
-        } catch {
-          // Không rollback để giữ UX mượt mà
-        } finally {
-          sendingMessagesRef.current.delete(tempId);
-        }
-      })();
+        })();
+      }
+      
+      // Tự động tắt typing indicator sau khi gửi icon
+      if (typingSentRef.current) {
+        typingSentRef.current = false;
+      }
     },
     [user, currentTargetUserId, updateConversationInternal]
   );
@@ -1028,60 +1101,54 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Thêm targetUserId vào stickerData để backend biết
       (stickerData as any).targetUserId = targetId;
 
+      // Chỉ gửi qua WebSocket nếu available
+      // Backend sẽ tự động lưu vào DB khi nhận WebSocket message
       if (wsRef.current && wsRef.current.isConnected()) {
         const roomID = getChatRoomID(user.userId, targetId);
         wsRef.current.sendMessage(roomID, targetId, stickerData);
-      }
-
-      // Gửi API trong background để đảm bảo persistence (fallback nếu WebSocket fail)
-      // Backend sẽ nhận WebSocket event và lưu vào DB, nhưng vẫn gọi API để đảm bảo
-      (async () => {
-        try {
-          // Gọi API để lưu sticker vào database
-          const response = await chatApiService.sendMessage({
-            targetUserId: targetId,
-            username: user.username,
-            fullName: user.fullName || user.username,
-            avatar: user.avatar || null,
-            message: '',
-            timestamp: stickerData.timestamp,
-            type: 'sticker',
-            media: stickerId,
-            audio: audioUrl || null,
-          });
-
-          const finalStickerId = response.data?.id || tempId;
-          const finalStickerData = { ...stickerData, id: finalStickerId };
-
-          // Cập nhật ID thật từ server (thay thế temp ID)
-          if (currentTargetUserId === targetId) {
-            setMessages((prev) => {
-              const updated = prev.map((msg) =>
-                msg.id === tempId ? finalStickerData : msg
-              );
-              messagesByConversationRef.current.set(targetId, updated);
-              return updated;
+        sendingMessagesRef.current.delete(tempId);
+      } else {
+        // Fallback: chỉ gửi qua REST API nếu WebSocket không available
+        (async () => {
+          try {
+            const response = await chatApiService.sendMessage({
+              targetUserId: targetId,
+              username: user.username,
+              fullName: user.fullName || user.username,
+              avatar: user.avatar || null,
+              message: '',
+              timestamp: stickerData.timestamp,
+              type: 'sticker',
+              media: stickerId,
+              audio: audioUrl || null,
             });
-          }
-          // Tăng count khi sticker đã được lưu thành công
-          // Backend sẽ tự động broadcast qua WebSocket, không cần gọi thêm API
-          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
-          messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
-          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
-          updateConversationInternal(finalStickerData, false, targetId);
-          
-          // Tự động tắt typing indicator sau khi gửi sticker
-          if (typingSentRef.current) {
-            typingSentRef.current = false;
+            const finalStickerId = response.data?.id || tempId;
+            const finalStickerData = { ...stickerData, id: finalStickerId };
+
+            if (currentTargetUserId === targetId) {
+              setMessages((prev) => {
+                const updated = prev.map((msg) =>
+                  msg.id === tempId ? finalStickerData : msg
+                );
+                messagesByConversationRef.current.set(targetId, updated);
+                return updated;
+              });
+            }
+
+            updateConversationInternal(finalStickerData, false, targetId);
+          } catch {
+            // Không rollback để giữ UX mượt mà
+          } finally {
+            sendingMessagesRef.current.delete(tempId);
           }
-        } catch {
-          // Không rollback để giữ UX mượt mà
-        } finally {
-          sendingMessagesRef.current.delete(tempId);
-        }
-      })();
+        })();
+      }
+      
+      // Tự động tắt typing indicator sau khi gửi sticker
+      if (typingSentRef.current) {
+        typingSentRef.current = false;
+      }
     },
     [user, currentTargetUserId, updateConversationInternal]
   );
@@ -1150,59 +1217,53 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
       // Thêm targetUserId vào imageData để backend biết
       (imageData as any).targetUserId = targetId;
 
+      // Chỉ gửi qua WebSocket nếu available
+      // Backend sẽ tự động lưu vào DB khi nhận WebSocket message
       if (wsRef.current && wsRef.current.isConnected()) {
         const roomID = getChatRoomID(user.userId, targetId);
         wsRef.current.sendMessage(roomID, targetId, imageData);
-      }
-
-      // Gửi API trong background để đảm bảo persistence (fallback nếu WebSocket fail)
-      // Backend sẽ nhận WebSocket event và lưu vào DB, nhưng vẫn gọi API để đảm bảo
-      (async () => {
-        try {
-          // Gọi API để lưu ảnh vào database
-          const response = await chatApiService.sendMessage({
-            targetUserId: targetId,
-            username: user.username,
-            fullName: user.fullName || user.username,
-            avatar: user.avatar || null,
-            message: '',
-            timestamp: imageData.timestamp,
-            type: 'image',
-            media: imageUrl,
-          });
-
-          const finalImageId = response.data?.id || tempId;
-          const finalImageData = { ...imageData, id: finalImageId };
-
-          // Cập nhật ID thật từ server (thay thế temp ID)
-          if (currentTargetUserId === targetId) {
-            setMessages((prev) => {
-              const updated = prev.map((msg) =>
-                msg.id === tempId ? finalImageData : msg
-              );
-              messagesByConversationRef.current.set(targetId, updated);
-              return updated;
+        sendingMessagesRef.current.delete(tempId);
+      } else {
+        // Fallback: chỉ gửi qua REST API nếu WebSocket không available
+        (async () => {
+          try {
+            const response = await chatApiService.sendMessage({
+              targetUserId: targetId,
+              username: user.username,
+              fullName: user.fullName || user.username,
+              avatar: user.avatar || null,
+              message: '',
+              timestamp: imageData.timestamp,
+              type: 'image',
+              media: imageUrl,
             });
-          }
-          // Tăng count khi ảnh đã được lưu thành công
-          // Backend sẽ tự động broadcast qua WebSocket, không cần gọi thêm API
-          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
-          messageCountByConversationRef.current.set(targetId, currentCount + 1);
 
-          // Cập nhật lại conversation với ID thật từ server (thay thế temp ID)
-          // Conversation đã được cập nhật optimistic ở trên, giờ chỉ cần cập nhật với ID thật
-          updateConversationInternal(finalImageData, false, targetId);
-          
-          // Tự động tắt typing indicator sau khi gửi ảnh
-          if (typingSentRef.current) {
-            typingSentRef.current = false;
+            const finalImageId = response.data?.id || tempId;
+            const finalImageData = { ...imageData, id: finalImageId };
+
+            if (currentTargetUserId === targetId) {
+              setMessages((prev) => {
+                const updated = prev.map((msg) =>
+                  msg.id === tempId ? finalImageData : msg
+                );
+                messagesByConversationRef.current.set(targetId, updated);
+                return updated;
+              });
+            }
+
+            updateConversationInternal(finalImageData, false, targetId);
+          } catch {
+            // Không rollback để giữ UX mượt mà
+          } finally {
+            sendingMessagesRef.current.delete(tempId);
           }
-        } catch {
-          // Không rollback để giữ UX mượt mà
-        } finally {
-          sendingMessagesRef.current.delete(tempId);
-        }
-      })();
+        })();
+      }
+      
+      // Tự động tắt typing indicator sau khi gửi ảnh
+      if (typingSentRef.current) {
+        typingSentRef.current = false;
+      }
     },
     [user, currentTargetUserId, updateConversationInternal]
   );

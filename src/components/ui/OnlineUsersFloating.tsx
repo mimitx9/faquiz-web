@@ -57,8 +57,9 @@ export default function OnlineUsersFloating() {
       const conversation = conversations.find(conv => conv.targetUserId === onlineUser.userId);
       return {
         ...onlineUser,
-        // Ưu tiên avatar từ conversation nếu onlineUser không có avatar
-        avatar: onlineUser.avatar || conversation?.targetAvatar || undefined,
+        // Avatar từ onlineUser là nguồn chính, không phụ thuộc vào conversation
+        // onlineUser.avatar sẽ được cập nhật từ message khi user gửi tin nhắn
+        avatar: onlineUser.avatar || undefined,
         // Cập nhật thông tin từ conversation nếu thiếu
         username: onlineUser.username || conversation?.targetUsername || onlineUser.username,
         fullName: onlineUser.fullName || conversation?.targetFullName || onlineUser.fullName,
