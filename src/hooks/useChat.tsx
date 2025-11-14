@@ -120,8 +120,8 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     }
 
     const baseUrl = process.env.NODE_ENV === 'production'
-      ? 'http://localhost:7071/fai'
-      : 'http://localhost:7071/fai';
+      ? 'https://api.facourse.com/fai'
+      : 'https://api.facourse.com/fai';
 
     const ws = new ChatWebSocket(baseUrl, token);
     wsRef.current = ws;
