@@ -143,11 +143,48 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null); // Ref cho audio element để phát lại
 
+  // Track xem đã scroll lần đầu khi mở boxchat chưa
+  const hasScrolledToBottomRef = useRef<boolean>(false);
+  const lastTargetUserIdRef = useRef<number | null>(null);
+  
+  // Scroll xuống dưới cùng khi mở boxchat lần đầu hoặc khi messages được load
+  useEffect(() => {
+    // Reset flag khi targetUserId thay đổi (mở boxchat mới)
+    if (lastTargetUserIdRef.current !== targetUserId) {
+      hasScrolledToBottomRef.current = false;
+      lastTargetUserIdRef.current = targetUserId;
+    }
+    
+    // Chỉ scroll nếu chưa scroll lần đầu và có messages
+    if (!hasScrolledToBottomRef.current && messages.length > 0) {
+      // Đợi một chút để đảm bảo DOM đã render xong
+      const timer = setTimeout(() => {
+        if (messagesContainerRef.current) {
+          const container = messagesContainerRef.current;
+          // Scroll xuống dưới cùng ngay lập tức (không smooth để nhanh hơn)
+          container.scrollTop = container.scrollHeight;
+          hasScrolledToBottomRef.current = true;
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [targetUserId, messages.length]); // Chạy khi mở boxchat mới hoặc khi messages được load
+  
   // Auto scroll to bottom khi có tin nhắn mới hoặc typing indicator
   // Chỉ scroll nếu không đang load more (để giữ scroll position khi load more)
   useEffect(() => {
     if (!isLoadingMoreRef.current && !isLoadingMore) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // Nếu đã scroll lần đầu, dùng smooth scroll
+      // Nếu chưa scroll lần đầu, scroll ngay lập tức (đã xử lý ở useEffect trên)
+      if (hasScrolledToBottomRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      } else if (messagesContainerRef.current && messages.length > 0) {
+        // Fallback: nếu chưa scroll lần đầu và có messages, scroll ngay
+        const container = messagesContainerRef.current;
+        container.scrollTop = container.scrollHeight;
+        hasScrolledToBottomRef.current = true;
+      }
     }
   }, [messages, isTyping, isLoadingMore]);
 
@@ -505,9 +542,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         
         // Gửi sticker với audio
         sendStickerWithAudio(stickerId, audioUrl);
-      } catch (error) {
-        console.error('[Chat] Lỗi khi upload audio:', error);
-        // Gửi sticker không có audio nếu upload thất bại
+      } catch {
         sendSticker(stickerId, targetUserId);
       }
     } else {
@@ -612,8 +647,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           }
         }
       }, 100);
-    } catch (error) {
-      console.error('[Chat] Lỗi khi bắt đầu ghi âm:', error);
+    } catch {
       alert('Không thể truy cập microphone. Vui lòng kiểm tra quyền truy cập.');
     }
   };
@@ -710,8 +744,6 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               blobUrlToRealUrlMapRef.current.set(imageUrl, retryMessage.media);
               setZoomedImage(retryMessage.media);
               setImageRotation(0);
-            } else {
-              console.warn('[Chat] Không thể zoom ảnh: blob URL đã bị revoke và chưa có URL thật');
             }
           }, 500);
           return; // Return sớm, sẽ set zoom sau khi tìm thấy
@@ -802,41 +834,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             return updated;
           });
 
-          // Trigger Pusher event để người nhận nhận được ảnh real-time
-          const token = localStorage.getItem('auth_token');
-          if (token) {
-            try {
-              // Tính toán channel name giống như trong useChat
-              const [minId, maxId] = [user.userId, targetUserId].sort((a, b) => a - b);
-              const channelName = `private-chat-${minId}-${maxId}`;
-              
-              await fetch('/api/pusher/message', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  type: 'image',
-                  data: {
-                    id: finalImageId,
-                    userId: user.userId,
-                    username: user.username,
-                    fullName: user.fullName || user.username,
-                    avatar: user.avatar || null,
-                    message: '',
-                    timestamp: tempMessage.timestamp,
-                    type: 'image',
-                    media: uploadedUrl,
-                  },
-                  channelName,
-                  targetUserId: targetUserId,
-                }),
-              });
-            } catch (pusherError) {
-              console.error('[Chat] Lỗi khi trigger Pusher event:', pusherError);
-            }
-          }
+          // Backend sẽ tự động broadcast qua WebSocket khi lưu message vào database
+          // Không cần gọi thêm API nào
         }
 
         // Revoke preview URL sau khi đã cập nhật message (đợi lâu hơn để đảm bảo message đã được cập nhật trong cả local state và useChat context)
@@ -858,8 +857,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             // Không xóa mapping vì có thể cần dùng để zoom sau này
           }
         }, 2000);
-      } catch (error) {
-        console.error('[Chat] Lỗi khi upload ảnh:', error);
+      } catch {
         // Giữ preview URL nếu upload thất bại
       } finally {
         // Reset input để có thể chọn lại cùng file
@@ -1275,9 +1273,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                                 if (audioRef.current) {
                                   if (audioRef.current.paused) {
                                     audioRef.current.src = audioUrl;
-                                    audioRef.current.play().catch(err => {
-                                      console.error('[Chat] Lỗi khi play audio:', err);
-                                    });
+                                    audioRef.current.play().catch(() => {});
                                   } else {
                                     audioRef.current.pause();
                                     audioRef.current.currentTime = 0;
@@ -1285,15 +1281,11 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                                 } else {
                                   const audio = new Audio(audioUrl);
                                   audioRef.current = audio;
-                                  audio.play().catch(err => {
-                                    console.error('[Chat] Lỗi khi play audio:', err);
-                                  });
+                                  audio.play().catch(() => {});
                                   audio.onended = () => {
                                     audioRef.current = null;
                                   };
-                                  audio.onerror = (err) => {
-                                    console.error('[Chat] Lỗi audio:', err);
-                                  };
+                                  audio.onerror = () => {};
                                 }
                               }}
                               className="flex-shrink-0 p-1.5 rounded-full bg-white hover:bg-gray-50 transition-colors"

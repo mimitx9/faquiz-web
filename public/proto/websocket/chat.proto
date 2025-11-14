@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package websocket.chat;
+
+// WebSocket Chat Request (Client → Server)
+message WebSocketChatRequest {
+  string type = 1;           // "join-room", "leave-room", "send-message", "typing", "ping", "join-presence"
+  string roomId = 2;         // Room ID (e.g., "chat-5-10")
+  
+  oneof data {
+    SendMessageData sendMessage = 3;
+    TypingData typing = 4;
+    JoinRoomData joinRoom = 5;
+    LeaveRoomData leaveRoom = 6;
+    PingData ping = 7;
+    JoinPresenceData joinPresence = 8;
+  }
+}
+
+// Join Room Data
+message JoinRoomData {
+  // Empty - roomId được lấy từ WebSocketChatRequest.roomId
+}
+
+// Leave Room Data
+message LeaveRoomData {
+  // Empty - roomId được lấy từ WebSocketChatRequest.roomId
+}
+
+// Send Message Data
+message SendMessageData {
+  string id = 1;             // Message ID (can be temp ID)
+  int64 targetUserId = 2;     // Target user ID
+  string username = 3;        // Sender username
+  string fullName = 4;        // Sender full name
+  string avatar = 5;          // Sender avatar URL
+  string message = 6;         // Message content
+  int64 timestamp = 7;       // Timestamp
+  string type = 8;            // Message type: "message", "icon", "sticker", "image"
+  string media = 9;           // Media URL/ID for icon/sticker/image
+  string audio = 10;          // Audio URL if sticker has audio
+}
+
+// Typing Data
+message TypingData {
+  bool isTyping = 1;          // Is typing indicator
+}
+
+// Ping Data
+message PingData {
+  // Empty
+}
+
+// Join Presence Data
+message JoinPresenceData {
+  // Empty
+}
+
+// WebSocket Chat Message (Server → Client)
+message WebSocketChatMessage {
+  string type = 1;            // "new-message", "typing", "joined-room", "left-room", "error", "pong", "presence-list", "user-online", "user-offline", "new-message-notification"
+  string roomId = 2;          // Room ID (optional)
+  
+  oneof data {
+    ChatMessage newMessage = 3;  // ChatMessage trực tiếp (khớp với backend)
+    TypingIndicatorData typingIndicator = 4;
+    JoinedRoomData joinedRoom = 5;
+    LeftRoomData leftRoom = 6;
+    ErrorData error = 7;
+    PongData pong = 8;
+    PresenceListData presenceList = 9;
+    UserOnlineData userOnline = 10;
+    UserOfflineData userOffline = 11;
+    NewMessageNotificationData newMessageNotification = 12;
+  }
+}
+
+// Chat Message (Server → Client)
+// Đây là message type mà server gửi, phải khớp với server proto
+message ChatMessage {
+  string id = 1;             // Message ID
+  int64 userId = 2;          // User ID
+  string username = 3;       // Username
+  string fullName = 4;       // Full name
+  string avatar = 5;         // Avatar URL
+  string message = 6;        // Message content
+  int64 timestamp = 7;      // Timestamp
+  string type = 8;           // Message type: "message", "icon", "sticker", "image"
+  string media = 9;          // Media URL/ID
+  string audio = 10;         // Audio URL
+}
+
+// Message DTO (deprecated - sử dụng ChatMessage thay thế)
+message MessageDto {
+  string id = 1;              // Message ID
+  int64 userId = 2;           // User ID
+  string username = 3;        // Username
+  string fullName = 4;        // Full name
+  string avatar = 5;          // Avatar URL
+  string message = 6;         // Message content
+  int64 timestamp = 7;        // Timestamp
+  string type = 8;            // Message type: "message", "icon", "sticker", "image"
+  string media = 9;           // Media URL/ID
+  string audio = 10;          // Audio URL
+}
+
+// Typing Indicator Data
+message TypingIndicatorData {
+  int64 userId = 1;           // User ID who is typing
+  bool isTyping = 2;          // Is typing indicator
+}
+
+// Joined Room Data
+message JoinedRoomData {
+  string roomId = 1;          // Room ID
+  string status = 2;          // Status
+}
+
+// Left Room Data
+message LeftRoomData {
+  string roomId = 1;          // Room ID
+  string status = 2;          // Status
+}
+
+// Error Data
+message ErrorData {
+  string message = 1;         // Error message
+}
+
+// Pong Data
+message PongData {
+  int64 timestamp = 1;        // Timestamp
+}
+
+// Presence List Data
+message PresenceListData {
+  map<string, UserInfo> members = 1;  // Map of user ID to user info
+}
+
+// User Info
+message UserInfo {
+  int64 userId = 1;           // User ID
+  string username = 2;        // Username
+  string fullName = 3;        // Full name
+  string avatar = 4;          // Avatar URL
+  int64 onlineSince = 5;      // Online since timestamp
+}
+
+// User Online Data
+message UserOnlineData {
+  int64 userId = 1;           // User ID
+  UserInfo info = 2;          // User info
+}
+
+// User Offline Data
+message UserOfflineData {
+  int64 userId = 1;           // User ID
+}
+
+// New Message Notification Data
+message NewMessageNotificationData {
+  int64 fromUserId = 1;       // From user ID
+  string channelName = 2;     // Channel name (room ID)
+  ChatMessage message = 3;   // ChatMessage từ server
+}
+
+

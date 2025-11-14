@@ -4,8 +4,8 @@ import { createTitleSlug } from '@/lib/utils';
 
 // Base URL configuration
 const BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.facourse.com/fai' 
-  : 'https://api.facourse.com/fai';
+  ? 'http://localhost:7071/fai' 
+  : 'http://localhost:7071/fai';
 
 const CATEGORY_API_BASE_URL = `${BASE_URL}/v1/category`;
 const FAQUIZ_API_BASE_URL = `${BASE_URL}/faquiz/v1`;

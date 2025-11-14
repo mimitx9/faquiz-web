@@ -38,7 +38,7 @@ const UpgradePage: React.FC = () => {
       setErrorMessage(null);
       try {
         const res = await fetch(
-          'https://api.facourse.com/fai/faquiz/v1/remote-config/choose-purchase-package',
+          'http://localhost:7071/fai/faquiz/v1/remote-config/choose-purchase-package',
           {
             method: 'GET',
             headers: {

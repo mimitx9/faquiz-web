@@ -28,6 +28,14 @@ export default function OnlineUsersFloating() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Debug: Log onlineUsersList để kiểm tra (phải đặt trước các điều kiện return)
+  useEffect(() => {
+    console.log('[OnlineUsersFloating] onlineUsersList:', onlineUsersList);
+    console.log('[OnlineUsersFloating] onlineUsersList length:', onlineUsersList.length);
+    console.log('[OnlineUsersFloating] hiddenUserIds:', Array.from(hiddenUserIds));
+    console.log('[OnlineUsersFloating] isVisible:', isVisible);
+  }, [onlineUsersList, hiddenUserIds, isVisible]);
+
   // Chỉ hiển thị cho user đã đăng nhập
   if (!isInitialized || !user) {
     return null;
@@ -40,7 +48,7 @@ export default function OnlineUsersFloating() {
 
   // Lọc ra các user chưa bị ẩn và lấy tối đa 4 người đang online
   // Không cần bỏ user đang được chọn vì giờ có thể mở nhiều box chat cùng lúc
-  // Nếu user có trong onlineUsersList thì họ đang online (đã được sync với Pusher)
+  // Nếu user có trong onlineUsersList thì họ đang online (đã được sync với WebSocket)
   const displayUsers = onlineUsersList
     .filter(onlineUser => 
       !hiddenUserIds.has(onlineUser.userId)
@@ -49,6 +57,11 @@ export default function OnlineUsersFloating() {
       const conversation = conversations.find(conv => conv.targetUserId === onlineUser.userId);
       return {
         ...onlineUser,
+        // Ưu tiên avatar từ conversation nếu onlineUser không có avatar
+        avatar: onlineUser.avatar || conversation?.targetAvatar || undefined,
+        // Cập nhật thông tin từ conversation nếu thiếu
+        username: onlineUser.username || conversation?.targetUsername || onlineUser.username,
+        fullName: onlineUser.fullName || conversation?.targetFullName || onlineUser.fullName,
         unreadCount: conversation?.unreadCount || 0,
         lastMessage: conversation?.lastMessage,
         // Thêm timestamp để sắp xếp: ưu tiên lastMessage timestamp, nếu không có thì dùng onlineSince
@@ -167,16 +180,15 @@ export default function OnlineUsersFloating() {
                   type="button"
                 >
                   <div className="relative w-14 h-14 sm:w-16 sm:h-16">
-                    <div className="w-full h-full rounded-full overflow-hidden shadow-lg flex items-center justify-center">
+                    <div className="w-full h-full rounded-full overflow-hidden shadow-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700">
                       {onlineUser.avatar ? (
-                        <div className="scale-[1.3] pointer-events-none">
-                          <div className="w-12 h-12 rounded-full overflow-hidden pointer-events-none">
-                            <Avatar
-                              src={onlineUser.avatar}
-                              name={onlineUser.fullName}
-                              size="lg"
-                            />
-                          </div>
+                        <div className="w-full h-full">
+                          <Avatar
+                            src={onlineUser.avatar}
+                            name={onlineUser.fullName}
+                            size="lg"
+                            className="!w-full !h-full"
+                          />
                         </div>
                       ) : (
                         <div 
