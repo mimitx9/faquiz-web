@@ -536,82 +536,177 @@ export const useChat = (targetUserId?: number | null): UseChatReturn => {
     // Cập nhật messages
     if (currentTargetUserIdRef.current === targetId) {
       setMessages((prev) => {
-        // Kiểm tra duplicate trong state hiện tại
-        const isDuplicateInState = prev.some((msg) => {
-          if (msg.id === data.id) return true;
-          // Kiểm tra temp ID duplicate
-          if (msg.id.startsWith('temp-') && data.userId === user.userId) {
-            const isSameContent = msg.type === data.type && 
-              msg.message === data.message && 
-              msg.media === data.media;
-            const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
-            return isSameContent && isSameTimestamp;
-          }
-          return false;
-        });
+        // Kiểm tra duplicate theo ID thật
+        const hasExactId = prev.some((msg) => msg.id === data.id);
+        if (hasExactId) {
+          // Đã có message với ID này, không thêm nữa
+          return prev;
+        }
         
-        if (isDuplicateInState) {
-          // Nếu là duplicate nhưng có temp ID hoặc blob URL, thay thế bằng message thật từ server
-          if (data.userId === user.userId) {
-            const updated = prev.map((msg) => {
-              // Tìm temp message hoặc message với blob URL tương ứng và thay thế bằng message thật
-              if ((msg.id.startsWith('temp-') || msg.media?.startsWith('blob:')) && msg.userId === data.userId) {
-                const isSameContent = msg.type === data.type && 
-                  msg.message === data.message;
-                // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
-                const isSameMedia = data.type === 'image' || msg.media === data.media;
-                const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
-                if (isSameContent && isSameMedia && isSameTimestamp) {
-                  return data; // Thay thế temp/blob message bằng message thật
-                }
+        // Nếu message từ chính mình, luôn tìm và thay thế temp message nếu có
+        if (data.userId === user.userId) {
+          let foundTempMessage = false;
+          const updated = prev.map((msg) => {
+            // Tìm temp message hoặc message với blob URL tương ứng và thay thế bằng message thật
+            if ((msg.id.startsWith('temp-') || msg.media?.startsWith('blob:')) && msg.userId === data.userId) {
+              const isSameContent = msg.type === data.type && 
+                msg.message === data.message;
+              // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
+              const isSameMedia = data.type === 'image' || msg.media === data.media;
+              const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000; // Tăng lên 5 giây để chắc chắn
+              if (isSameContent && isSameMedia && isSameTimestamp) {
+                foundTempMessage = true;
+                return data; // Thay thế temp/blob message bằng message thật
               }
-              return msg;
-            }).sort((a, b) => a.timestamp - b.timestamp);
+            }
+            return msg;
+          }).sort((a, b) => a.timestamp - b.timestamp);
+          
+          if (foundTempMessage) {
+            // Đã thay thế temp message, cập nhật cache và return
             messagesByConversationRef.current.set(targetId, updated);
             return updated;
           }
+          
+          // Nếu không tìm thấy temp message để thay thế, kiểm tra xem có duplicate không
+          // (có thể temp message đã bị xóa hoặc chưa được thêm vào state)
+          const hasSimilarMessage = prev.some((msg) => {
+            const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+            const isSameMessage = msg.message === data.message;
+            const isSameMedia = data.type === 'image' || msg.media === data.media;
+            const hasBlobUrl = data.type === 'image' && (msg.media?.startsWith('blob:') || data.media?.startsWith('blob:'));
+            const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+            
+            if (data.type === 'image' && hasBlobUrl) {
+              return isSameUserAndType && isSameMessage;
+            }
+            
+            return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+          });
+          
+          if (hasSimilarMessage) {
+            // Có message tương tự, không thêm nữa
+            return prev;
+          }
+          
+          // Không có duplicate, thêm message mới
+          const finalUpdated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
+          messagesByConversationRef.current.set(targetId, finalUpdated);
+          // Tăng count vì đã thêm message mới (đã kiểm tra duplicate ở trên)
+          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
+          messageCountByConversationRef.current.set(targetId, currentCount + 1);
+          return finalUpdated;
+        }
+        
+        // Message từ user khác, kiểm tra duplicate trước khi thêm
+        const hasSimilarMessage = prev.some((msg) => {
+          const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+          const isSameMessage = msg.message === data.message;
+          const isSameMedia = data.type === 'image' || msg.media === data.media;
+          const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+          
+          return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+        });
+        
+        if (hasSimilarMessage) {
+          // Có message tương tự, không thêm nữa
           return prev;
         }
         
         const updated = [...prev, data].sort((a, b) => a.timestamp - b.timestamp);
         messagesByConversationRef.current.set(targetId, updated);
-        // Tăng count nếu tin nhắn mới và chưa có tin nhắn tương tự
-        if (!isDuplicate) {
-          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
-          messageCountByConversationRef.current.set(targetId, currentCount + 1);
-        }
+        // Tăng count vì đã thêm message mới (đã kiểm tra duplicate ở trên)
+        const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
+        messageCountByConversationRef.current.set(targetId, currentCount + 1);
         return updated;
       });
     } else {
       // Vẫn lưu vào cache để khi mở conversation sẽ có tin nhắn
-      if (!isDuplicate) {
-        // Nếu có temp message, thay thế bằng message thật
-        let updatedMessages = conversationMessages;
-        if (data.userId === user.userId) {
-          updatedMessages = conversationMessages.map((msg) => {
-            if (msg.id.startsWith('temp-') && msg.userId === data.userId) {
-              const isSameContent = msg.type === data.type && 
-                msg.message === data.message && 
-                msg.media === data.media;
-              const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 3000;
-              if (isSameContent && isSameTimestamp) {
-                return data; // Thay thế temp message bằng message thật
-              }
+      // Kiểm tra duplicate theo ID thật trước
+      const hasExactId = conversationMessages.some((msg) => msg.id === data.id);
+      if (hasExactId) {
+        // Đã có message với ID này, không thêm nữa
+        return;
+      }
+      
+      // Nếu message từ chính mình, luôn tìm và thay thế temp message nếu có
+      if (data.userId === user.userId) {
+        let foundTempMessage = false;
+        let updatedMessages = conversationMessages.map((msg) => {
+          // Tìm temp message hoặc message với blob URL tương ứng và thay thế bằng message thật
+          if ((msg.id.startsWith('temp-') || msg.media?.startsWith('blob:')) && msg.userId === data.userId) {
+            const isSameContent = msg.type === data.type && 
+              msg.message === data.message;
+            // Đối với image, không so sánh media URL vì có thể khác nhau (blob URL vs real URL)
+            const isSameMedia = data.type === 'image' || msg.media === data.media;
+            const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000; // Tăng lên 5 giây để chắc chắn
+            if (isSameContent && isSameMedia && isSameTimestamp) {
+              foundTempMessage = true;
+              return data; // Thay thế temp/blob message bằng message thật
             }
-            return msg;
-          });
-          // Nếu không tìm thấy temp message để thay thế, thêm message mới
-          if (updatedMessages.length === conversationMessages.length) {
-            updatedMessages = [...conversationMessages, data];
           }
-        } else {
-          updatedMessages = [...conversationMessages, data];
+          return msg;
+        });
+        
+        if (!foundTempMessage) {
+          // Nếu không tìm thấy temp message để thay thế, kiểm tra xem có duplicate không
+          const hasSimilarMessage = conversationMessages.some((msg) => {
+            const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+            const isSameMessage = msg.message === data.message;
+            const isSameMedia = data.type === 'image' || msg.media === data.media;
+            const hasBlobUrl = data.type === 'image' && (msg.media?.startsWith('blob:') || data.media?.startsWith('blob:'));
+            const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+            
+            if (data.type === 'image' && hasBlobUrl) {
+              return isSameUserAndType && isSameMessage;
+            }
+            
+            return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+          });
+          
+          if (!hasSimilarMessage) {
+            // Không có duplicate, thêm message mới
+            updatedMessages = [...conversationMessages, data];
+          } else {
+            // Có duplicate, không thêm
+            return;
+          }
         }
         
         const updated = updatedMessages.sort((a, b) => a.timestamp - b.timestamp);
         messagesByConversationRef.current.set(targetId, updated);
-        // Tăng count nếu chưa có tin nhắn tương tự
+        // Tăng count nếu đã thay thế temp message hoặc thêm message mới
+        if (foundTempMessage || !conversationMessages.some((msg) => {
+          const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+          const isSameMessage = msg.message === data.message;
+          const isSameMedia = data.type === 'image' || msg.media === data.media;
+          const hasBlobUrl = data.type === 'image' && (msg.media?.startsWith('blob:') || data.media?.startsWith('blob:'));
+          const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+          
+          if (data.type === 'image' && hasBlobUrl) {
+            return isSameUserAndType && isSameMessage;
+          }
+          
+          return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+        })) {
+          const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
+          messageCountByConversationRef.current.set(targetId, currentCount + 1);
+        }
+      } else {
+        // Message từ user khác, kiểm tra duplicate trước khi thêm
+        const hasSimilarMessage = conversationMessages.some((msg) => {
+          const isSameUserAndType = msg.userId === data.userId && msg.type === data.type;
+          const isSameMessage = msg.message === data.message;
+          const isSameMedia = data.type === 'image' || msg.media === data.media;
+          const isSameTimestamp = Math.abs(msg.timestamp - data.timestamp) < 5000;
+          
+          return isSameUserAndType && isSameMessage && isSameMedia && isSameTimestamp;
+        });
+        
         if (!hasSimilarMessage) {
+          const updated = [...conversationMessages, data].sort((a, b) => a.timestamp - b.timestamp);
+          messagesByConversationRef.current.set(targetId, updated);
+          // Tăng count nếu chưa có tin nhắn tương tự
           const currentCount = messageCountByConversationRef.current.get(targetId) || 0;
           messageCountByConversationRef.current.set(targetId, currentCount + 1);
         }
