@@ -13,6 +13,7 @@ interface StickerCategory {
 interface StickerPickerProps {
   onSelectSticker: (stickerId: string) => void;
   onSelectEmoji?: (emoji: string) => void;
+  onLongPressSticker?: (stickerId: string) => void;
   emojiList?: string[];
   onClose: () => void;
   className?: string;
@@ -35,7 +36,7 @@ export function getStickerUrl(stickerId: string | null | undefined): string {
   return `/stickers/${stickerId}`;
 }
 
-export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiList = [], onClose, className, position, style }: StickerPickerProps) {
+export default function StickerPicker({ onSelectSticker, onSelectEmoji, onLongPressSticker, emojiList = [], onClose, className, position, style }: StickerPickerProps) {
   const [categories, setCategories] = useState<StickerCategory[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -45,16 +46,16 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
   const menuButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const isScrollingRef = useRef(false);
+  const longPressTimeoutRef = useRef<Record<string, NodeJS.Timeout | null>>({});
+  const mouseDownTimeRef = useRef<Record<string, number | null>>({});
 
-  // Load danh sách stickers từ public/stickers/
+  // Load danh sách stickers từ API
   useEffect(() => {
     const loadStickers = async () => {
       try {
         setIsLoading(true);
         
-        // Danh sách categories (có thể hardcode hoặc fetch từ API)
-        // Dựa vào folder structure: bts, cat, wechat, wonyoung, xuka
-        const categoryFolders = ['bts', 'cat', 'wechat', 'wonyoung', 'xuka'];
+        // Danh sách categories và tên hiển thị
         const categoryNames: Record<string, string> = {
           bts: 'BTS',
           cat: 'Mèo',
@@ -63,61 +64,103 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
           xuka: 'Xuka',
         };
 
-        const loadedCategories: StickerCategory[] = [];
+        // Fetch stickers từ API
+        const response = await fetch('/api/stickers');
+        const data = await response.json();
+        
+        if (data.success && data.stickers) {
+          // Nhóm stickers theo category
+          const stickersByCategory: Record<string, string[]> = {};
+          
+          data.stickers.forEach((sticker: { category: string; filename: string; stickerId: string }) => {
+            if (!stickersByCategory[sticker.category]) {
+              stickersByCategory[sticker.category] = [];
+            }
+            stickersByCategory[sticker.category].push(sticker.filename);
+          });
 
-        // Load stickers từ mỗi category
-        for (const categoryId of categoryFolders) {
-          try {
-            const stickers: string[] = [];
-            
-            loadedCategories.push({
-              id: categoryId,
-              name: categoryNames[categoryId] || categoryId,
-              stickers: stickers,
-            });
-          } catch (error) {
-            console.error(`Error loading category ${categoryId}:`, error);
+          // Tạo danh sách categories với stickers
+          const loadedCategories: StickerCategory[] = Object.keys(categoryNames).map(categoryId => ({
+            id: categoryId,
+            name: categoryNames[categoryId],
+            stickers: stickersByCategory[categoryId] || [],
+          }));
+
+          setCategories(loadedCategories);
+          // Set active category đầu tiên
+          if (loadedCategories.length > 0 && loadedCategories[0].stickers.length > 0) {
+            setActiveCategory(loadedCategories[0].id);
+          } else if (emojiList.length > 0) {
+            setActiveCategory('emoji');
           }
-        }
-
-        // Hardcode stickers cho mỗi category
-        if (loadedCategories.length > 0 && loadedCategories[0].stickers.length === 0) {
-          loadedCategories[0] = {
-            id: 'bts',
-            name: 'BTS',
-            stickers: Array.from({ length: 20 }, (_, i) => `${i + 5}.thumb128.webp`),
-          };
-          loadedCategories[1] = {
-            id: 'cat',
-            name: 'Mèo',
-            stickers: Array.from({ length: 24 }, (_, i) => `${i}-1.thumb128.webp`),
-          };
-          loadedCategories[2] = {
-            id: 'wechat',
-            name: 'WeChat',
-            stickers: Array.from({ length: 20 }, (_, i) => `${i + 5}.thumb128.webp`),
-          };
-          loadedCategories[3] = {
-            id: 'wonyoung',
-            name: 'Wonyoung',
-            stickers: Array.from({ length: 34 }, (_, i) => `${i + 1}.thumb128.webp`),
-          };
-          loadedCategories[4] = {
-            id: 'xuka',
-            name: 'Xuka',
-            stickers: Array.from({ length: 23 }, (_, i) => `${i + 1}.thumb128.webp`),
-          };
-        }
-
-        setCategories(loadedCategories);
-        // Set active category đầu tiên
-        if (loadedCategories.length > 0) {
-          setActiveCategory(loadedCategories[0].id);
-        } else if (emojiList.length > 0) {
-          setActiveCategory('emoji');
+        } else {
+          // Fallback về hardcode nếu API fail
+          const loadedCategories: StickerCategory[] = [
+            {
+              id: 'bts',
+              name: 'BTS',
+              stickers: Array.from({ length: 20 }, (_, i) => `${i + 5}.thumb128.webp`),
+            },
+            {
+              id: 'cat',
+              name: 'Mèo',
+              stickers: Array.from({ length: 24 }, (_, i) => `${i}-1.thumb128.webp`),
+            },
+            {
+              id: 'wechat',
+              name: 'WeChat',
+              stickers: Array.from({ length: 19 }, (_, i) => `${i + 5}.thumb128.webp`),
+            },
+            {
+              id: 'wonyoung',
+              name: 'Wonyoung',
+              stickers: Array.from({ length: 34 }, (_, i) => `${i + 1}.thumb128.webp`),
+            },
+            {
+              id: 'xuka',
+              name: 'Xuka',
+              stickers: Array.from({ length: 23 }, (_, i) => `${i + 1}.thumb128.webp`),
+            },
+          ];
+          setCategories(loadedCategories);
+          if (loadedCategories.length > 0) {
+            setActiveCategory(loadedCategories[0].id);
+          }
         }
       } catch (error) {
         console.error('Error loading stickers:', error);
+        // Fallback về hardcode nếu có lỗi
+        const loadedCategories: StickerCategory[] = [
+          {
+            id: 'bts',
+            name: 'BTS',
+            stickers: Array.from({ length: 20 }, (_, i) => `${i + 5}.thumb128.webp`),
+          },
+          {
+            id: 'cat',
+            name: 'Mèo',
+            stickers: Array.from({ length: 24 }, (_, i) => `${i}-1.thumb128.webp`),
+          },
+          {
+            id: 'wechat',
+            name: 'WeChat',
+            stickers: Array.from({ length: 19 }, (_, i) => `${i + 5}.thumb128.webp`),
+          },
+          {
+            id: 'wonyoung',
+            name: 'Wonyoung',
+            stickers: Array.from({ length: 34 }, (_, i) => `${i + 1}.thumb128.webp`),
+          },
+          {
+            id: 'xuka',
+            name: 'Xuka',
+            stickers: Array.from({ length: 23 }, (_, i) => `${i + 1}.thumb128.webp`),
+          },
+        ];
+        setCategories(loadedCategories);
+        if (loadedCategories.length > 0) {
+          setActiveCategory(loadedCategories[0].id);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -384,6 +427,49 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
                         <button
                           key={`${item.id}-${filename}-${index}`}
                           onClick={() => handleStickerClick(item.id, filename)}
+                          onMouseDown={(e) => {
+                            if (onLongPressSticker) {
+                              e.preventDefault();
+                              mouseDownTimeRef.current[stickerId] = Date.now();
+                              longPressTimeoutRef.current[stickerId] = setTimeout(() => {
+                                if (mouseDownTimeRef.current[stickerId] !== null) {
+                                  onLongPressSticker(stickerId);
+                                }
+                              }, 150);
+                            }
+                          }}
+                          onMouseUp={() => {
+                            if (longPressTimeoutRef.current[stickerId]) {
+                              clearTimeout(longPressTimeoutRef.current[stickerId]!);
+                              longPressTimeoutRef.current[stickerId] = null;
+                            }
+                            mouseDownTimeRef.current[stickerId] = null;
+                          }}
+                          onMouseLeave={() => {
+                            if (longPressTimeoutRef.current[stickerId]) {
+                              clearTimeout(longPressTimeoutRef.current[stickerId]!);
+                              longPressTimeoutRef.current[stickerId] = null;
+                            }
+                            mouseDownTimeRef.current[stickerId] = null;
+                          }}
+                          onTouchStart={(e) => {
+                            if (onLongPressSticker) {
+                              e.preventDefault();
+                              mouseDownTimeRef.current[stickerId] = Date.now();
+                              longPressTimeoutRef.current[stickerId] = setTimeout(() => {
+                                if (mouseDownTimeRef.current[stickerId] !== null) {
+                                  onLongPressSticker(stickerId);
+                                }
+                              }, 150);
+                            }
+                          }}
+                          onTouchEnd={() => {
+                            if (longPressTimeoutRef.current[stickerId]) {
+                              clearTimeout(longPressTimeoutRef.current[stickerId]!);
+                              longPressTimeoutRef.current[stickerId] = null;
+                            }
+                            mouseDownTimeRef.current[stickerId] = null;
+                          }}
                           className={cn(
                             'aspect-square overflow-hidden',
                             'hover:scale-[1.2]',

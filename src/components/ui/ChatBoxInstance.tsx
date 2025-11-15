@@ -127,6 +127,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const [isRecording, setIsRecording] = useState(false); // Đang ghi âm
   const [recordingTime, setRecordingTime] = useState(0); // Thời gian ghi âm (giây)
   const [recordedAudio, setRecordedAudio] = useState<Blob | null>(null); // Audio đã ghi
+  // Sticker search state
+  const [searchResults, setSearchResults] = useState<string[]>([]); // Kết quả tìm kiếm sticker
+  const [showSearchResults, setShowSearchResults] = useState(false); // Hiển thị kết quả tìm kiếm
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -145,6 +148,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null); // Ref cho audio element để phát lại
+  const searchLongPressTimeoutRef = useRef<Record<string, NodeJS.Timeout | null>>({});
+  const searchMouseDownTimeRef = useRef<Record<string, number | null>>({});
 
   // Track xem đã scroll lần đầu khi mở boxchat chưa
   const hasScrolledToBottomRef = useRef<boolean>(false);
@@ -175,18 +180,27 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   }, [targetUserId, messages.length]); // Chạy khi mở boxchat mới hoặc khi messages được load
   
   // Auto scroll to bottom khi có tin nhắn mới hoặc typing indicator
-  // Chỉ scroll nếu không đang load more (để giữ scroll position khi load more)
+  // Chỉ scroll nếu không đang load more và user đang ở gần bottom
   useEffect(() => {
-    if (!isLoadingMoreRef.current && !isLoadingMore) {
-      // Nếu đã scroll lần đầu, dùng smooth scroll
-      // Nếu chưa scroll lần đầu, scroll ngay lập tức (đã xử lý ở useEffect trên)
-      if (hasScrolledToBottomRef.current) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      } else if (messagesContainerRef.current && messages.length > 0) {
-        // Fallback: nếu chưa scroll lần đầu và có messages, scroll ngay
-        const container = messagesContainerRef.current;
-        container.scrollTop = container.scrollHeight;
-        hasScrolledToBottomRef.current = true;
+    if (!isLoadingMoreRef.current && !isLoadingMore && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      
+      // Kiểm tra xem user có đang ở gần bottom không (trong vòng 150px từ bottom)
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
+      
+      // Chỉ auto-scroll nếu:
+      // 1. User đang ở gần bottom (để không làm phiền khi đang xem tin nhắn cũ)
+      // 2. Hoặc chưa scroll lần đầu (khi mở boxchat mới)
+      if (isNearBottom || !hasScrolledToBottomRef.current) {
+        // Nếu đã scroll lần đầu, dùng smooth scroll
+        if (hasScrolledToBottomRef.current) {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        } else if (messages.length > 0) {
+          // Fallback: nếu chưa scroll lần đầu và có messages, scroll ngay
+          container.scrollTop = container.scrollHeight;
+          hasScrolledToBottomRef.current = true;
+        }
       }
     }
   }, [messages, isTyping, isLoadingMore]);
@@ -524,6 +538,21 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       e.target.style.overflowY = 'auto';
     }
 
+    // Tìm kiếm sticker khi user gõ
+    if (value.trim().length >= 2) {
+      // Chỉ tìm kiếm khi có ít nhất 2 ký tự
+      const results = searchStickers(value);
+      if (results.length > 0) {
+        setSearchResults(results);
+        setShowSearchResults(true);
+      } else {
+        setShowSearchResults(false);
+      }
+    } else {
+      setShowSearchResults(false);
+      setSearchResults([]);
+    }
+
     if (!isConnected) {
       return;
     }
@@ -562,21 +591,112 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     sendIcon(emoji, targetUserId);
   };
 
-  // Hàm lấy 4 sticker từ category để preview, đảm bảo sticker được chọn nằm trong đó
-  const getPreviewStickers = (stickerId: string): string[] => {
-    // stickerId format: "category/filename" (ví dụ: "bts/10.thumb128.webp")
-    const [category] = stickerId.split('/');
+  // State để lưu danh sách tất cả stickers
+  const [allStickersList, setAllStickersList] = useState<string[]>([]);
+
+  // Load danh sách stickers từ API khi component mount
+  useEffect(() => {
+    const loadStickers = async () => {
+      try {
+        const response = await fetch('/api/stickers');
+        const data = await response.json();
+        if (data.success && data.stickers) {
+          // Lấy danh sách stickerId từ response
+          const stickerIds = data.stickers.map((s: { stickerId: string }) => s.stickerId);
+          setAllStickersList(stickerIds);
+        }
+      } catch (error) {
+        console.error('Error loading stickers:', error);
+        // Fallback về hardcode nếu API fail
+        const fallbackStickers = [
+          ...Array.from({ length: 20 }, (_, i) => `bts/${i + 5}.thumb128.webp`),
+          ...Array.from({ length: 24 }, (_, i) => `cat/${i}-1.thumb128.webp`),
+          ...Array.from({ length: 19 }, (_, i) => `wechat/${i + 5}.thumb128.webp`),
+          ...Array.from({ length: 34 }, (_, i) => `wonyoung/${i + 1}.thumb128.webp`),
+          ...Array.from({ length: 23 }, (_, i) => `xuka/${i + 1}.thumb128.webp`),
+        ];
+        setAllStickersList(fallbackStickers);
+      }
+    };
     
-    // Hardcode một số stickers cho mỗi category (giống như trong StickerPicker)
+    loadStickers();
+  }, []);
+
+  // Hàm lấy tất cả stickers từ tất cả categories
+  const getAllStickers = (): string[] => {
+    // Sử dụng danh sách từ API nếu có, nếu không thì fallback
+    if (allStickersList.length > 0) {
+      return allStickersList;
+    }
+    
+    // Fallback về hardcode nếu chưa load xong
     const stickerMap: Record<string, string[]> = {
       bts: Array.from({ length: 20 }, (_, i) => `bts/${i + 5}.thumb128.webp`),
       cat: Array.from({ length: 24 }, (_, i) => `cat/${i}-1.thumb128.webp`),
-      wechat: Array.from({ length: 20 }, (_, i) => `wechat/${i + 5}.thumb128.webp`),
+      wechat: Array.from({ length: 19 }, (_, i) => `wechat/${i + 5}.thumb128.webp`),
       wonyoung: Array.from({ length: 34 }, (_, i) => `wonyoung/${i + 1}.thumb128.webp`),
       xuka: Array.from({ length: 23 }, (_, i) => `xuka/${i + 1}.thumb128.webp`),
     };
     
-    const stickers = stickerMap[category] || [];
+    // Flatten tất cả stickers thành một mảng
+    return Object.values(stickerMap).flat();
+  };
+
+  // Hàm tìm kiếm sticker dựa trên từ khóa
+  const searchStickers = (keyword: string): string[] => {
+    if (!keyword.trim()) {
+      return [];
+    }
+    
+    const allStickers = getAllStickers();
+    const lowerKeyword = keyword.toLowerCase().trim();
+    
+    // Tìm các sticker có tên file chứa từ khóa
+    const results = allStickers.filter(stickerId => {
+      // Lấy tên file từ stickerId (ví dụ: "bts/10.thumb128.webp" -> "10.thumb128.webp")
+      const filename = stickerId.split('/')[1] || stickerId;
+      // Tìm kiếm không phân biệt hoa thường
+      return filename.toLowerCase().includes(lowerKeyword);
+    });
+    
+    // Giới hạn tối đa 4 kết quả để hiển thị
+    return results.slice(0, 4);
+  };
+
+  // Hàm lấy 4 sticker từ category để preview, đảm bảo sticker được chọn nằm trong đó
+  const getPreviewStickers = (stickerId: string): string[] => {
+    // stickerId format: "category/filename" (ví dụ: "bts/10.thumb128.webp" hoặc "wechat/hehe, kk.webp")
+    const [category] = stickerId.split('/');
+    
+    // Lấy danh sách stickers từ API hoặc fallback
+    const allStickers = getAllStickers();
+    
+    // Lọc stickers theo category
+    const stickers = allStickers.filter(s => s.startsWith(`${category}/`));
+    
+    // Nếu không có stickers trong category, fallback về hardcode
+    if (stickers.length === 0) {
+      const stickerMap: Record<string, string[]> = {
+        bts: Array.from({ length: 20 }, (_, i) => `bts/${i + 5}.thumb128.webp`),
+        cat: Array.from({ length: 24 }, (_, i) => `cat/${i}-1.thumb128.webp`),
+        wechat: Array.from({ length: 19 }, (_, i) => `wechat/${i + 5}.thumb128.webp`),
+        wonyoung: Array.from({ length: 34 }, (_, i) => `wonyoung/${i + 1}.thumb128.webp`),
+        xuka: Array.from({ length: 23 }, (_, i) => `xuka/${i + 1}.thumb128.webp`),
+      };
+      const fallbackStickers = stickerMap[category] || [];
+      const selectedIndex = fallbackStickers.findIndex(s => s === stickerId);
+      if (selectedIndex === -1) {
+        return fallbackStickers.slice(0, 4);
+      }
+      if (selectedIndex <= 2) {
+        return fallbackStickers.slice(0, 4);
+      } else if (selectedIndex >= fallbackStickers.length - 2) {
+        return fallbackStickers.slice(-4);
+      } else {
+        const startIndex = selectedIndex - 1;
+        return fallbackStickers.slice(startIndex, startIndex + 4);
+      }
+    }
     
     // Tìm index của sticker được chọn trong danh sách
     const selectedIndex = stickers.findIndex(s => s === stickerId);
@@ -602,14 +722,47 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   };
 
   const handleStickerClick = (stickerId: string) => {
-    // Hiển thị preview thay vì gửi ngay
+    // Gửi sticker ngay lập tức
+    sendSticker(stickerId, targetUserId);
+    setShowStickerPicker(false);
+    // Đóng kết quả tìm kiếm nếu có
+    setShowSearchResults(false);
+    setSearchResults([]);
+  };
+
+  // Hàm xử lý khi click vào sticker từ kết quả tìm kiếm
+  const handleSearchStickerClick = (stickerId: string) => {
+    // Gửi sticker ngay lập tức
+    sendSticker(stickerId, targetUserId);
+    // Đóng kết quả tìm kiếm và xóa text trong input
+    setShowSearchResults(false);
+    setSearchResults([]);
+    setInputMessage('');
+    // Reset textarea height
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const lineHeight = parseInt(getComputedStyle(inputRef.current).lineHeight) || 24;
+      inputRef.current.style.height = `${lineHeight}px`;
+      inputRef.current.style.overflowY = 'hidden';
+    }
+  };
+
+  // Hàm xử lý khi long press sticker (từ StickerPicker hoặc search results)
+  const handleLongPressSticker = (stickerId: string) => {
+    // Hiển thị preview và bắt đầu ghi âm
     const previewStickers = getPreviewStickers(stickerId);
     setSelectedStickers(previewStickers);
     // Tìm index của sticker được chọn trong preview
     const index = previewStickers.findIndex(s => s === stickerId);
     setSelectedStickerIndex(index >= 0 ? index : 0);
     setShowStickerPicker(false);
+    // Đóng kết quả tìm kiếm nếu có
+    setShowSearchResults(false);
+    setSearchResults([]);
+    // Bắt đầu ghi âm
+    startRecording(stickerId);
   };
+
 
   // Hàm đóng preview sticker
   const handleCloseStickerPreview = () => {
@@ -710,31 +863,35 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         
         const currentStickerId = recordingStickerIdRef.current;
         
-        // Luôn gửi sticker khi đã bắt đầu recording
-        // Nếu có audio (size > 0), gửi kèm audio
-        if (currentStickerId) {
-          setTimeout(() => {
-            if (recordedAudioBlobRef.current && recordedAudioBlobRef.current.size > 0) {
-              // Có audio được ghi → gửi kèm audio
-              handleSendSticker(currentStickerId, recordedAudioBlobRef.current);
-            } else {
-              // Không có audio hoặc size = 0 → gửi không có audio
-              handleSendSticker(currentStickerId);
-            }
-            recordedAudioBlobRef.current = null;
-            recordingStickerIdRef.current = null;
-            recordingStartTimeRef.current = null;
-            // Reset flag chờ onstop callback
-            isWaitingForStopCallbackRef.current = false;
-          }, 200);
-        } else {
-          // Reset state nếu không có stickerId
-          recordedAudioBlobRef.current = null;
-          recordingStickerIdRef.current = null;
-          recordingStartTimeRef.current = null;
-          // Reset flag chờ onstop callback
-          isWaitingForStopCallbackRef.current = false;
+        // Không gửi ngay, chỉ lưu audio để preview
+        // User sẽ click lần nữa để gửi
+        if (currentStickerId && recordedAudioBlobRef.current && recordedAudioBlobRef.current.size > 0) {
+          // Phát preview audio
+          const audioUrl = URL.createObjectURL(recordedAudioBlobRef.current);
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = audioUrl;
+            audioRef.current.play().catch(() => {});
+            audioRef.current.onended = () => {
+              URL.revokeObjectURL(audioUrl);
+            };
+          } else {
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            audio.play().catch(() => {});
+            audio.onended = () => {
+              URL.revokeObjectURL(audioUrl);
+              audioRef.current = null;
+            };
+            audio.onerror = () => {
+              URL.revokeObjectURL(audioUrl);
+              audioRef.current = null;
+            };
+          }
         }
+        
+        // Reset flag chờ onstop callback
+        isWaitingForStopCallbackRef.current = false;
       };
       
       mediaRecorderRef.current = mediaRecorder;
@@ -743,10 +900,10 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       setIsRecording(true);
       setRecordingTime(0);
       
-      // Tự động dừng sau 60 giây
+      // Tự động dừng sau 5 giây
       recordingTimeoutRef.current = setTimeout(() => {
         stopRecording();
-      }, 60000);
+      }, 5000);
       
       // Cập nhật thời gian ghi âm mỗi 100ms để progress chạy mượt
       recordingIntervalRef.current = setInterval(() => {
@@ -754,9 +911,9 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         if (startTime) {
           const elapsedMs = Date.now() - startTime;
           const elapsedSeconds = elapsedMs / 1000;
-          if (elapsedSeconds >= 60) {
+          if (elapsedSeconds >= 5) {
             stopRecording();
-            setRecordingTime(60);
+            setRecordingTime(5);
           } else {
             // Cập nhật với giá trị chính xác theo milliseconds để progress mượt
             setRecordingTime(elapsedSeconds);
@@ -1224,7 +1381,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         {/* Messages */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto p-3 space-y-1"
+          className="flex-1 overflow-y-auto pl-4 pr-2 space-y-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-thumb]:bg-gray-700"
         >
           {/* Loading indicator khi load more */}
           {isLoadingMore && (
@@ -1360,51 +1517,74 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                     if (isGroupStart) {
                       // Bubble đầu: bo tròn nhỏ góc dưới bên trái (hoặc phải nếu là tin nhắn của mình)
                       borderRadiusClasses = isMyMessage 
-                        ? 'rounded-2xl rounded-br-sm' 
-                        : 'rounded-2xl rounded-bl-sm';
+                        ? 'rounded-2xl rounded-br-lg' 
+                        : 'rounded-2xl rounded-bl-lg';
                     } else {
                       // Bubble thứ 2: bo tròn nhỏ góc trên bên trái (hoặc phải nếu là tin nhắn của mình)
                       borderRadiusClasses = isMyMessage 
-                        ? 'rounded-2xl rounded-tr-sm' 
-                        : 'rounded-2xl rounded-tl-sm';
+                        ? 'rounded-2xl rounded-tr-lg' 
+                        : 'rounded-2xl rounded-tl-lg';
                     }
                   } else {
                     // 3+ bubble
                     if (isGroupStart) {
                       // Bubble đầu: bo tròn nhỏ góc dưới bên trái (hoặc phải)
                       borderRadiusClasses = isMyMessage 
-                        ? 'rounded-2xl rounded-br-sm' 
-                        : 'rounded-2xl rounded-bl-sm';
+                        ? 'rounded-2xl rounded-br-lg' 
+                        : 'rounded-2xl rounded-bl-lg';
                     } else if (isGroupMiddle) {
                       // Bubble giữa: bo tròn nhỏ cả 2 góc bên trái (hoặc phải)
                       borderRadiusClasses = isMyMessage 
-                        ? 'rounded-2xl rounded-tr-sm rounded-br-sm' 
-                        : 'rounded-2xl rounded-tl-sm rounded-bl-sm';
+                        ? 'rounded-2xl rounded-tr-lg rounded-br-lg' 
+                        : 'rounded-2xl rounded-tl-lg rounded-bl-lg';
                     } else {
                       // Bubble cuối: bo tròn nhỏ góc trên bên trái (hoặc phải)
                       borderRadiusClasses = isMyMessage 
-                        ? 'rounded-2xl rounded-tr-sm' 
-                        : 'rounded-2xl rounded-tl-sm';
+                        ? 'rounded-2xl rounded-tr-lg' 
+                        : 'rounded-2xl rounded-tl-lg';
                     }
                   }
                 }
+                
+                // Xác định xem đây có phải là tin nhắn cuối cùng trong nhóm liên tiếp không
+                // Nhóm liên tiếp = các tin nhắn từ cùng một người, không bị ngắt bởi tin nhắn của người khác
+                const isLastInMessageGroup = (() => {
+                  // Nếu là tin nhắn của mình, không hiển thị avatar
+                  if (isMyMessage) return false;
+                  
+                  // Kiểm tra tin nhắn tiếp theo
+                  const nextMsg = messages[index + 1];
+                  
+                  // Nếu không có tin nhắn tiếp theo, đây là tin nhắn cuối cùng
+                  if (!nextMsg) return true;
+                  
+                  // Nếu tin nhắn tiếp theo là của người khác, đây là tin nhắn cuối cùng trong nhóm
+                  if (nextMsg.userId !== msg.userId) return true;
+                  
+                  // Nếu tin nhắn tiếp theo là của cùng người, đây không phải tin nhắn cuối
+                  return false;
+                })();
                 
                 return (
                   <div
                     key={msg.id}
                     className={cn(
-                      'flex gap-2 group relative',
+                      'flex gap-2 group relative items-end',
                       isMyMessage && 'flex-row-reverse'
                     )}
                   >
-                    {/* Chỉ hiển thị avatar cho tin nhắn của người khác */}
-                    {!isMyMessage && (
+                    {/* Chỉ hiển thị avatar cho tin nhắn cuối cùng trong nhóm liên tiếp của người khác */}
+                    {!isMyMessage && isLastInMessageGroup && (
                       <Avatar
                         src={msg.avatar || undefined}
                         name={msg.fullName}
                         size="sm"
-                        className="flex-shrink-0 w-6 h-6"
+                        className="flex-shrink-0 w-6 h-6 mb-0.5"
                       />
+                    )}
+                    {/* Hiển thị placeholder để giữ layout khi không có avatar */}
+                    {!isMyMessage && !isLastInMessageGroup && (
+                      <div className="flex-shrink-0 w-6 h-6" />
                     )}
                     <div
                       className={cn(
@@ -1441,7 +1621,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                             alt="Sticker"
                             width={120}
                             height={120}
-                            className="w-[120px] h-[120px] object-contain"
+                            className="w-[120px] h-[120px] object-contain  rounded-2xl"
                             unoptimized // Vì là animated webp
                           />
                           {msg.audio && (
@@ -1470,7 +1650,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                                   audio.onerror = () => {};
                                 }
                               }}
-                              className="flex-shrink-0 p-1.5 rounded-full bg-white hover:bg-gray-50 transition-colors"
+                              className="flex-shrink-0 p-1.5 rounded-full hover:bg-gray-50 transition-colors"
                               aria-label="Phát audio"
                             >
                               <Image
@@ -1493,7 +1673,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       ) : (
                         <div
                           className={cn(
-                            'px-3 py-1.5 relative',
+                            'px-3.5 py-1.5 relative',
                             borderRadiusClasses,
                             isMyMessage
                               ? 'text-white'
@@ -1530,6 +1710,79 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         {/* Input area */}
         <div className="p-4 relative flex-shrink-0">
           
+          {/* Sticker search results */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div className="mb-3 relative">
+              {/* Hàng sticker gợi ý - tối đa 4 sticker, 1 hàng */}
+              <div className="flex gap-2 justify-center items-center">
+                {searchResults.map((stickerId) => {
+                  return (
+                    <div
+                      key={stickerId}
+                      className="relative cursor-pointer transition-all hover:scale-110"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSearchStickerClick(stickerId);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        searchMouseDownTimeRef.current[stickerId] = Date.now();
+                        searchLongPressTimeoutRef.current[stickerId] = setTimeout(() => {
+                          if (searchMouseDownTimeRef.current[stickerId] !== null) {
+                            handleLongPressSticker(stickerId);
+                          }
+                        }, 150);
+                      }}
+                      onMouseUp={() => {
+                        if (searchLongPressTimeoutRef.current[stickerId]) {
+                          clearTimeout(searchLongPressTimeoutRef.current[stickerId]!);
+                          searchLongPressTimeoutRef.current[stickerId] = null;
+                        }
+                        searchMouseDownTimeRef.current[stickerId] = null;
+                      }}
+                      onMouseLeave={() => {
+                        if (searchLongPressTimeoutRef.current[stickerId]) {
+                          clearTimeout(searchLongPressTimeoutRef.current[stickerId]!);
+                          searchLongPressTimeoutRef.current[stickerId] = null;
+                        }
+                        searchMouseDownTimeRef.current[stickerId] = null;
+                      }}
+                      onTouchStart={(e) => {
+                        e.preventDefault();
+                        searchMouseDownTimeRef.current[stickerId] = Date.now();
+                        searchLongPressTimeoutRef.current[stickerId] = setTimeout(() => {
+                          if (searchMouseDownTimeRef.current[stickerId] !== null) {
+                            handleLongPressSticker(stickerId);
+                          }
+                        }, 150);
+                      }}
+                      onTouchEnd={() => {
+                        if (searchLongPressTimeoutRef.current[stickerId]) {
+                          clearTimeout(searchLongPressTimeoutRef.current[stickerId]!);
+                          searchLongPressTimeoutRef.current[stickerId] = null;
+                        }
+                        searchMouseDownTimeRef.current[stickerId] = null;
+                      }}
+                    >
+                      {/* Sticker image */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden">
+                        <Image
+                          src={getStickerUrl(stickerId)}
+                          alt="Sticker"
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-contain"
+                          unoptimized
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
           {/* Sticker preview với audio recording */}
           {selectedStickers.length > 0 && (
             <div className="mb-3 relative">
@@ -1544,7 +1797,11 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               
               {/* Text hướng dẫn */}
               <p className="text-xs text-center mb-2" style={{ color: '#8D7EF7' }}>
-                Giữ Sticker để thu âm
+                {isRecording 
+                  ? 'Đang ghi âm...' 
+                  : recordedAudio && recordedAudio.size > 0
+                    ? 'Click để gửi sticker với âm thanh'
+                    : 'Click để gửi sticker'}
               </p>
               
               {/* Hàng sticker preview */}
@@ -1561,18 +1818,18 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                         isSelected ? "scale-110" : "opacity-50"
                       )}
                       onClick={(e) => {
-                        // Click vào sticker → gửi ngay không có audio
                         // Ngăn onClick khi đang recording hoặc đang chờ onstop callback
-                        if (!isRecording && !hasClickedRef.current && !isWaitingForStopCallbackRef.current) {
+                        if (!isRecording && !isWaitingForStopCallbackRef.current) {
                           e.preventDefault();
                           e.stopPropagation();
-                          hasClickedRef.current = true;
-                          // Clear timeout nếu có để không bắt đầu recording
-                          if (clickTimeoutRef.current) {
-                            clearTimeout(clickTimeoutRef.current);
-                            clickTimeoutRef.current = null;
+                          
+                          // Nếu đã có audio được ghi cho sticker này, gửi với audio
+                          if (recordedAudioBlobRef.current && recordedAudioBlobRef.current.size > 0 && recordingStickerIdRef.current === stickerId) {
+                            handleSendSticker(stickerId, recordedAudioBlobRef.current);
+                          } else {
+                            // Nếu chưa có audio, gửi không có audio
+                            handleSendSticker(stickerId);
                           }
-                          handleSendSticker(stickerId);
                         }
                       }}
                       onMouseDown={(e) => {
@@ -1661,7 +1918,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                       <div
                         className={cn(
                           "w-16 h-16 rounded-lg overflow-hidden",
-                          isSelected ? "" : "bg-white opacity-50"
+                          isSelected ? "" : "opacity-50"
                         )}
                       >
                         <Image
@@ -1701,7 +1958,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                                 stroke="#8D7EF7"
                                 strokeWidth="3"
                                 strokeDasharray={`${2 * Math.PI * 20}`}
-                                strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(recordingTime / 60, 1))}`}
+                                strokeDashoffset={`${2 * Math.PI * 20 * (1 - Math.min(recordingTime / 5, 1))}`}
                                 strokeLinecap="round"
                               />
                             </svg>
@@ -1806,7 +2063,13 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
+              onBlur={() => {
+                // Đợi một chút trước khi đóng search results để cho phép click vào sticker
+                setTimeout(() => {
+                  setIsFocused(false);
+                  setShowSearchResults(false);
+                }, 200);
+              }}
               onPaste={(e) => {
                 // Xử lý paste trong textarea
                 // Nếu là ảnh, ngăn paste text vào textarea (sẽ được xử lý bởi useEffect paste handler)
@@ -1979,6 +2242,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           <StickerPicker
             onSelectSticker={handleStickerClick}
             onSelectEmoji={handleEmojiClick}
+            onLongPressSticker={handleLongPressSticker}
             emojiList={EMOJI_ICONS}
             onClose={() => setShowStickerPicker(false)}
             position={{
