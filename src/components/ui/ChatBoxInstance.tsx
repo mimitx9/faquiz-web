@@ -335,6 +335,25 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     return () => window.removeEventListener('keydown', handleEscape);
   }, [zoomedImage]);
 
+  // Xử lý phím Escape để đóng box chat
+  useEffect(() => {
+    // Chỉ đóng box chat nếu không có modal zoom ảnh đang mở
+    if (zoomedImage) return;
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Chỉ đóng nếu box chat đang được focus hoặc textarea đang được focus
+        if (boxChatRef.current?.contains(document.activeElement) || 
+            inputRef.current === document.activeElement) {
+          onClose();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [zoomedImage, onClose]);
+
   // Xử lý focus cho boxchat
   useEffect(() => {
     const handleFocusIn = (e: FocusEvent) => {
@@ -361,6 +380,16 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         boxChat.removeEventListener('focusout', handleFocusOut);
       }
     };
+  }, []);
+
+  // Kiểm tra nếu textarea đã được focus khi mount (do autofocus)
+  useEffect(() => {
+    // Sử dụng requestAnimationFrame để đảm bảo autofocus đã xảy ra
+    requestAnimationFrame(() => {
+      if (inputRef.current === document.activeElement) {
+        setIsFocused(true);
+      }
+    });
   }, []);
 
   // Xử lý paste ảnh từ clipboard (Ctrl+V / Cmd+V)
@@ -1006,6 +1035,44 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
     return `User ${targetUserId}`;
   };
 
+  // Helper function để tạo màu nền random dựa trên tên user (consistent cho cùng một user)
+  const getRandomColor = (name: string): string => {
+    // Tạo hash từ tên để có màu consistent
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Danh sách màu đẹp và dễ nhìn
+    const colors = [
+      '#FF6B6B', // Đỏ
+      '#4ECDC4', // Xanh ngọc
+      '#45B7D1', // Xanh dương
+      '#FFA07A', // Cam nhạt
+      '#98D8C8', // Xanh lá nhạt
+      '#F7DC6F', // Vàng
+      '#BB8FCE', // Tím nhạt
+      '#85C1E2', // Xanh nhạt
+      '#F8B739', // Vàng cam
+      '#52BE80', // Xanh lá
+      '#E74C3C', // Đỏ đậm
+      '#3498DB', // Xanh dương đậm
+      '#9B59B6', // Tím
+      '#E67E22', // Cam đậm
+      '#1ABC9C', // Xanh ngọc đậm
+    ];
+    
+    // Chọn màu dựa trên hash
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+
+  // Helper function để lấy ký tự đầu tiên
+  const getFirstLetter = (name: string): string => {
+    if (!name) return 'U';
+    return name.charAt(0).toUpperCase();
+  };
+
   const getTargetAvatar = () => {
     // Ưu tiên lấy từ conversation
     const conv = conversations.find((c) => c.targetUserId === targetUserId);
@@ -1051,13 +1118,33 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
   // Z-index: box sau có z-index cao hơn để không bị đè
   const zIndex = 50 + index;
 
+  // Handler để focus vào textarea khi click vào boxchat
+  const handleBoxChatClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Chỉ focus nếu click không phải vào các phần tử tương tác (buttons, links, inputs, etc.)
+    const target = e.target as HTMLElement;
+    const isInteractiveElement = 
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('textarea');
+    
+    if (!isInteractiveElement && inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   return (
     <div
       ref={boxChatRef}
+      onClick={handleBoxChatClick}
       className={cn(
         'fixed bottom-0',
-        'bg-white dark:bg-gray-800',
-        'rounded-t-lg',
+        'bg-white dark:bg-gray-900',
+        'rounded-t-2xl',
         'flex flex-col',
         'h-[420px]',
         'shadow-2xl',
@@ -1072,25 +1159,34 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       tabIndex={-1}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 flex-shrink-0">
-        <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center justify-between p-4 flex-shrink-0">
+        <div className="flex items-center gap-3 flex-1">
           <div className="relative">
             <div
               className={cn(
-                'w-2 h-2 rounded-full absolute -top-0.5 -right-0.5 border border-white dark:border-gray-800 z-10',
+                'w-3 h-3 rounded-full absolute -bottom-0 -right-0 border-2 border-white dark:border-gray-800 z-10',
                 isConnected ? 'bg-green-500' : 'bg-red-500'
               )}
             />
-            <Avatar
-              src={getTargetAvatar() || undefined}
-              name={getTargetName()}
-              size="sm"
-              className="w-8 h-8"
-            />
+            {getTargetAvatar() ? (
+              <Avatar
+                src={getTargetAvatar() || undefined}
+                name={getTargetName()}
+                size="sm"
+                className="w-10 h-10"
+              />
+            ) : (
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-md"
+                style={{ backgroundColor: getRandomColor(getTargetName()) }}
+              >
+                {getFirstLetter(getTargetName())}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">
-              {getTargetName()}
+            <div className="text-sm font-medium text-gray-600 dark:text-white truncate">
+              {getTargetName().length > 20 ? `${getTargetName().substring(0, 20)}...` : getTargetName()}
             </div>
           </div>
         </div>
@@ -1139,7 +1235,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           )}
           {messages.length === 0 ? (
             <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-              <p className="text-sm">Chat càng nhiều, info càng rõ</p>
+              <p className="text-sm">Chat tìm bạn học cùng cho bớt nản</p>
             </div>
           ) : (
             <>
@@ -1640,8 +1736,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           <div className={cn(
             "w-full max-w-sm mx-auto rounded-3xl px-4 py-3 flex items-center transition-all duration-200 border-2 border-gray-100 dark:border-white/10",
             isFocused 
-              ? "bg-transparent dark:bg-gray-100" 
-              : "bg-gray-100 dark:bg-gray-700"
+              ? "bg-transparent" 
+              : "bg-gray-100 dark:bg-gray-900"
           )}>
             <input
               ref={fileInputRef}
@@ -1654,11 +1750,11 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={!isConnected}
-              className="mr-3 p-1 opacity-50 hover:opacity-100 hover:scale-110 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="mr-3 p-1 opacity-30 hover:opacity-100 hover:scale-110 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Chọn ảnh"
             >
               <svg
-                className="w-4 h-4 text-gray-600 dark:text-white/30"
+                className="w-4 h-4 text-gray-600 dark:text-white/100"
                 width="19"
                 height="13"
                 viewBox="0 0 19 13"
@@ -1710,6 +1806,8 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               value={inputMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
               onPaste={(e) => {
                 // Xử lý paste trong textarea
                 // Nếu là ảnh, ngăn paste text vào textarea (sẽ được xử lý bởi useEffect paste handler)
@@ -1729,7 +1827,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               autoFocus
               rows={1}
               className="flex-1 bg-transparent text-md text-gray-800 dark:text-gray-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto max-h-[3rem] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-              style={{ minHeight: '1.5rem', lineHeight: '1.5rem', fontFamily: 'Roboto, sans-serif' }}
+              style={{ minHeight: '1.5rem', lineHeight: '1.5rem'}}
             />
             <button
               ref={stickerButtonRef}
@@ -1738,15 +1836,41 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
                 setShowStickerPicker(!showStickerPicker);
               }}
               disabled={!isConnected}
-              className="hover:scale-110 opacity-50 hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+              className="hover:scale-110 opacity-30 hover:opacity-100 transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Chọn sticker"
             >
-              <Image
-                src="/sticker.svg"
-                alt="Sticker"
-                width={17}
-                height={17}
-              />
+              <svg 
+                width="17" 
+                height="19" 
+                viewBox="0 0 19 21" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-gray-600 dark:text-white"
+              >
+                <path 
+                  d="M17.75 11.75C17.75 16.4444 13.9444 20.25 9.25 20.25C4.55558 20.25 0.75 16.4444 0.75 11.75C0.75 5.25 7.25 0.75 9.25 0.75C11.25 0.75 17.75 5.25 17.75 11.75Z" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5"
+                />
+                <circle 
+                  cx="6.75" 
+                  cy="9.75" 
+                  r="1" 
+                  fill="currentColor"
+                />
+                <circle 
+                  cx="11.75" 
+                  cy="9.75" 
+                  r="1" 
+                  fill="currentColor"
+                />
+                <path 
+                  d="M7.75878 13.6652C8.33559 13.8908 9.76112 14.0967 10.8488 13.1154" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
             <button
               onClick={handleSendMessage}
