@@ -41,6 +41,8 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
   const [isLoading, setIsLoading] = useState(true);
   const pickerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const menuContainerRef = useRef<HTMLDivElement>(null);
+  const menuButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const isScrollingRef = useRef(false);
 
@@ -211,6 +213,24 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
     }
   };
 
+  // Tự động scroll menu để hiển thị active button
+  useEffect(() => {
+    if (activeCategory && menuContainerRef.current && menuButtonRefs.current[activeCategory]) {
+      const menuContainer = menuContainerRef.current;
+      const activeButton = menuButtonRefs.current[activeCategory];
+      
+      if (activeButton) {
+        // Sử dụng scrollIntoView để tự động scroll button vào view
+        // inline: 'nearest' chỉ scroll khi button không trong view
+        activeButton.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [activeCategory]);
+
   const handleMenuClick = (categoryId: string) => {
     const sectionElement = sectionRefs.current[categoryId];
     if (sectionElement && scrollContainerRef.current) {
@@ -253,12 +273,13 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
 
   if (isLoading) {
     return (
-      <div className="relative z-[50]">
+      <div className="relative z-[100]">
         <div
           ref={pickerRef}
           className={cn(
             'p-4',
-            'bg-white dark:bg-gray-800',
+            'bg-white dark:bg-gray-900',
+            'dark:border-2 dark:border-gray-800',
             'rounded-2xl',
             'h-[480px] w-[340px] overflow-hidden flex items-center justify-center',
             className
@@ -280,13 +301,15 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
   ];
 
   return (
-    <div className="relative z-[50]">
+    <div className="relative z-[100]">
       <div
         ref={pickerRef}
         className={cn(
-          'bg-white dark:bg-gray-800',
+          'bg-white dark:bg-gray-900',
+          'dark:border-2 dark:border-gray-800',
           'rounded-2xl shadow-xl',
           'h-[480px] w-[340px] flex flex-col overflow-hidden',
+          'relative',
           className
         )}
         style={{ 
@@ -294,17 +317,17 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
           ...style,
         }}
       >
-        {/* Arrow bo tròn ở đỉnh */}
-        <div 
-          className="absolute -bottom-2 left-8 w-3 h-3 bg-white dark:bg-gray-800 transform rotate-45 rounded-tl-sm z-10"
-          style={{ borderRight: '1px solid #8D7EF740', borderBottom: '1px solid #8D7EF740' }}
-        />
-        
         {/* Phần 1: Menu sticker */}
-        <div className="flex gap-1 p-2 overflow-x-auto shrink-0 hide-scrollbar">
+        <div 
+          ref={menuContainerRef}
+          className="flex gap-1 p-2 overflow-x-auto shrink-0 hide-scrollbar"
+        >
           {allItems.map((item) => (
             <button
               key={item.id}
+              ref={(el) => {
+                menuButtonRefs.current[item.id] = el;
+              }}
               onClick={() => handleMenuClick(item.id)}
               className={cn(
                 'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
@@ -362,12 +385,11 @@ export default function StickerPicker({ onSelectSticker, onSelectEmoji, emojiLis
                           key={`${item.id}-${filename}-${index}`}
                           onClick={() => handleStickerClick(item.id, filename)}
                           className={cn(
-                            'aspect-square rounded-lg overflow-hidden',
-                            'hover:bg-gray-100 dark:hover:bg-gray-700',
-                            'transition-colors p-1',
+                            'aspect-square overflow-hidden',
+                            'hover:scale-[1.2]',
+                            'transition-all duration-200 p-1',
                             'flex items-center justify-center'
                           )}
-                          title={filename}
                         >
                           <Image
                             src={stickerUrl}

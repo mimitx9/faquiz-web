@@ -49,7 +49,7 @@ export default function Avatar({
       case 'lg':
         return 'w-12 h-12 text-lg';
       default: // md
-        return 'w-8 h-8 text-sm';
+        return 'w-10 h-10 text-sm';
     }
   };
 

@@ -1159,7 +1159,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
       tabIndex={-1}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 flex-shrink-0">
         <div className="flex items-center gap-3 flex-1">
           <div className="relative">
             <div
@@ -1172,7 +1172,6 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
               <Avatar
                 src={getTargetAvatar() || undefined}
                 name={getTargetName()}
-                size="sm"
                 className="w-10 h-10"
               />
             ) : (
@@ -1193,7 +1192,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push(`/messages?userId=${targetUserId}`)}
-            className="transition-colors"
+            className="hover:scale-110 transition-all duration-200 opacity-50 hover:opacity-100"
             title="Mở rộng chat"
           >
             <Image
@@ -1206,7 +1205,7 @@ export default function ChatBoxInstance({ targetUserId, index, totalBoxes, onClo
           </button>
           <button
             onClick={onClose}
-            className="ransition-colors"
+            className="hover:scale-110 transition-all duration-200 opacity-50 hover:opacity-100"
           >
             <X className="w-5 h-5 text-gray-500" />
           </button>
